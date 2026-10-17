@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Patient Stories | Tailbone Treatment</title>
+  <meta name="description" content="Real experiences from patients treated for tailbone (coccyx) pain by Dr Rajveer Singh in Bengaluru, New Delhi and online.">
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("theme"); } catch (e) {}
+      document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    })();
+  </script>
+</head>
+<body class="page">
+  <header class="mini-header">
+    <div class="container header__inner">
+      <a href="/" class="brand"><img src="assets/img/logo.svg" alt="" width="36" height="36"><span class="brand__text"><strong>TAILBONE</strong><small>TREATMENT.com</small></span></a>
+      <a href="/#appointment" class="btn btn--primary">Book appointment</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <div class="section__head">
+        <span class="eyebrow">Patient stories</span>
+        <h1>Real people, back to sitting comfortably.</h1>
+        <p id="storyStats">Every story is shared by a patient and published with their consent.</p>
+        <a href="#share" class="btn btn--primary">Share your story</a>
+      </div>
+
+      <div class="story-grid" id="storyGrid" aria-live="polite"></div>
+      <div class="center" style="margin-top:var(--space-6)">
+        <button class="btn btn--ghost" id="moreBtn" type="button" hidden>Load more stories</button>
+      </div>
+
+      <section class="card share" id="share">
+        <span class="eyebrow">Your experience matters</span>
+        <h2>Share your story</h2>
+        <p class="muted">Your words help someone who's struggling to sit right now. We publish your first name and last initial only, and the team reviews every story before it appears.</p>
+        <div class="alert alert--error" id="shareErr" hidden></div>
+        <form class="form" id="shareForm" novalidate>
+          <div class="field-row">
+            <div class="field"><label for="sName">Your name</label><input id="sName" name="name" required autocomplete="name"></div>
+            <div class="field"><label for="sCity">City <span class="muted">(optional)</span></label><input id="sCity" name="city" autocomplete="address-level2"></div>
+          </div>
+          <fieldset class="field">
+            <legend>Your rating</legend>
+            <div class="rating" id="rating">
+              <input type="radio" name="rating" id="r5" value="5" checked><label for="r5" title="5 stars">★</label>
+              <input type="radio" name="rating" id="r4" value="4"><label for="r4" title="4 stars">★</label>
+              <input type="radio" name="rating" id="r3" value="3"><label for="r3" title="3 stars">★</label>
+              <input type="radio" name="rating" id="r2" value="2"><label for="r2" title="2 stars">★</label>
+              <input type="radio" name="rating" id="r1" value="1"><label for="r1" title="1 star">★</label>
+            </div>
+          </fieldset>
+          <div class="field"><label for="sTitle">Headline <span class="muted">(optional)</span></label><input id="sTitle" name="title" maxlength="100" placeholder="e.g. I can finally drive to work again"></div>
+          <div class="field"><label for="sBody">Your story</label><textarea id="sBody" name="body" rows="6" required maxlength="2000" placeholder="What was the pain like? How did treatment go? How do you feel now?"></textarea><span class="small muted" id="charCount">0 / 2000</span></div>
+          <div class="field-row">
+            <div class="field"><label for="sDur">How long had you had the pain? <span class="muted">(optional)</span></label><input id="sDur" name="duration" placeholder="e.g. 2 years"></div>
+            <div class="field"><label for="sPhone">Phone <span class="muted">(optional, never published)</span></label><input id="sPhone" name="phone" type="tel" autocomplete="tel"></div>
+          </div>
+          <label class="check"><input type="checkbox" name="consent" required> I agree that Tailbone Treatment Clinic may publish this story with my first name and last initial.</label>
+          <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn btn--primary btn--lg btn--block" type="submit">Submit my story</button>
+        </form>
+        <div class="done" id="shareDone" hidden tabindex="-1">
+          <div class="done__icon" aria-hidden="true">✓</div>
+          <h3>Thank you for sharing!</h3>
+          <p class="muted">Our team will review your story and publish it soon.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer"><div class="container footer__bottom" style="margin-top:0">
+    <span>© Tailbone Treatment. All rights reserved.</span>
+    <a href="privacy.html">Privacy statement</a>
+  </div></footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="assets/js/stories.js" defer></script>
+</body>
+</html>

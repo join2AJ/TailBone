@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clinic Dashboard | Tailbone Treatment</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("theme"); } catch (e) {}
+      document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    })();
+  </script>
+</head>
+<body class="admin">
+  <!-- Login -->
+  <section class="login" id="loginView" hidden>
+    <form class="card login__card" id="loginForm">
+      <div class="brand"><img src="/assets/img/logo.svg" alt="" width="40" height="40"><span class="brand__text"><strong>TAILBONE</strong><small>CLINIC DASHBOARD</small></span></div>
+      <h1>Sign in</h1>
+      <div class="alert alert--error" id="loginErr" hidden></div>
+      <div class="field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="loginPass">Password</label><input id="loginPass" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn--primary btn--block btn--lg" type="submit">Sign in</button>
+      <a class="small muted center" href="/">← Back to website</a>
+    </form>
+  </section>
+
+  <!-- App shell -->
+  <div class="shell" id="appView" hidden>
+    <aside class="side" id="side">
+      <a href="/" class="brand brand--light"><img src="/assets/img/logo.svg" alt="" width="34" height="34"><span class="brand__text"><strong>TAILBONE</strong><small>DASHBOARD</small></span></a>
+      <nav class="side__nav" aria-label="Dashboard">
+        <a href="#/overview" data-view="overview"><span>◎</span>Overview</a>
+        <a href="#/appointments" data-view="appointments"><span>▦</span>Appointments</a>
+        <a href="#/followups" data-view="followups"><span>↻</span>Follow-ups <b class="count" id="fuCount" hidden></b></a>
+        <a href="#/patients" data-view="patients"><span>☺</span>Patients</a>
+        <a href="#/stories" data-view="stories"><span>❝</span>Stories <b class="count" id="storyCount" hidden></b></a>
+        <a href="#/instagram" data-view="instagram"><span>▶</span>Instagram</a>
+        <a href="#/settings" data-view="settings"><span>⚙</span>Settings</a>
+      </nav>
+      <div class="side__foot">
+        <div class="me"><div class="avatar avatar--sm" id="meAvatar"></div><div><strong id="meName"></strong><small id="meEmail"></small></div></div>
+        <button class="btn btn--outline-light btn--block" id="logoutBtn" type="button">Sign out</button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar-admin">
+        <button class="icon-btn side-toggle" id="sideToggle" aria-label="Menu">☰</button>
+        <h1 id="viewTitle">Overview</h1>
+        <div class="topbar-admin__actions">
+          <button class="btn btn--primary" id="newApptBtn" type="button">+ New appointment</button>
+          <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode">◐</button>
+        </div>
+      </header>
+      <main class="content" id="content" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <dialog class="modal" id="modal">
+    <form method="dialog" class="modal__close"><button class="icon-btn" aria-label="Close">×</button></form>
+    <div id="modalBody"></div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/admin/admin.js" defer></script>
+</body>
+</html>

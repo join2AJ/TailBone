@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Appointments | Tailbone Treatment</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("theme"); } catch (e) {}
+      document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    })();
+  </script>
+</head>
+<body class="page">
+  <header class="mini-header">
+    <div class="container header__inner">
+      <a href="/" class="brand"><img src="assets/img/logo.svg" alt="" width="36" height="36"><span class="brand__text"><strong>TAILBONE</strong><small>TREATMENT.com</small></span></a>
+      <a href="/#appointment" class="btn btn--primary">Book new</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Lookup -->
+      <section class="card" id="lookupCard">
+        <span class="eyebrow">My appointments</span>
+        <h1>Manage your booking</h1>
+        <p class="muted">Enter your booking reference and the phone number you booked with. You'll find the reference on your confirmation.</p>
+        <div class="alert alert--error" id="lookupErr" hidden></div>
+        <form class="form" id="lookupForm" novalidate>
+          <div class="field">
+            <label for="ref">Booking reference</label>
+            <input id="ref" name="ref" required placeholder="TB-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="phone">Phone number</label>
+            <input id="phone" name="phone" type="tel" required placeholder="+91 98xxx xxxxx" autocomplete="tel">
+          </div>
+          <button class="btn btn--primary btn--block btn--lg" type="submit">Find my booking</button>
+        </form>
+        <p class="small muted center" style="margin-top:1rem">Lost your reference? <a href="https://wa.me/919886688323" target="_blank" rel="noopener">WhatsApp us</a> or call <a href="tel:+919886688323">+91 98866 88323</a>.</p>
+      </section>
+
+      <!-- Result -->
+      <section class="card" id="resultCard" hidden>
+        <div class="alert" id="resultMsg" hidden></div>
+        <span class="eyebrow">Your appointment</span>
+        <h1 id="hello"></h1>
+        <div id="apptBox"></div>
+
+        <div id="actions" class="row-gap" hidden>
+          <button class="btn btn--primary" id="reschedBtn" type="button">Reschedule</button>
+          <button class="btn btn--ghost" id="cancelBtn" type="button">Cancel appointment</button>
+        </div>
+
+        <!-- Reschedule panel -->
+        <div id="reschedPanel" hidden style="margin-top:1.4rem">
+          <h3>Pick a new time</h3>
+          <div class="days" id="dayStrip" role="listbox" aria-label="Days"></div>
+          <div class="slots" id="slotGrid" role="listbox" aria-label="Times"></div>
+          <div class="row-gap" style="margin-top:1rem">
+            <button class="btn btn--primary" id="confirmResched" type="button" disabled>Confirm new time</button>
+            <button class="btn btn--ghost" id="closeResched" type="button">Keep current time</button>
+          </div>
+        </div>
+
+        <!-- Cancel panel -->
+        <div id="cancelPanel" hidden style="margin-top:1.4rem">
+          <h3>Cancel this appointment?</h3>
+          <div class="field">
+            <label for="cancelReason">Reason <span class="muted">(optional)</span></label>
+            <input id="cancelReason" maxlength="300" placeholder="e.g. feeling better, schedule clash">
+          </div>
+          <div class="row-gap" style="margin-top:1rem">
+            <button class="btn btn--primary" id="confirmCancel" type="button" style="background:var(--danger)">Yes, cancel it</button>
+            <button class="btn btn--ghost" id="closeCancel" type="button">Go back</button>
+          </div>
+        </div>
+
+        <div id="othersBox" hidden style="margin-top:2rem">
+          <h3>Your other upcoming appointments</h3>
+          <div id="othersList"></div>
+        </div>
+
+        <button class="linkish" id="lookupAgain" type="button">Look up a different booking</button>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer"><div class="container footer__bottom" style="margin-top:0">
+    <span>© Tailbone Treatment. All rights reserved.</span>
+    <a href="privacy.html">Privacy statement</a>
+  </div></footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="assets/js/manage.js" defer></script>
+</body>
+</html>

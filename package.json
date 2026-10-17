@@ -1,0 +1,20 @@
+{
+  "name": "tailbone-treatment",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Tailbone Treatment Clinic website with online booking, patient portal, follow-ups and a clinic dashboard.",
+  "type": "module",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server/index.js",
+    "admin:create": "node --disable-warning=ExperimentalWarning scripts/create-admin.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Progress Check-in | Tailbone Treatment</title>
+  <meta name="robots" content="noindex">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("theme"); } catch (e) {}
+      document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    })();
+  </script>
+</head>
+<body class="page">
+  <header class="mini-header">
+    <div class="container header__inner">
+      <a href="/" class="brand"><img src="assets/img/logo.svg" alt="" width="36" height="36"><span class="brand__text"><strong>TAILBONE</strong><small>TREATMENT.com</small></span></a>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <section class="card" id="loading"><p class="muted center">Loading your check-in…</p></section>
+
+      <section class="card" id="invalid" hidden>
+        <span class="eyebrow">Check-in</span>
+        <h1>This link isn't valid</h1>
+        <p class="muted">It may have been mistyped. Please message us on WhatsApp and we'll send a new one.</p>
+        <a class="btn btn--wa" href="https://wa.me/919886688323" target="_blank" rel="noopener">WhatsApp us</a>
+      </section>
+
+      <section class="card" id="checkinCard" hidden>
+        <span class="eyebrow">Progress check-in</span>
+        <h1 id="hello">How are you feeling?</h1>
+        <p class="muted">Dr Rajveer Singh's team reviews every answer. It takes about 30 seconds.</p>
+        <form class="form" id="checkinForm" novalidate>
+          <fieldset class="field">
+            <legend>Your tailbone pain right now, from 0 (none) to 10 (worst imaginable)</legend>
+            <div class="scale" id="scale"></div>
+            <div class="scale__legend"><span>No pain</span><span>Worst pain</span></div>
+          </fieldset>
+          <fieldset class="field">
+            <legend>Compared with your last visit, you feel…</legend>
+            <div class="seg">
+              <label><input type="radio" name="trend" value="better"><span>😊 Better</span></label>
+              <label><input type="radio" name="trend" value="same"><span>😐 Same</span></label>
+              <label><input type="radio" name="trend" value="worse"><span>😣 Worse</span></label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="sitting">How long can you sit comfortably? <span class="muted">(minutes, optional)</span></label>
+            <input id="sitting" name="sittingMinutes" type="number" min="0" max="600" inputmode="numeric" placeholder="e.g. 30">
+          </div>
+          <div class="field">
+            <label for="notes">Anything else we should know? <span class="muted">(optional)</span></label>
+            <textarea id="notes" name="notes" rows="3" maxlength="1000"></textarea>
+          </div>
+          <button class="btn btn--primary btn--block btn--lg" type="submit">Send check-in</button>
+        </form>
+      </section>
+
+      <section class="card done" id="thanks" hidden tabindex="-1">
+        <div class="done__icon" aria-hidden="true">✓</div>
+        <h1>Thank you!</h1>
+        <p class="muted" id="thanksMsg">We've received your update.</p>
+        <div class="row-gap" style="justify-content:center">
+          <a class="btn btn--primary" href="stories.html#share" id="storyInvite" hidden>Share your story</a>
+          <a class="btn btn--primary" href="/#appointment">Book a follow-up visit</a>
+          <a class="btn btn--ghost" href="/#tips">Self-care tips</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="assets/js/checkin.js" defer></script>
+</body>
+</html>
