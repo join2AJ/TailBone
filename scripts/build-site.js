@@ -17,7 +17,8 @@ export function syncFooters() {
   for (const [f, active] of Object.entries(HEADERS)) {
     const file = path.join(root, "public", f);
     if (!fs.existsSync(file)) continue;
-    let html = fs.readFileSync(file, "utf8").replace(/<header class="(?:header|mini-header)[^"]*"[^>]*>[\s\S]*?<\/header>/, siteHeader(active));
+    let html = fs.readFileSync(file, "utf8").replace(/<header class="(?:header|mini-header)[^"]*"[^>]*>[\s\S]*?<\/header>/, siteHeader(active))
+      .replace(/<link rel="canonical" href="[^"]*">/, `<link rel="canonical" href="${SITE}/${f}">`);
     // The menu button and theme toggle need the shared header script.
     if (!html.includes("site-nav.js")) html = html.replace("</body>", '  <script src="/assets/js/site-nav.js" defer></script>\n</body>');
     fs.writeFileSync(file, html);
@@ -30,8 +31,10 @@ export function syncFooters() {
   }
 }
 
-export function writeSitemap(pages, posts, today = new Date().toISOString().slice(0, 10)) {
-  const row = (loc, lastmod, freq, prio) => `  <url><loc>${loc}</loc><lastmod>${lastmod}</lastmod><changefreq>${freq}</changefreq><priority>${prio}</priority></url>`;
+// lastmod is given only where we know the real date (articles). The build date isn't when a page changed, and search
+// engines ignore lastmod that is always "today"; it would also make every build differ.
+export function writeSitemap(pages, posts, today = null) {
+  const row = (loc, lastmod, freq, prio) => `  <url><loc>${loc}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}<changefreq>${freq}</changefreq><priority>${prio}</priority></url>`;
   const rows = [
     ...pages.map((p) => row(`${SITE}${p.slug}`, today, p.slug === "/" ? "weekly" : "monthly", p.slug === "/" ? "1.0" : ["/coccydynia", "/treatment", "/book"].includes(p.slug) ? "0.9" : "0.8")),
     row(`${SITE}/blog/`, posts[0]?.meta.date || today, "weekly", "0.7"),

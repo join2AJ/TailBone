@@ -52,8 +52,24 @@ function inline(text) {
     });
 }
 
+/** Width and height of a JPEG or PNG in public/ (so images reserve their space and the page doesn't jump). */
+export function imageSize(webPath) {
+  try {
+    const b = fs.readFileSync(path.join(root, "public", webPath));
+    if (b[0] === 0x89 && b.toString("ascii", 1, 4) === "PNG") return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) };
+    for (let i = 2; i < b.length - 9;) {
+      if (b[i] !== 0xff) return null;
+      const marker = b[i + 1];
+      if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { width: b.readUInt16BE(i + 7), height: b.readUInt16BE(i + 5) };
+      i += 2 + b.readUInt16BE(i + 2);
+    }
+  } catch { /* missing or unreadable: no size */ }
+  return null;
+}
+
 export function markdown(md) {
   const out = [];
+  const usedIds = new Set();
   const lines = md.split("\n");
   let para = [];
   let list = null; // { tag, items }
@@ -86,7 +102,9 @@ export function markdown(md) {
     if ((m = /^(#{2,3})\s+(.*)$/.exec(line))) {
       flushPara(); flushList();
       const level = m[1].length;
-      const id = "s-" + m[2].toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      let id = "s-" + m[2].toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      for (let n = 2; usedIds.has(id); n++) id = id.replace(/-\d+$/, "") + `-${n}`;
+      usedIds.add(id);
       out.push(`<h${level} id="${id}">${inline(m[2])}</h${level}>`);
     } else if ((m = /^[-*]\s+(.*)$/.exec(line)) || (m = /^\d+\.\s+(.*)$/.exec(line))) {
       flushPara();
@@ -111,7 +129,7 @@ export function markdown(md) {
 
 const prettyDate = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
-export function page({ title, description, canonical, type = "website", jsonLd, body, image = `${SITE}/assets/img/og-image.png`, blogActive = true }) {
+export function page({ title, description, canonical, type = "website", jsonLd, body, image = `${SITE}/assets/img/og-image.jpg`, blogActive = true }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -185,7 +203,7 @@ const plainText = (body) => body
   .replace(/[*#>|`_]+/g, " ").replace(/-{3,}/g, " ").replace(/\s+/g, " ").trim();
 const metaLine = (m) => `<time datetime="${m.date}">${prettyDate(m.date)}</time> · ${m.readMinutes} min read`;
 
-const publisher = { "@type": "MedicalClinic", name: "Tailbone Treatment Clinic", url: `${SITE}/`, logo: `${SITE}/assets/img/logo.svg` };
+const publisher = { "@type": "MedicalClinic", name: "Tailbone Treatment Clinic", url: `${SITE}/`, logo: `${SITE}/assets/img/icon-512.png` };
 
 function articlePage(post, others) {
   const { meta } = post;
@@ -197,10 +215,11 @@ function articlePage(post, others) {
           <ol>${heads.map((h) => `<li><a href="#${h[1]}">${h[2]}</a></li>`).join("")}</ol>
         </nav>` : "";
   const shareText = encodeURIComponent(`${meta.title} ${url}`);
-  const share = `<div class="post-share" aria-label="Share this article">
+  const share = `<div class="post-share" role="group" aria-label="Share this article">
           <a class="post-share__btn post-share__wa" href="https://wa.me/?text=${shareText}" target="_blank" rel="noopener">Share on WhatsApp</a>
           <button type="button" class="post-share__btn" data-share="${esc(url)}" data-title="${esc(meta.title)}">Copy link</button>
         </div>`;
+  const cover = meta.image ? imageSize(meta.image) : null;
   const more = related(post, others).map((o) => `<li><a href="/blog/${o.meta.slug}.html">${esc(o.meta.title)}</a></li>`).join("");
   const body = `      <article class="post narrow" data-post-id="${meta.id}">
         <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a></nav>
@@ -209,7 +228,7 @@ function articlePage(post, others) {
         <p class="post-lede">${esc(meta.summary)}</p>
         <p class="post-meta muted small">By ${esc(meta.author || "Tailbone Treatment Clinic")} · ${metaLine(meta)}${meta.originalUrl ? " · first published on tailbonetreatment.com" : ""}</p>
         ${share}
-        ${meta.image ? `<figure class="post-cover"><img src="${esc(meta.image)}" alt="" loading="eager" decoding="async"></figure>` : ""}
+        ${meta.image ? `<figure class="post-cover"><img src="${esc(meta.image)}" alt=""${cover ? ` width="${cover.width}" height="${cover.height}"` : ""} fetchpriority="high" decoding="async"></figure>` : ""}
         ${toc}
         <div class="post-body">
 ${post.html}
@@ -234,7 +253,7 @@ ${post.html}
     description: meta.summary,
     canonical: url,
     type: "article",
-    jsonLd: {
+    jsonLd: [{
       "@context": "https://schema.org",
       "@type": "Article",
       headline: meta.title,
@@ -242,14 +261,22 @@ ${post.html}
       datePublished: meta.date,
       dateModified: meta.updated || meta.date,
       mainEntityOfPage: url,
-      image: meta.image ? `${SITE}${meta.image}` : `${SITE}/assets/img/og-image.png`,
+      image: meta.image ? `${SITE}${meta.image}` : `${SITE}/assets/img/og-image.jpg`,
       author: meta.author ? { "@type": "Person", name: meta.author, ...(meta.author.includes("Rajveer") ? { "@id": `${SITE}/doctor#rajveer-singh`, url: `${SITE}/doctor` } : {}) }
         : { "@type": "Organization", name: "Tailbone Treatment Clinic", url: `${SITE}/` },
       publisher,
       keywords: meta.tags.join(", "),
       about: { "@type": "MedicalCondition", name: "Coccydynia", alternateName: ["Tailbone pain", "Coccyx pain"], "@id": `${SITE}/coccydynia#condition` },
       ...(post.sources.length ? { citation: post.sources } : {}),
-    },
+    }, {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE}/blog/` },
+        { "@type": "ListItem", position: 3, name: meta.title, item: url },
+      ],
+    }],
     body,
     image: meta.image ? `${SITE}${meta.image}` : undefined,
   });
@@ -271,6 +298,7 @@ function indexPage(posts) {
         <label for="blogQ" class="visually-hidden">Search articles</label>
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <input type="search" id="blogQ" name="q" placeholder="Search articles, e.g. pregnancy, sitting, cushion" autocomplete="off" enterkeyhint="search">
+        <button type="submit" class="visually-hidden">Search</button>
       </form>
       <div class="blog-tags" role="group" aria-label="Filter by topic">
         <button type="button" class="chip is-active" data-tag="" aria-pressed="true">All</button>

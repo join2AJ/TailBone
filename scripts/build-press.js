@@ -18,7 +18,7 @@ export function buildPress() {
   const items = JSON.parse(fs.readFileSync(path.join(root, "content/press.json"), "utf8"));
   const cards = items.map((p) => `        <li class="press-card" id="${esc(p.slug)}">
           <a href="${esc(p.image)}" class="press-card__img" target="_blank" rel="noopener" aria-label="Open the full clipping: ${esc(heading(p))}">
-            <img src="${esc(p.image)}" alt="Newspaper clipping: ${esc(p.title)}" width="${p.width}" height="${p.height}" loading="lazy" decoding="async">
+            <img src="${esc(p.thumb || p.image)}" alt="Newspaper clipping: ${esc(p.title)}" width="${p.thumbWidth || p.width}" height="${p.thumbHeight || p.height}" loading="lazy" decoding="async">
           </a>
           <h2>${esc(heading(p))}</h2>
           <p class="muted small"><time datetime="${p.date}">${prettyDate(p.date)}</time>${p.language ? ` · ${esc(p.language)}` : ""}</p>

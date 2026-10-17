@@ -13,7 +13,7 @@
 </head>
 <body class="admin">
   <!-- Login -->
-  <main class="login" id="loginView" hidden>
+  <main class="login" id="loginView" aria-label="Sign in" hidden>
     <form class="card login__card" id="loginForm">
       <div class="brand"><img src="/assets/img/logo.svg" alt="" width="40" height="40"><span class="brand__text"><strong>TAILBONE</strong><small>CLINIC DASHBOARD</small></span></div>
       <h1>Sign in</h1>
@@ -34,7 +34,7 @@
 
   <!-- App shell -->
   <div class="shell" id="appView" hidden>
-    <aside class="side" id="side">
+    <aside class="side" id="side" aria-label="Menu">
       <a href="/" class="brand brand--light"><img src="/assets/img/logo.svg" alt="" width="34" height="34"><span class="brand__text"><strong>TAILBONE</strong><small>DASHBOARD</small></span></a>
       <nav class="side__nav" aria-label="Dashboard">
         <a href="#/overview" data-view="overview"><span>◎</span>Overview</a>
@@ -65,7 +65,7 @@
           <button type="button" class="icon-btn" id="themeToggle" aria-label="Toggle dark mode"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
         </div>
       </header>
-      <main class="content" id="content" tabindex="-1"></main>
+      <main class="content" id="content" tabindex="-1" aria-label="Dashboard section"></main>
     </div>
   </div>
 

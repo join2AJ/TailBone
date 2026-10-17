@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
+import zlib from "node:zlib";
 import express from "express";
 import path from "node:path";
 import { config } from "./config.js";
@@ -94,6 +95,34 @@ export function createApp(db) {
   app.get(/^\/blog\/([a-z0-9-]+)(\.html)?$/, (req, res, next) => {
     if (!hiddenPosts(db).some((p) => p.slug === req.params[0])) return next();
     res.status(404).set("X-Robots-Tag", "noindex").sendFile(path.join(config.publicDir, "404.html"));
+  });
+
+  // Compress text files (pages, CSS, JS, SVG, JSON): about 4x smaller over slow mobile connections.
+  // Compressed copies are kept in memory and rebuilt when the file changes.
+  const gzCache = new Map();
+  const COMPRESSIBLE = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".json": "application/json", ".txt": "text/plain", ".xml": "application/xml" };
+  app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") return next();
+    if (!/\bgzip\b/.test(req.get("accept-encoding") || "")) return next();
+    let rel;
+    try { rel = decodeURIComponent(req.path); } catch { return next(); }
+    if (rel.endsWith("/")) rel += "index.html";
+    else if (!path.extname(rel) && fs.existsSync(path.join(config.publicDir, `${rel}.html`))) rel += ".html";
+    const type = COMPRESSIBLE[path.extname(rel)];
+    const file = path.join(config.publicDir, rel);
+    if (!type || !file.startsWith(config.publicDir + path.sep)) return next();
+    let stat;
+    try { stat = fs.statSync(file); } catch { return next(); }
+    if (!stat.isFile() || stat.size < 1024) return next();
+    const key = `${file}:${stat.mtimeMs}:${stat.size}`;
+    let body = gzCache.get(file)?.key === key ? gzCache.get(file).body : null;
+    if (!body) { body = zlib.gzipSync(fs.readFileSync(file), { level: 9 }); gzCache.set(file, { key, body }); }
+    const etag = `W/"gz-${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+    res.set({ "Content-Type": `${type}; charset=utf-8`, "Content-Encoding": "gzip", Vary: "Accept-Encoding", ETag: etag });
+    res.set("Cache-Control", type === "text/html" || !config.isProd ? "no-cache" : "public, max-age=3600");
+    if (req.get("if-none-match") === etag) return res.status(304).end();
+    res.set("Content-Length", String(body.length));
+    res.end(req.method === "HEAD" ? undefined : body);
   });
 
   // Each short page is its own pre-built file (/coccydynia → coccydynia.html, via `extensions` below).

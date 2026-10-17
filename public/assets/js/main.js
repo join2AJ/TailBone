@@ -8,7 +8,7 @@
 
   // ---- Theme (initial value is set inline in <head> to avoid a flash) ----
   const root = document.documentElement;
-  $("#themeToggle").addEventListener("click", () => {
+  $("#themeToggle")?.addEventListener("click", () => {
     root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
     try { localStorage.setItem("theme", root.dataset.theme); } catch { /* storage unavailable */ }
   });

@@ -7,7 +7,10 @@
     "image": "/assets/img/press/article-on-tailbone-treatment-in-hindustan-delhi-english.jpg",
     "width": 765,
     "height": 788,
-    "language": ""
+    "language": "",
+    "thumb": "/assets/img/press/article-on-tailbone-treatment-in-hindustan-delhi-english-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 494
   },
   {
     "slug": "article-on-tailbone-hindustan-delhi",
@@ -17,7 +20,10 @@
     "image": "/assets/img/press/article-on-tailbone-hindustan-delhi.jpg",
     "width": 765,
     "height": 788,
-    "language": "Hindi"
+    "language": "Hindi",
+    "thumb": "/assets/img/press/article-on-tailbone-hindustan-delhi-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 494
   },
   {
     "slug": "tailbone-pain-article-in-times-of-india-news-paper",
@@ -27,7 +33,10 @@
     "image": "/assets/img/press/tailbone-pain-article-in-times-of-india-news-paper.jpg",
     "width": 675,
     "height": 661,
-    "language": ""
+    "language": "",
+    "thumb": "/assets/img/press/tailbone-pain-article-in-times-of-india-news-paper-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 470
   },
   {
     "slug": "tailbone-article-in-prajavani-news-paper",
@@ -35,9 +44,12 @@
     "publication": "Prajavani",
     "date": "2015-05-05",
     "image": "/assets/img/press/tailbone-article-in-prajavani-news-paper.jpg",
-    "width": 1400,
-    "height": 1717,
-    "language": "Kannada"
+    "width": 1200,
+    "height": 1472,
+    "language": "Kannada",
+    "thumb": "/assets/img/press/tailbone-article-in-prajavani-news-paper-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 589
   },
   {
     "slug": "the-acute-pain-of-tail-bone",
@@ -47,7 +59,10 @@
     "image": "/assets/img/press/the-acute-pain-of-tail-bone.jpg",
     "width": 847,
     "height": 1280,
-    "language": ""
+    "language": "",
+    "thumb": "/assets/img/press/the-acute-pain-of-tail-bone-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 725
   },
   {
     "slug": "tailbone-pain-article-in-deccan-herald",
@@ -57,7 +72,10 @@
     "image": "/assets/img/press/tailbone-pain-article-in-deccan-herald.jpg",
     "width": 570,
     "height": 1024,
-    "language": ""
+    "language": "",
+    "thumb": "/assets/img/press/tailbone-pain-article-in-deccan-herald-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 862
   },
   {
     "slug": "article-on-diastasis-recti",
@@ -67,7 +85,10 @@
     "image": "/assets/img/press/article-on-diastasis-recti.jpg",
     "width": 1017,
     "height": 744,
-    "language": ""
+    "language": "",
+    "thumb": "/assets/img/press/article-on-diastasis-recti-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 351
   },
   {
     "slug": "tailbone-pain-article-in-kanada-news-paper",
@@ -77,7 +98,10 @@
     "image": "/assets/img/press/tailbone-pain-article-in-kanada-news-paper.jpg",
     "width": 959,
     "height": 828,
-    "language": "Kannada"
+    "language": "Kannada",
+    "thumb": "/assets/img/press/tailbone-pain-article-in-kanada-news-paper-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 414
   },
   {
     "slug": "tailbone-pain-article-in-rajasthan-patrika-news-paper",
@@ -87,7 +111,10 @@
     "image": "/assets/img/press/tailbone-pain-article-in-rajasthan-patrika-news-paper.jpg",
     "width": 604,
     "height": 942,
-    "language": ""
+    "language": "",
+    "thumb": "/assets/img/press/tailbone-pain-article-in-rajasthan-patrika-news-paper-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 749
   },
   {
     "slug": "tailbone-pain-article-in-salar-paper",
@@ -97,7 +124,10 @@
     "image": "/assets/img/press/tailbone-pain-article-in-salar-paper.jpg",
     "width": 850,
     "height": 1169,
-    "language": ""
+    "language": "",
+    "thumb": "/assets/img/press/tailbone-pain-article-in-salar-paper-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 660
   },
   {
     "slug": "article-on-tail-bone-pain",
@@ -107,6 +137,9 @@
     "image": "/assets/img/press/article-on-tail-bone-pain.jpg",
     "width": 960,
     "height": 698,
-    "language": ""
+    "language": "",
+    "thumb": "/assets/img/press/article-on-tail-bone-pain-thumb.webp",
+    "thumbWidth": 480,
+    "thumbHeight": 349
   }
 ]

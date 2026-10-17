@@ -85,7 +85,7 @@ const clinic = {
   alternateName: "TailboneTreatment.com",
   url: `${SITE}/`,
   logo: `${SITE}/assets/img/icon-512.png`,
-  image: `${SITE}/assets/img/og-image.png`,
+  image: `${SITE}/assets/img/og-image.jpg`,
   description: "Specialist, non-surgical treatment for tailbone (coccyx) pain, also called coccydynia, led by Dr Rajveer Singh. Clinic in Vasant Kunj, New Delhi, and online video consultations.",
   telephone: "+91-98866-88323",
   email: "contact@tailbonetreatment.com",
@@ -156,7 +156,6 @@ function graphFor(p, html) {
     "@type": ["coccydynia", "treatment"].includes(p.page) ? "MedicalWebPage" : p.page === "faq" ? ["WebPage", "FAQPage"] : "WebPage",
     "@id": `${pageUrl}#webpage`, url: pageUrl, name: p.title, description: p.description, inLanguage: "en-IN",
     isPartOf: { "@id": `${SITE}/#website` }, about: { "@id": p.page === "doctor" ? DOCTOR_ID : p.page === "coccydynia" ? condition["@id"] : CLINIC_ID },
-    dateModified: new Date().toISOString().slice(0, 10),
   };
   if (["coccydynia", "treatment"].includes(p.page)) {
     webPage.audience = { "@type": "PeopleAudience", audienceType: "Patient" };
@@ -196,10 +195,13 @@ export function renderPage(template, p) {
     `<meta property="og:locale" content="en_IN">`,
   ].join("\n  ");
   html = html
+    // The template's own og: tags go first, so they don't duplicate (or remove) this page's ones.
+    .replace(/\s*<meta property="og:(title|description|type|url|locale)"[^>]*>/g, "")
     .replace(/<title>[\s\S]*?<\/title>\s*<meta name="description"[^>]*>/, head)
-    .replace(/\s*<meta property="og:(title|description|type)"[^>]*>/g, "")
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(graphFor(p, html)).replace(/</g, "\\u003c")}</script>`)
     .replace(/<html lang="en">/, '<html lang="en-IN">');
+  // The article show/hide check (blog.js) is only needed where the page links to articles.
+  if (!/href="\/blog\/[a-z0-9-]+\.html"/.test(html)) html = html.replace(/\n\s*<script src="\/assets\/js\/blog\.js" defer><\/script>/, "");
   if (p.heading) html = html.replace('<main id="main">', `<main id="main">\n    <h1 class="visually-hidden" id="pageTitle">${esc(p.heading)}</h1>`);
   return html;
 }
