@@ -13,11 +13,12 @@
 </head>
 <body class="admin">
   <!-- Login -->
-  <section class="login" id="loginView" hidden>
+  <main class="login" id="loginView" hidden>
     <form class="card login__card" id="loginForm">
       <div class="brand"><img src="/assets/img/logo.svg" alt="" width="40" height="40"><span class="brand__text"><strong>TAILBONE</strong><small>CLINIC DASHBOARD</small></span></div>
       <h1>Sign in</h1>
       <div class="alert alert--error" id="loginErr" hidden></div>
+      <div class="alert alert--warn" id="serverNotice" hidden>The clinic server is not connected to this website yet, so sign-in and the demo are not available here. Once it is connected (see DEPLOY.md), this page works as normal.</div>
       <div class="field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="username" required></div>
       <div class="field"><label for="loginPass">Password</label><input id="loginPass" type="password" autocomplete="current-password" required></div>
       <div class="field" id="codeField" hidden><label for="loginCode">6-digit code from your authenticator app</label><input type="text" id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" pattern="[0-9 ]*"></div>
@@ -29,7 +30,7 @@
       </div>
       <a class="small muted center" href="/">← Back to website</a>
     </form>
-  </section>
+  </main>
 
   <!-- App shell -->
   <div class="shell" id="appView" hidden>

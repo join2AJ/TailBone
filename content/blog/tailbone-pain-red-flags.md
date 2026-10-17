@@ -9,6 +9,9 @@ readMinutes: 4
 
 The vast majority of tailbone pain comes from a fall, childbirth, long sitting or strain on the coccyx and the muscles around it. It is uncomfortable and can be stubborn, but it isn't dangerous. Rarely, though, pain at the base of the spine is a sign of something that needs prompt medical care.
 
+::anim red-flags
+
+
 ## See a doctor promptly if you have tailbone pain with:
 
 - **Fever, chills or feeling generally unwell.** This could mean an infection, such as an abscess or an infected cyst near the tailbone (a pilonidal cyst).

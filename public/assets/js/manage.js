@@ -230,7 +230,7 @@
   const syncConsent = () => api("/api/manage/consent", creds).then(({ consents }) => { waToggle.checked = consents.includes("whatsapp_updates"); }).catch(() => {});
 
   // ---- Demo mode: one-click sample patient (server must run with DEMO_MODE=true) ----
-  fetch("/api/config").then((r) => (r.ok ? r.json() : null)).then((cfg) => {
+  fetch("/api/config").then((r) => (r.ok ? r.json() : Promise.reject(new Error("no server")))).then((cfg) => {
     const demo = cfg?.demo?.patient;
     if (!demo) return;
     const bar = document.createElement("div");
@@ -243,7 +243,7 @@
     const go = () => { $("#ref").value = demo.ref; $("#phone").value = demo.phone; lookup(demo.ref, demo.phone); };
     $("#demoPatientBtn").addEventListener("click", go);
     if (new URLSearchParams(location.search).get("demo") === "1") go();
-  }).catch(() => {});
+  }).catch(() => { $("#serverNotice").hidden = false; });
 
   // Prefill the reference from the confirmation link.
   const ref = new URLSearchParams(location.search).get("ref");

@@ -11,6 +11,9 @@ If your tailbone hurts, sitting is usually the hardest part of the day. When you
 
 The good news is that how you sit makes a real difference. These are the changes our patients find most useful.
 
+::anim sitting
+
+
 ## 1. Lean slightly forward
 
 Tilting your upper body a little forward shifts your weight onto your thigh bones and the "sitting bones" of your pelvis, and off the coccyx. Sitting on the front half of the chair with your feet flat on the floor makes this easier.
@@ -18,6 +21,9 @@ Tilting your upper body a little forward shifts your weight onto your thigh bone
 ## 2. Use a cut-out cushion
 
 A wedge or U-shaped cushion with a gap at the back lets the tailbone hang free instead of pressing on the seat. Round "doughnut" rings help some people but can still press on the coccyx, so a cushion with an open back is usually better. Take it with you: to the office, the car and restaurants.
+
+::anim cushion
+
 
 ## 3. Choose firm seats over soft sofas
 

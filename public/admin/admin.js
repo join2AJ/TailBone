@@ -122,11 +122,11 @@
     boot();
   }
   $("#demoLoginBtn").addEventListener("click", demoSignIn);
-  fetch("/api/config").then((r) => (r.ok ? r.json() : null)).then((cfg) => {
+  fetch("/api/config").then((r) => (r.ok ? r.json() : Promise.reject(new Error("no server")))).then((cfg) => {
     if (!cfg?.demo) return;
     $("#demoLogin").hidden = false;
     if (new URLSearchParams(location.search).get("demo") === "1" && !state.admin) demoSignIn();
-  }).catch(() => {});
+  }).catch(() => { $("#serverNotice").hidden = false; });
 
   async function boot() {
     try {

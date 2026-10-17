@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { animFigure, siteFooter, injectAnims } from "./partials.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(root, "content/blog");
@@ -51,6 +52,7 @@ export function markdown(md) {
     const line = raw.trimEnd();
     let m;
     if (!line.trim()) { flushPara(); flushList(); continue; }
+    if ((m = /^::anim\s+([\w-]+)$/.exec(line.trim()))) { flushPara(); flushList(); out.push(animFigure(m[1])); continue; }
     if ((m = /^(#{2,3})\s+(.*)$/.exec(line))) {
       flushPara(); flushList();
       const level = m[1].length;
@@ -143,12 +145,7 @@ ${body}
     </div>
   </main>
 
-  <footer class="footer">
-    <div class="container footer__bottom">
-      <span>© 2014 – 2026 Tailbone Treatment · <a href="/">Home</a> · <a href="/book">Book</a> · <a href="/manage.html">My appointments</a> · <a href="/policies.html">Terms</a> · <a href="/privacy.html">Privacy</a></span>
-      <span>Information on this site is not a substitute for medical advice.</span>
-    </div>
-  </footer>
+  ${siteFooter()}
 
   <div class="mbar">
     <a href="tel:+919886688323">📞&nbsp;Call</a>
@@ -157,6 +154,7 @@ ${body}
   </div>
 
   <script src="/assets/js/site-nav.js" defer></script>
+  <script src="/assets/js/anim.js" defer></script>
 </body>
 </html>
 `;
@@ -261,6 +259,15 @@ export function build() {
   fs.mkdirSync(OUT, { recursive: true });
   for (const p of posts) fs.writeFileSync(path.join(OUT, `${p.meta.slug}.html`), articlePage(p, posts.filter((o) => o !== p)));
   fs.writeFileSync(path.join(OUT, "index.html"), indexPage(posts));
+
+  // Shared parts: animations in the homepage, the full footer on the standalone pages.
+  const indexFile = path.join(root, "public/index.html");
+  fs.writeFileSync(indexFile, injectAnims(fs.readFileSync(indexFile, "utf8")));
+  const footer = siteFooter();
+  for (const f of ["manage.html", "policies.html", "privacy.html", "stories.html"]) {
+    const file = path.join(root, "public", f);
+    fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/<footer class="footer">[\s\S]*?<\/footer>/, footer));
+  }
 
   // Keep the sitemap's blog entries in step with the articles.
   const smFile = path.join(root, "public/sitemap.xml");

@@ -1,0 +1,33 @@
+<svg class="anim__svg" viewBox="0 0 640 300" aria-hidden="true" focusable="false">
+  <line x1="80" y1="80" x2="560" y2="80" class="a-track"/>
+  <line x1="80" y1="80" x2="80" y2="80" class="a-progress">
+    <animate attributeName="x2" values="80;80;240;240;400;400;560;560;80" keyTimes="0;.2;.25;.45;.5;.7;.75;.96;1" dur="10s" repeatCount="indefinite"/>
+  </line>
+  <g>
+    <circle cx="80" cy="80" r="30" class="a-node"/>
+    <circle cx="80" cy="80" r="30" class="a-node-on" opacity="0"><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.03;.96;1" dur="10s" repeatCount="indefinite"/></circle>
+    <circle cx="240" cy="80" r="30" class="a-node"/>
+    <circle cx="240" cy="80" r="30" class="a-node-on" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.22;.25;.96;1" dur="10s" repeatCount="indefinite"/></circle>
+    <circle cx="400" cy="80" r="30" class="a-node"/>
+    <circle cx="400" cy="80" r="30" class="a-node-on" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.47;.5;.96;1" dur="10s" repeatCount="indefinite"/></circle>
+    <circle cx="560" cy="80" r="30" class="a-node"/>
+    <circle cx="560" cy="80" r="30" class="a-node-on" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.72;.75;.96;1" dur="10s" repeatCount="indefinite"/></circle>
+  </g>
+  <text x="80" y="88" class="a-num">1</text>
+  <text x="240" y="88" class="a-num">2</text>
+  <text x="400" y="88" class="a-num">3</text>
+  <text x="560" y="88" class="a-num">4</text>
+  <text x="80" y="144" class="a-lbl">Listen &amp;</text><text x="80" y="166" class="a-lbl">assess</text>
+  <text x="240" y="144" class="a-lbl">Pinpoint</text><text x="240" y="166" class="a-lbl">the cause</text>
+  <text x="400" y="144" class="a-lbl">Hands-on</text><text x="400" y="166" class="a-lbl">treatment</text>
+  <text x="560" y="144" class="a-lbl">Recover &amp;</text><text x="560" y="166" class="a-lbl">prevent</text>
+  <rect x="40" y="200" width="560" height="76" rx="16" class="a-row"/>
+  <g opacity="0"><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.03;.22;.25;1" dur="10s" repeatCount="indefinite"/>
+    <text x="320" y="246" text-anchor="middle" class="a-t2">Your story, your reports and a careful examination</text></g>
+  <g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.25;.28;.47;.5;1" dur="10s" repeatCount="indefinite"/>
+    <text x="320" y="246" text-anchor="middle" class="a-t2">Is the coccyx stiff, too mobile or out of place?</text></g>
+  <g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.5;.53;.72;.75;1" dur="10s" repeatCount="indefinite"/>
+    <text x="320" y="246" text-anchor="middle" class="a-t2">Gentle manipulation, explained first, with consent</text></g>
+  <g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.75;.78;.96;1" dur="10s" repeatCount="indefinite"/>
+    <text x="320" y="246" text-anchor="middle" class="a-t2">Exercises, seating advice and a follow-up check</text></g>
+</svg>

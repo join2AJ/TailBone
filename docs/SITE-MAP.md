@@ -5,7 +5,9 @@
 ```
 tailbone.netlify.app
 │
-├── /                     Home: hero, key numbers, 6 "explore" cards
+├── /                     Home tells the whole story on one page: hero · key numbers ·
+│                         the problem (animated: why sitting hurts) · how we fix it (animated 4 steps) ·
+│                         meet Dr Rajveer · book
 ├── /coccydynia           What is coccydynia: causes, symptom self-check, self-care tips,
 │                         key facts, red flags and sources (Cleveland Clinic, NHS)
 ├── /treatment            How a visit works (4 steps) · why patients choose us · Instagram videos
@@ -18,7 +20,7 @@ tailbone.netlify.app
 │     └── no server reachable → same form sends a WhatsApp request
 │
 ├── /blog/                Articles (built from content/blog/*.md with `npm run build:blog`)
-│     └── /blog/<slug>.html one article: sources, disclaimer, Book / WhatsApp
+│     └── /blog/<slug>.html one article: animated explainer(s), sources, disclaimer, Book / WhatsApp
 │
 ├── /stories.html         All patient stories + "Share your story" form
 ├── /manage.html          My appointments (booking reference + phone)

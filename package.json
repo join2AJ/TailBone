@@ -14,7 +14,8 @@
     "admin:create": "node --disable-warning=ExperimentalWarning scripts/create-admin.js",
     "backup:restore": "node --disable-warning=ExperimentalWarning scripts/restore-backup.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
-    "build:blog": "node scripts/build-blog.js"
+    "build:blog": "node scripts/build-blog.js",
+    "build": "node scripts/build-blog.js"
   },
   "dependencies": {
     "express": "^5.1.0",

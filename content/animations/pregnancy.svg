@@ -1,0 +1,51 @@
+<svg class="anim__svg" viewBox="0 0 640 420" aria-hidden="true" focusable="false">
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.04;.33;.37;1" dur="10s" repeatCount="indefinite"/>
+    <text x="320" y="32" text-anchor="middle" class="a-t1">During a vaginal delivery,</text>
+    <text x="320" y="60" text-anchor="middle" class="a-t2">the baby's head pushes the coccyx backwards</text>
+  </g>
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.37;.41;.62;.66;1" dur="10s" repeatCount="indefinite"/>
+    <text x="320" y="32" text-anchor="middle" class="a-t1 a-t1--red">Afterwards it may stay strained</text>
+    <text x="320" y="60" text-anchor="middle" class="a-t2">or out of place, so sitting and feeding hurt</text>
+  </g>
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.66;.72;.96;1" dur="10s" repeatCount="indefinite"/>
+    <text x="320" y="32" text-anchor="middle" class="a-t1 a-t1--green">Gentle, hands-on treatment</text>
+    <text x="320" y="60" text-anchor="middle" class="a-t2">helps restore its normal position and movement</text>
+  </g>
+  <g transform="translate(0 70)">
+    <text x="182" y="300" class="a-t3">Front</text>
+    <text x="458" y="300" class="a-t3">Back</text>
+    <path d="M193 200 Q260 110 350 52" class="a-guide"/>
+    <path d="M193 262 Q290 304 372 288" class="a-guide"/>
+    <rect x="180" y="200" width="26" height="62" rx="12" class="a-bone"/>
+    <path d="M350 40 C395 40 420 150 398 234 L382 230 C398 150 380 80 340 62 Z" class="a-bone"/>
+    <g opacity="0">
+      <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.05;.32;.4;1" dur="10s" repeatCount="indefinite"/>
+      <animateMotion path="M280 10 Q300 150 338 244" keyPoints="0;1;1" keyTimes="0;.3;1" calcMode="linear" dur="10s" repeatCount="indefinite"/>
+      <circle cx="0" cy="0" r="52" class="a-head"/>
+    </g>
+    <g>
+      <animateTransform attributeName="transform" type="rotate" values="0 390 232;0 390 232;-40 390 232;-40 390 232;0 390 232;0 390 232" keyTimes="0;.2;.3;.64;.76;1" dur="10s" repeatCount="indefinite"/>
+      <circle cx="377" cy="280" r="18" class="a-red" opacity="0">
+        <animate attributeName="opacity" values="0;0;.55;.55;0;0" keyTimes="0;.37;.41;.62;.66;1" dur="10s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="12;20;12" dur="1s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="377" cy="280" r="15" class="a-green" opacity="0">
+        <animate attributeName="opacity" values="0;0;.5;.5;0" keyTimes="0;.74;.78;.96;1" dur="10s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="388" cy="244" r="7" class="a-coccyx"/>
+      <circle cx="385" cy="258" r="6" class="a-coccyx"/>
+      <circle cx="381" cy="270" r="5" class="a-coccyx"/>
+      <circle cx="377" cy="280" r="4" class="a-coccyx"/>
+    </g>
+    <g opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.62;.66;.78;.82" dur="10s" repeatCount="indefinite"/>
+      <path d="M452 296 Q446 268 420 268" class="a-arrow"/>
+      <path d="M420 268 l11 -8 M420 268 l11 8" class="a-arrow"/>
+    </g>
+    <text x="418" y="120" class="a-t3">Sacrum</text>
+    <text x="424" y="236" class="a-t3">Coccyx</text>
+  </g>
+</svg>

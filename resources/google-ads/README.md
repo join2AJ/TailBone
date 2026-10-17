@@ -56,7 +56,7 @@ Required sizes: landscape 1200×628, square 1200×1200, portrait 960×1200. Keep
 
 ## 5. Videos
 
-Upload his best Instagram reels (most views) to the clinic's YouTube channel as **Public** or **Unlisted**, then paste the links. Aim for one each of horizontal 16:9, square 1:1 and vertical 9:16, at least 10 seconds long. Without a video, Google auto-generates one from the images, which usually looks generic.
+Ready now: five animated explainer videos in [`../videos/`](../videos/README.md) (16:9 and 1:1). Upload them to the clinic's YouTube channel and paste the links. Also upload his best Instagram reels (most views) to the clinic's YouTube channel as **Public** or **Unlisted**, then paste the links. Aim for one each of horizontal 16:9, square 1:1 and vertical 9:16, at least 10 seconds long. Without a video, Google auto-generates one from the images, which usually looks generic.
 
 ## Re-generating the images
 

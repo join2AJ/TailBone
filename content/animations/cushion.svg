@@ -1,0 +1,52 @@
+<svg class="anim__svg" viewBox="0 0 640 420" aria-hidden="true" focusable="false">
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.06;.38;.43;1" dur="8s" repeatCount="indefinite"/>
+    <text x="320" y="32" text-anchor="middle" class="a-t1 a-t1--red">Hard, flat seat:</text>
+    <text x="320" y="60" text-anchor="middle" class="a-t2">the tailbone takes the pressure</text>
+  </g>
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.5;.56;.92;1" dur="8s" repeatCount="indefinite"/>
+    <text x="320" y="32" text-anchor="middle" class="a-t1 a-t1--green">Cut-out (wedge) cushion:</text>
+    <text x="320" y="60" text-anchor="middle" class="a-t2">the tailbone floats free over the gap</text>
+  </g>
+  <g transform="translate(0 70)">
+    <line x1="60" y1="340" x2="580" y2="340" class="a-floor"/>
+    <rect x="170" y="280" width="250" height="12" rx="4" class="a-seat"/>
+    <rect x="180" y="292" width="8" height="48" class="a-seat"/>
+    <rect x="404" y="292" width="8" height="48" class="a-seat"/>
+    <rect x="420" y="150" width="10" height="190" rx="4" class="a-seat"/>
+    <rect x="175" y="262" width="30" height="78" rx="14" class="a-body"/>
+    <rect x="150" y="326" width="55" height="14" rx="7" class="a-body"/>
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="-360 0;-360 0;0 0;0 0;-360 0" keyTimes="0;.4;.5;.92;1" dur="8s" repeatCount="indefinite"/>
+      <rect x="172" y="262" width="154" height="18" rx="6" class="a-cushion"/>
+    </g>
+    <ellipse cx="345" cy="283" rx="20" ry="5" class="a-red" opacity="0">
+      <animate attributeName="opacity" values="0;.8;.8;0;0" keyTimes="0;.06;.38;.43;1" dur="8s" repeatCount="indefinite"/>
+    </ellipse>
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 -18;0 -18;0 0" keyTimes="0;.44;.5;.92;1" dur="8s" repeatCount="indefinite"/>
+      <rect x="175" y="246" width="150" height="34" rx="17" class="a-body"/>
+      <ellipse cx="318" cy="268" rx="16" ry="9" class="a-bone"/>
+      <circle cx="310" cy="45" r="28" class="a-body"/>
+      <rect x="285" y="70" width="70" height="190" rx="34" class="a-body"/>
+      <rect x="331" y="80" width="18" height="20" rx="5" class="a-bone"/>
+      <rect x="331" y="104" width="18" height="20" rx="5" class="a-bone"/>
+      <rect x="331" y="128" width="18" height="20" rx="5" class="a-bone"/>
+      <rect x="331" y="152" width="18" height="20" rx="5" class="a-bone"/>
+      <rect x="331" y="176" width="18" height="20" rx="5" class="a-bone"/>
+      <rect x="331" y="200" width="18" height="20" rx="5" class="a-bone"/>
+      <path d="M328 224 L352 224 Q362 244 352 262 L340 258 Q346 242 328 232 Z" class="a-bone"/>
+      <circle cx="345" cy="279" r="18" class="a-red" opacity="0">
+        <animate attributeName="opacity" values="0;.55;.55;0;0" keyTimes="0;.06;.38;.43;1" dur="8s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="12;20;12" dur="1s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="345" cy="279" r="13" class="a-green" opacity="0">
+        <animate attributeName="opacity" values="0;0;.5;.5;0" keyTimes="0;.5;.56;.92;1" dur="8s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="350" cy="264" r="5" class="a-coccyx"/>
+      <circle cx="348" cy="272" r="4" class="a-coccyx"/>
+      <circle cx="345" cy="279" r="3.5" class="a-coccyx"/>
+    </g>
+  </g>
+</svg>

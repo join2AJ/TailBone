@@ -17,6 +17,9 @@ Many people put off getting tailbone pain checked because they aren't sure what 
 - **Wear comfortable clothes.**
 - If you would prefer to be seen by a **female clinician**, mention it when booking.
 
+::anim visit-steps
+
+
 ## 1. Listening and history
 
 The visit starts with a conversation: how the pain began (a fall, childbirth, long sitting or no clear reason), how long you have had it, how it affects your work, sleep and daily life, and what you have already tried.

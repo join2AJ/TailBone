@@ -16,6 +16,9 @@ Tailbone pain is much more common in women than in men, and pregnancy and childb
 - **Weight and posture change.** Through pregnancy, the way you sit and stand changes, putting new strain on the lower spine and pelvic floor.
 - **Assisted or long deliveries** and larger babies make injury a little more likely.
 
+::anim pregnancy
+
+
 ## What it typically feels like
 
 - An ache or sharp pain right at the base of the spine

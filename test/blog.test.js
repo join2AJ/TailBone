@@ -23,3 +23,14 @@ test("every article is built into public/blog", () => {
   for (const p of posts) assert.ok(fs.existsSync(`public/blog/${p.meta.slug}.html`), `run npm run build:blog (${p.meta.slug})`);
   assert.ok(fs.existsSync("public/blog/index.html"));
 });
+
+test("shared footer and animations are up to date (run npm run build)", async () => {
+  const { siteFooter, injectAnims } = await import("../scripts/partials.js");
+  const footer = siteFooter();
+  for (const f of ["manage.html", "policies.html", "privacy.html", "stories.html", "blog/index.html"]) {
+    assert.ok(fs.readFileSync(`public/${f}`, "utf8").includes(footer), `${f} footer is stale`);
+  }
+  const index = fs.readFileSync("public/index.html", "utf8");
+  assert.equal(injectAnims(index), index, "homepage animations are stale");
+  assert.ok(index.includes('data-anim="sitting"') && index.includes('data-anim="visit-steps"'));
+});

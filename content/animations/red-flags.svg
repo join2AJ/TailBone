@@ -1,0 +1,26 @@
+<svg class="anim__svg" viewBox="0 0 640 380" aria-hidden="true" focusable="false">
+  <rect x="20" y="20" width="600" height="104" rx="18" class="a-row">
+    <animate attributeName="opacity" values="1;1;.35;.35;1" keyTimes="0;.3;.34;.96;1" dur="9s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="20" y="138" width="600" height="104" rx="18" class="a-row" opacity=".35">
+    <animate attributeName="opacity" values=".35;.35;1;1;.35;.35" keyTimes="0;.3;.34;.63;.67;1" dur="9s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="20" y="256" width="600" height="104" rx="18" class="a-row" opacity=".35">
+    <animate attributeName="opacity" values=".35;.35;1;1;.35" keyTimes="0;.63;.67;.96;1" dur="9s" repeatCount="indefinite"/>
+  </rect>
+  <circle cx="74" cy="72" r="26" fill="#22c55e">
+    <animate attributeName="opacity" values="1;1;.25;.25;1" keyTimes="0;.3;.34;.96;1" dur="9s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="74" cy="190" r="26" fill="#f59e0b" opacity=".25">
+    <animate attributeName="opacity" values=".25;.25;1;1;.25;.25" keyTimes="0;.3;.34;.63;.67;1" dur="9s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="74" cy="308" r="26" fill="#ef4444" opacity=".25">
+    <animate attributeName="opacity" values=".25;.25;1;1;.25" keyTimes="0;.63;.67;.96;1" dur="9s" repeatCount="indefinite"/>
+  </circle>
+  <text x="120" y="64" class="a-t1">Sore after a fall, birth or long sitting</text>
+  <text x="120" y="96" class="a-t2">Try self-care: cushion, posture, heat or ice</text>
+  <text x="120" y="182" class="a-t1">Not better after a few weeks?</text>
+  <text x="120" y="214" class="a-t2">Book a specialist assessment</text>
+  <text x="120" y="300" class="a-t1 a-t1--red">Fever, numbness or leg weakness?</text>
+  <text x="120" y="332" class="a-t2">Or bladder/bowel changes: see a doctor now</text>
+</svg>
