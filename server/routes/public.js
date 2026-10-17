@@ -2,9 +2,14 @@ import { Router } from "express";
 import { CLINICS, HOURS, BOOKING, config } from "../config.js";
 import { rateLimit } from "../auth.js";
 import { clinicNow } from "../time.js";
+import { encrypt } from "../crypto.js";
+import { getPolicy, policySummary, refundQuote, rescheduleCheck } from "../policy.js";
+import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, verifyWebhookSignature, rupees } from "../payments.js";
+import { notify } from "../notify.js";
 import {
-  HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient,
-  rescheduleAppointment, cleanText, requireClinic, siteUrl, waLink, prettyDate, prettyTime, normalizePhone, displayName,
+  HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment,
+  rescheduleAppointment, cancelAppointment, markPaid, logEvent, readAppt, APPT_SELECT,
+  cleanText, requireClinic, siteUrl, waLink, prettyDate, prettyTime, normalizePhone, displayName,
 } from "../services.js";
 
 /** Public, unauthenticated API used by the website, patient portal and check-in page. */
@@ -13,23 +18,44 @@ export function publicRoutes(db) {
   const bookingLimit = rateLimit({ windowMs: 60 * 60_000, max: 20, message: "Too many booking attempts. Please call us instead." });
   const lookupLimit = rateLimit({ windowMs: 15 * 60_000, max: 30 });
 
-  const view = (a, req) => ({
-    ref: a.ref,
-    name: a.patient_name,
-    clinic: a.clinic,
-    clinicName: CLINICS[a.clinic].name,
-    address: CLINICS[a.clinic].address,
-    date: a.date,
-    time: a.time,
-    when: `${prettyDate(a.date)}, ${prettyTime(a.time)}`,
-    status: a.status,
-    reason: a.reason,
-    canChange: ["pending", "confirmed"].includes(a.status) && a.date >= clinicNow().date,
-    manageUrl: `${siteUrl(req)}/manage.html?ref=${a.ref}`,
-  });
+  // What a patient may see about their own booking. Never includes clinical notes.
+  const view = (a, req) => {
+    const policy = getPolicy(db);
+    const open = ["pending", "confirmed"].includes(a.status) && a.date >= clinicNow().date;
+    return {
+      ref: a.ref,
+      name: a.patient_name,
+      clinic: a.clinic,
+      clinicName: CLINICS[a.clinic].name,
+      address: CLINICS[a.clinic].address,
+      date: a.date,
+      time: a.time,
+      when: `${prettyDate(a.date)}, ${prettyTime(a.time)}`,
+      status: a.status,
+      visitType: a.visit_type,
+      fee: a.fee,
+      feeText: a.fee ? rupees(a.fee) : "",
+      payment: { status: a.payment_status, paid: a.amount_paid, refunded: a.amount_refunded },
+      canChange: open && a.payment_status !== "awaiting",
+      cancelQuote: open && a.amount_paid ? refundQuote(a, policy) : null,
+      reschedule: open ? rescheduleCheck(a, policy) : { allowed: false },
+      manageUrl: `${siteUrl(req)}/manage.html?ref=${a.ref}`,
+    };
+  };
 
   r.get("/config", (req, res) => {
-    res.json({ clinics: Object.values(CLINICS), hours: HOURS, booking: BOOKING, whatsapp: config.whatsappNumber, today: clinicNow().date });
+    const policy = getPolicy(db);
+    res.json({
+      clinics: Object.values(CLINICS),
+      hours: HOURS,
+      booking: BOOKING,
+      whatsapp: config.whatsappNumber,
+      today: clinicNow().date,
+      fees: policy.fees,
+      followup: policy.followup,
+      payOnline: paymentsEnabled() && policy.payments.mode === "online",
+      policy: policySummary(policy),
+    });
   });
 
   r.get("/days", (req, res) => {
@@ -40,38 +66,113 @@ export function publicRoutes(db) {
     res.json(availableSlots(db, req.query.clinic, req.query.date));
   });
 
-  r.post("/appointments", bookingLimit, (req, res) => {
+  r.post("/appointments", bookingLimit, async (req, res) => {
     if (req.body.website) throw new HttpError(400, "Invalid submission."); // honeypot field
     const data = parseBooking(req.body);
     const appt = createAppointment(db, data, { source: "web" });
+    const base = siteUrl(req);
+
+    if (appt.payment_status === "awaiting") {
+      const policy = getPolicy(db);
+      let order;
+      try {
+        order = await createOrder({
+          amount: appt.fee,
+          receipt: appt.ref,
+          notes: { ref: appt.ref, clinic: appt.clinic, date: appt.date, time: appt.time },
+          doctorAccountId: appt.platform_fee > 0 ? policy.commission.doctorAccountId : "",
+          doctorShare: appt.fee - appt.platform_fee,
+        });
+      } catch (err) {
+        // Release the slot so the patient can try again.
+        db.prepare("UPDATE appointments SET status = 'cancelled', cancelled_by = 'system' WHERE id = ?").run(appt.id);
+        logEvent(db, appt.id, "system", "", "payment_error", err.message);
+        throw new HttpError(502, "Online payment is temporarily unavailable. Please try again in a minute or WhatsApp us to book.");
+      }
+      db.prepare("UPDATE appointments SET payment_order_id = ? WHERE id = ?").run(order.id, appt.id);
+      return res.status(201).json({
+        appointment: view(appt, req),
+        payment: {
+          keyId: publicKeyId(),
+          orderId: order.id,
+          amount: appt.fee,
+          currency: "INR",
+          name: "Tailbone Treatment Clinic",
+          description: `${appt.visit_type === "followup" ? "Follow-up" : "Consultation"} · ${CLINICS[appt.clinic].short} · ${appt.ref}`,
+          prefill: { name: appt.patient_name, contact: `+${appt.patient_phone}`, email: appt.patient_email || "" },
+          holdMinutes: policy.holdMinutes,
+        },
+      });
+    }
+
+    notify(db, "booked", appt, { base });
     const text = `Hello Dr Rajveer Singh, I just booked appointment ${appt.ref} for ${prettyDate(appt.date)} at ${prettyTime(appt.time)} (${CLINICS[appt.clinic].short}).`;
     res.status(201).json({ appointment: view(appt, req), whatsappUrl: waLink(config.whatsappNumber, text) });
   });
 
-  // Patient self-service: lookup needs both the booking reference and phone number.
-  r.post("/manage/lookup", lookupLimit, (req, res) => {
-    const appt = findAppointmentForPatient(db, req.body.ref, req.body.phone);
-    if (!appt) throw new HttpError(404, "We couldn't find a booking with that reference and phone number.");
-    const upcoming = db.prepare(
-      `SELECT * FROM appointments WHERE patient_id = ? AND id != ? AND status IN ('pending','confirmed') AND date >= ? ORDER BY date, time`,
-    ).all(appt.patient_id, appt.id, clinicNow().date).map((a) => view({ ...a, patient_name: appt.patient_name }, req));
-    res.json({ appointment: view(appt, req), others: upcoming });
+  // Checkout success callback from the browser. The signature proves the payment is genuine.
+  r.post("/payments/verify", lookupLimit, async (req, res) => {
+    const { orderId, paymentId, signature } = req.body;
+    if (!paymentsEnabled() || !orderId || !paymentId || !signature) throw new HttpError(400, "Invalid payment confirmation.");
+    if (!verifyCheckoutSignature({ orderId, paymentId, signature })) throw new HttpError(400, "Payment could not be verified. If money was deducted it will be refunded automatically.");
+    const row = db.prepare(`${APPT_SELECT} WHERE a.payment_order_id = ?`).get(cleanText(orderId, 64));
+    if (!row) throw new HttpError(404, "Booking not found for this payment.");
+    const { appointment } = await markPaid(db, readAppt(row), { paymentId: cleanText(paymentId, 64), base: siteUrl(req) });
+    res.json({ appointment: view(appointment, req) });
   });
 
-  r.post("/manage/cancel", lookupLimit, (req, res) => {
+  // Server-to-server confirmation from Razorpay (covers closed tabs and dropped connections).
+  r.post("/payments/webhook", async (req, res) => {
+    const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from("");
+    if (!verifyWebhookSignature(raw, req.get("x-razorpay-signature"))) return res.status(400).json({ error: "Invalid signature." });
+    let event;
+    try { event = JSON.parse(raw.toString("utf8")); } catch { return res.status(400).json({ error: "Invalid JSON." }); }
+    const payment = event?.payload?.payment?.entity;
+    if ((event.event === "payment.captured" || event.event === "order.paid") && payment?.order_id) {
+      const row = db.prepare(`${APPT_SELECT} WHERE a.payment_order_id = ?`).get(payment.order_id);
+      if (row) await markPaid(db, readAppt(row), { paymentId: payment.id, amount: payment.amount }).catch(() => {});
+    }
+    const refund = event?.payload?.refund?.entity;
+    if (event.event === "refund.processed" && refund?.id) {
+      db.prepare("UPDATE refunds SET status = 'processed' WHERE provider_refund_id = ?").run(refund.id);
+    }
+    if (event.event === "refund.failed" && refund?.id) {
+      db.prepare("UPDATE refunds SET status = 'failed', error = 'Refund failed at the bank; please retry from the dashboard.' WHERE provider_refund_id = ?").run(refund.id);
+    }
+    res.json({ ok: true });
+  });
+
+  // Patient self-service: lookup needs both the booking reference and phone number.
+  const findOwn = (req) => {
     const appt = findAppointmentForPatient(db, req.body.ref, req.body.phone);
-    if (!appt) throw new HttpError(404, "Booking not found.");
+    if (!appt) throw new HttpError(404, "We couldn't find a booking with that reference and phone number.");
+    return appt;
+  };
+
+  r.post("/manage/lookup", lookupLimit, (req, res) => {
+    const appt = findOwn(req);
+    const upcoming = db.prepare(`${APPT_SELECT} WHERE a.patient_id = ? AND a.id != ? AND a.status IN ('pending','confirmed') AND a.date >= ? ORDER BY a.date, a.time`)
+      .all(appt.patient_id, appt.id, clinicNow().date).map((a) => view(readAppt(a), req));
+    res.json({ appointment: view(appt, req), others: upcoming, policy: policySummary(getPolicy(db)) });
+  });
+
+  r.post("/manage/cancel", lookupLimit, async (req, res) => {
+    const appt = findOwn(req);
     if (!view(appt, req).canChange) throw new HttpError(409, "This appointment can no longer be cancelled online. Please call us.");
-    db.prepare("UPDATE appointments SET status = 'cancelled', notes = notes || ?, updated_at = datetime('now') WHERE id = ?")
-      .run(`${appt.notes ? "\n" : ""}Cancelled by patient online${req.body.reason ? `: ${cleanText(req.body.reason, 300)}` : ""}`, appt.id);
-    res.json({ appointment: view(findAppointmentForPatient(db, appt.ref, appt.patient_phone), req) });
+    const { appointment, quote, refund } = await cancelAppointment(db, appt, {
+      actor: "patient", actorName: appt.patient_name, reason: cleanText(req.body.reason, 300), base: siteUrl(req),
+    });
+    res.json({ appointment: view(appointment, req), refund: refund && { amount: refund.amount, percent: quote.percent, status: refund.status } });
   });
 
   r.post("/manage/reschedule", lookupLimit, (req, res) => {
-    const appt = findAppointmentForPatient(db, req.body.ref, req.body.phone);
-    if (!appt) throw new HttpError(404, "Booking not found.");
+    const appt = findOwn(req);
     if (!view(appt, req).canChange) throw new HttpError(409, "This appointment can no longer be changed online. Please call us.");
-    const updated = rescheduleAppointment(db, appt, req.body.date, req.body.time);
+    const check = rescheduleCheck(appt, getPolicy(db));
+    if (!check.allowed) throw new HttpError(409, check.reason);
+    const from = `${prettyDate(appt.date)} at ${prettyTime(appt.time)}`;
+    const updated = rescheduleAppointment(db, appt, req.body.date, req.body.time, { actor: "patient", actorName: appt.patient_name });
+    notify(db, "rescheduled", updated, { base: siteUrl(req), actor: "patient", from });
     res.json({ appointment: view(updated, req) });
   });
 
@@ -96,7 +197,7 @@ export function publicRoutes(db) {
     if (!trend) throw new HttpError(400, "Please tell us whether you feel better, the same or worse.");
     const sitting = req.body.sittingMinutes === "" || req.body.sittingMinutes == null ? null : Math.max(0, Math.min(600, Math.round(Number(req.body.sittingMinutes)) || 0));
     db.prepare("INSERT INTO checkins (followup_id, patient_id, pain_score, sitting_minutes, trend, notes) VALUES (?, ?, ?, ?, ?, ?)")
-      .run(fu.id, fu.patient_id, pain, sitting, trend, cleanText(req.body.notes, 1000));
+      .run(fu.id, fu.patient_id, pain, sitting, trend, encrypt(cleanText(req.body.notes, 1000)));
     db.prepare("UPDATE followups SET status = 'done', completed_at = datetime('now') WHERE id = ?").run(fu.id);
     res.status(201).json({ ok: true, needsAttention: trend === "worse" || pain >= 7 });
   });

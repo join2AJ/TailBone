@@ -126,3 +126,10 @@ td .muted { font-size: .8rem; }
 .profile > .stack:first-child .item { grid-template-columns: auto 1fr; }
 .profile > .stack:first-child .item__actions { grid-column: 1 / -1; justify-content: flex-start; }
 #themeToggle { font-size: 1.2rem; }
+
+/* Appointment history */
+.timeline { list-style: none; padding: 0 0 0 1.1rem; margin: 0; border-left: 2px solid var(--line); display: grid; gap: .8rem; }
+.timeline li { position: relative; font-size: .9rem; }
+.timeline li::before { content: ""; position: absolute; left: calc(-1.1rem - 6px); top: .45em; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); border: 2px solid var(--surface); }
+.kpi a { color: inherit; }
+#policyForm h3 { margin: 1.2rem 0 .2rem; font-size: 1rem; }

@@ -1,0 +1,41 @@
+# Netlify serves the website from /public and forwards the API to the Node backend.
+# 1. Deploy the backend (see render.yaml / README "Deploying").
+# 2. Replace BACKEND_URL below with its address, e.g. https://tailbone-api.onrender.com
+# Because Netlify proxies /api/* (status 200 rewrite), the browser sees one domain:
+# sign-in cookies, booking and payments all work without CORS.
+
+[build]
+  publish = "public"
+  command = ""
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://BACKEND_URL/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://checkout.razorpay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://api.razorpay.com https://checkout.razorpay.com https://www.instagram.com https://maps.google.com https://www.google.com; connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"

@@ -16,6 +16,8 @@
   const prettyDay = (date, opts) => new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", opts);
   const prettyTime = (t) => { const [h, m] = t.split(":").map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
   const STATUS = { pending: "Awaiting confirmation", confirmed: "Confirmed", completed: "Completed", cancelled: "Cancelled", no_show: "Missed" };
+  const PAY = { paid: "Paid", refunded: "Refunded", partially_refunded: "Partly refunded", pay_at_clinic: "Pay at clinic", awaiting: "Payment pending", unpaid: "" };
+  const rupees = (paise) => `₹${(paise / 100).toLocaleString("en-IN")}`;
 
   let toastTimer;
   const toast = (text) => {
@@ -38,6 +40,13 @@
     const head = el("div", "appt__head");
     head.append(el("strong", "", a.when), el("span", `badge badge--${a.status}`, STATUS[a.status]));
     card.append(head, el("div", "", a.clinicName), el("div", "muted small", a.address), el("div", "muted small", `Ref ${a.ref}`));
+    if (a.fee) {
+      const p = a.payment;
+      let text = `${a.visitType === "followup" ? "Follow-up" : "Consultation"} fee ${a.feeText}`;
+      if (PAY[p.status]) text += ` · ${PAY[p.status]}`;
+      if (p.refunded) text += ` · ${rupees(p.refunded)} refunded`;
+      card.append(el("div", "pay-chip", text));
+    }
     return card;
   }
 
@@ -48,6 +57,10 @@
     $("#hello").textContent = `Hi ${current.name.split(" ")[0]}`;
     $("#apptBox").replaceChildren(apptCard(current));
     $("#actions").hidden = !current.canChange;
+    const rs = current.reschedule || {};
+    $("#reschedBtn").hidden = !rs.allowed;
+    $("#reschedNote").hidden = !current.canChange || rs.allowed;
+    $("#reschedNote").textContent = rs.reason || "";
     $("#reschedPanel").hidden = true;
     $("#cancelPanel").hidden = true;
     const msg = $("#resultMsg");
@@ -137,7 +150,7 @@
     try {
       await api("/api/manage/reschedule", { ...creds, ...picked });
       const data = await api("/api/manage/lookup", creds);
-      render(data, `Done! Your appointment is now ${data.appointment.when}. We'll reconfirm on WhatsApp.`);
+      render(data, `Done! Your appointment is now ${data.appointment.when}. The clinic has been notified.`);
     } catch (e) {
       toast(e.message);
       if (picked.date) loadSlots(picked.date).catch(() => {});
@@ -148,13 +161,23 @@
   $("#cancelBtn").addEventListener("click", () => {
     $("#reschedPanel").hidden = true;
     $("#cancelPanel").hidden = false;
+    const q = current.cancelQuote;
+    const box = $("#refundQuote");
+    box.hidden = !q;
+    if (q) {
+      box.replaceChildren(
+        el("div", "", "If you cancel now you'll get back"),
+        el("strong", "", `${rupees(q.amount)} of ${rupees(q.refundable)}`),
+        el("div", "small muted", `${q.rule} Refunds reach the original payment method in 5–7 working days.`),
+      );
+    }
   });
   $("#closeCancel").addEventListener("click", () => { $("#cancelPanel").hidden = true; });
   $("#confirmCancel").addEventListener("click", async () => {
     try {
-      await api("/api/manage/cancel", { ...creds, reason: $("#cancelReason").value });
+      const res = await api("/api/manage/cancel", { ...creds, reason: $("#cancelReason").value });
       const data = await api("/api/manage/lookup", creds);
-      render(data, "Your appointment has been cancelled. We hope to see you again soon.");
+      render(data, res.refund ? `Your appointment has been cancelled. A refund of ${rupees(res.refund.amount)} has been ${res.refund.status === "processed" ? "issued" : "requested"}. The clinic has been notified.` : "Your appointment has been cancelled and the clinic has been notified. We hope to see you again soon.");
     } catch (e) {
       toast(e.message);
     }

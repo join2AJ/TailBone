@@ -2,6 +2,10 @@ import crypto from "node:crypto";
 import { config, CLINICS, BOOKING } from "./config.js";
 import { tx } from "./db.js";
 import { clinicNow, slotsForDate, isBookableTime, addDays, isDate, isTime } from "./time.js";
+import { encrypt, decryptFields } from "./crypto.js";
+import { getPolicy, priceFor, refundQuote } from "./policy.js";
+import { paymentsEnabled, refundPayment, rupees } from "./payments.js";
+import { notify } from "./notify.js";
 
 export class HttpError extends Error {
   constructor(status, message) {
@@ -50,9 +54,22 @@ export function isBlocked(db, clinic, date) {
   return !!db.prepare("SELECT 1 FROM blocked_dates WHERE date = ? AND clinic IN ('all', ?)").get(date, clinic);
 }
 
+/** Free slots held by online bookings that were never paid for. */
+export function releaseExpiredHolds(db) {
+  const expired = db.prepare(
+    "SELECT id FROM appointments WHERE status = 'pending' AND payment_status = 'awaiting' AND hold_until IS NOT NULL AND hold_until < datetime('now')",
+  ).all();
+  for (const { id } of expired) {
+    db.prepare("UPDATE appointments SET status = 'cancelled', cancelled_by = 'system', updated_at = datetime('now') WHERE id = ?").run(id);
+    logEvent(db, id, "system", "", "hold_expired", "Payment not completed in time; slot released.");
+  }
+  return expired.length;
+}
+
 export function availableSlots(db, clinic, date, now = new Date()) {
   requireClinic(clinic);
   if (!isDate(date)) throw new HttpError(400, "Invalid date.");
+  releaseExpiredHolds(db);
   if (isBlocked(db, clinic, date)) return { date, clinic, closed: true, slots: [] };
   const taken = new Set(
     db.prepare("SELECT time FROM appointments WHERE clinic = ? AND date = ? AND status IN ('pending','confirmed')")
@@ -79,7 +96,26 @@ export function availableDays(db, clinic, days = 14, now = new Date()) {
   return out;
 }
 
+// ---------- Audit trail ----------
+
+export function logEvent(db, appointmentId, actor, actorName, action, detail = "") {
+  db.prepare("INSERT INTO appointment_events (appointment_id, actor, actor_name, action, detail) VALUES (?, ?, ?, ?, ?)")
+    .run(appointmentId, actor, actorName || "", action, cleanText(detail, 500));
+}
+
+export function appointmentEvents(db, appointmentId) {
+  return db.prepare("SELECT * FROM appointment_events WHERE appointment_id = ? ORDER BY id").all(appointmentId);
+}
+
 // ---------- Patients & appointments ----------
+
+const APPT_SECRET_FIELDS = ["reason", "notes"];
+const APPT_SELECT = `SELECT a.*, p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email
+  FROM appointments a JOIN patients p ON p.id = a.patient_id`;
+
+/** Decrypt the sensitive fields of an appointment row read with APPT_SELECT. */
+export const readAppt = (row) => decryptFields(row, APPT_SECRET_FIELDS);
+export { APPT_SELECT };
 
 export function upsertPatient(db, { name, phone, email }) {
   const existing = db.prepare("SELECT * FROM patients WHERE phone = ?").get(phone);
@@ -110,8 +146,14 @@ export function parseBooking(body, { allowAnyTime = false } = {}) {
   };
 }
 
-export function createAppointment(db, data, { source = "web", status = "pending" } = {}) {
+/**
+ * Create a booking. Website bookings that must be paid online are held for `holdMinutes`
+ * (payment_status = 'awaiting'); if payment doesn't arrive the slot is released automatically.
+ */
+export function createAppointment(db, data, { source = "web", status = "pending", actorName = "" } = {}) {
   if (source === "web" && isBlocked(db, data.clinic, data.date)) throw new HttpError(409, "The clinic is closed on that day. Please choose another date.");
+  releaseExpiredHolds(db);
+  const policy = getPolicy(db);
   try {
     return tx(db, () => {
       const patientId = upsertPatient(db, data);
@@ -121,12 +163,21 @@ export function createAppointment(db, data, { source = "web", status = "pending"
           .get(patientId, clinicNow().date).n;
         if (active >= 3) throw new HttpError(409, "You already have several upcoming bookings. Please manage them from 'My appointments' or call us.");
       }
+      const price = priceFor(db, policy, { clinic: data.clinic, patientId, date: data.date });
+      const payOnline = source === "web" && paymentsEnabled() && policy.payments.mode === "online" && price.fee > 0;
+      const split = payOnline && policy.commission.enabled && policy.commission.doctorAccountId ? price.platformFee : 0;
+      const paymentStatus = payOnline ? "awaiting" : price.fee > 0 ? "pay_at_clinic" : "unpaid";
+      const holdUntil = payOnline ? new Date(Date.now() + policy.holdMinutes * 60_000).toISOString().replace("T", " ").slice(0, 19) : null;
       const ref = makeRef();
-      const id = db.prepare(
-        `INSERT INTO appointments (ref, patient_id, clinic, date, time, status, reason, source, prefers_female)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(ref, patientId, data.clinic, data.date, data.time, status, data.reason, source, data.prefersFemale).lastInsertRowid;
-      return getAppointment(db, Number(id));
+      const id = Number(db.prepare(
+        `INSERT INTO appointments (ref, patient_id, clinic, date, time, status, reason, source, prefers_female,
+           visit_type, fee, platform_fee, payment_status, hold_until)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(ref, patientId, data.clinic, data.date, data.time, status, encrypt(data.reason), source, data.prefersFemale,
+        price.visitType, price.fee, split, paymentStatus, holdUntil).lastInsertRowid);
+      logEvent(db, id, source === "web" ? "patient" : "clinic", source === "web" ? data.name : actorName, "booked",
+        `${CLINICS[data.clinic].short}, ${data.date} ${data.time}${price.visitType === "followup" ? " (follow-up rate)" : ""}`);
+      return getAppointment(db, id);
     });
   } catch (err) {
     if (String(err.message).includes("UNIQUE") && String(err.message).includes("appointments")) {
@@ -137,35 +188,104 @@ export function createAppointment(db, data, { source = "web", status = "pending"
 }
 
 export function getAppointment(db, id) {
-  return db.prepare(
-    `SELECT a.*, p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email
-     FROM appointments a JOIN patients p ON p.id = a.patient_id WHERE a.id = ?`,
-  ).get(id);
+  return readAppt(db.prepare(`${APPT_SELECT} WHERE a.id = ?`).get(id));
 }
 
 export function findAppointmentForPatient(db, ref, phone) {
   const normalized = normalizePhone(phone);
   if (!normalized || !ref) return null;
-  return db.prepare(
-    `SELECT a.*, p.name AS patient_name, p.phone AS patient_phone
-     FROM appointments a JOIN patients p ON p.id = a.patient_id
-     WHERE a.ref = ? COLLATE NOCASE AND p.phone = ?`,
-  ).get(cleanText(ref, 20).toUpperCase(), normalized);
+  return readAppt(db.prepare(`${APPT_SELECT} WHERE a.ref = ? COLLATE NOCASE AND p.phone = ?`).get(cleanText(ref, 20).toUpperCase(), normalized));
 }
 
-export function rescheduleAppointment(db, appt, date, time, { allowAnyTime = false } = {}) {
+export function rescheduleAppointment(db, appt, date, time, { allowAnyTime = false, actor = "patient", actorName = "" } = {}) {
   if (!isDate(date) || !isTime(time)) throw new HttpError(400, "Please choose a date and time.");
   if (!allowAnyTime && (!isBookableTime(date, time) || isBlocked(db, appt.clinic, date))) {
     throw new HttpError(409, "That time is not available. Please pick another slot.");
   }
   try {
-    db.prepare("UPDATE appointments SET date = ?, time = ?, status = CASE WHEN status = 'confirmed' THEN 'pending' ELSE status END, updated_at = datetime('now') WHERE id = ?")
-      .run(date, time, appt.id);
+    db.prepare(
+      `UPDATE appointments SET date = ?, time = ?, reschedule_count = reschedule_count + ?, updated_at = datetime('now') WHERE id = ?`,
+    ).run(date, time, actor === "patient" ? 1 : 0, appt.id);
   } catch (err) {
     if (String(err.message).includes("UNIQUE")) throw new HttpError(409, "Sorry, that slot is taken. Please pick another time.");
     throw err;
   }
+  logEvent(db, appt.id, actor, actorName, "rescheduled", `${appt.date} ${appt.time} → ${date} ${time}`);
   return getAppointment(db, appt.id);
+}
+
+/**
+ * Issue a refund through the gateway (or record a manual one for pay-at-clinic bookings).
+ * Never throws for gateway failures: the failure is recorded so the clinic can retry.
+ */
+export async function issueRefund(db, appt, amount, { reason = "", actor = "clinic", actorName = "" } = {}) {
+  const refundable = Math.max(0, appt.amount_paid - appt.amount_refunded);
+  const value = Math.min(Math.max(0, Math.round(amount)), refundable);
+  if (!value) return null;
+  const refundId = Number(db.prepare("INSERT INTO refunds (appointment_id, amount, reason) VALUES (?, ?, ?)").run(appt.id, value, cleanText(reason, 250)).lastInsertRowid);
+  const settle = (status, providerId = null, error = "") => {
+    db.prepare("UPDATE refunds SET status = ?, provider_refund_id = ?, error = ? WHERE id = ?").run(status, providerId, cleanText(error, 300), refundId);
+    if (status !== "failed") {
+      db.prepare(
+        `UPDATE appointments SET amount_refunded = amount_refunded + ?,
+           payment_status = CASE WHEN amount_refunded + ? >= amount_paid THEN 'refunded' ELSE 'partially_refunded' END,
+           updated_at = datetime('now') WHERE id = ?`,
+      ).run(value, value, appt.id);
+    }
+    logEvent(db, appt.id, actor, actorName, status === "failed" ? "refund_failed" : "refunded", `${rupees(value)}${error ? ` · ${error}` : ""}`);
+    return { id: refundId, amount: value, status, error };
+  };
+  if (!appt.payment_id || !paymentsEnabled()) return settle("manual");
+  try {
+    const r = await refundPayment(appt.payment_id, value, { reason, split: appt.platform_fee > 0 });
+    return settle("processed", r.id);
+  } catch (err) {
+    return settle("failed", null, err.message);
+  }
+}
+
+/**
+ * Cancel an appointment applying the refund policy, log it and notify the other side.
+ * Clinic cancellations refund in full; patient cancellations follow the time-based tiers.
+ */
+export async function cancelAppointment(db, appt, { actor, actorName = "", reason = "", noShow = false, base } = {}) {
+  if (!["pending", "confirmed"].includes(appt.status) && !(noShow && appt.status !== "cancelled")) {
+    throw new HttpError(409, "This appointment is already closed.");
+  }
+  const policy = getPolicy(db);
+  const quote = refundQuote(appt, policy, { actor, noShow });
+  db.prepare("UPDATE appointments SET status = ?, cancelled_by = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(noShow ? "no_show" : "cancelled", noShow ? null : actor, appt.id);
+  logEvent(db, appt.id, actor, actorName, noShow ? "no_show" : "cancelled", [reason && `Reason: ${reason}`, quote.refundable ? quote.rule : ""].filter(Boolean).join(" · "));
+  const refund = quote.amount ? await issueRefund(db, appt, quote.amount, { reason: noShow ? "no-show" : `cancelled by ${actor}`, actor, actorName }) : null;
+  const updated = getAppointment(db, appt.id);
+  notify(db, noShow ? "no_show" : "cancelled", updated, { base, actor, reason, refund: refund && { amount: refund.amount, percent: quote.percent } });
+  return { appointment: updated, quote, refund };
+}
+
+/** Mark an online payment as captured (from Checkout callback or webhook). Idempotent. */
+export async function markPaid(db, appt, { paymentId, amount, base }) {
+  if (appt.payment_status === "paid" || appt.payment_status.includes("refunded")) return { appointment: appt, already: true };
+  const paid = amount ?? appt.fee;
+  if (appt.status === "cancelled" && appt.cancelled_by === "system") {
+    // Payment arrived after the hold expired. Re-take the slot if still free, otherwise refund in full.
+    try {
+      db.prepare("UPDATE appointments SET status = 'pending', cancelled_by = NULL WHERE id = ?").run(appt.id);
+    } catch {
+      db.prepare("UPDATE appointments SET payment_id = ?, amount_paid = ?, payment_status = 'paid' WHERE id = ?").run(paymentId, paid, appt.id);
+      logEvent(db, appt.id, "system", "", "paid_late", "Payment received after the slot was released; refunding in full.");
+      await issueRefund(db, getAppointment(db, appt.id), paid, { reason: "slot no longer available", actor: "system" });
+      throw new HttpError(409, "Your payment arrived after the slot was released and someone else booked it. A full refund has been issued. Please choose another time.");
+    }
+  }
+  db.prepare(
+    `UPDATE appointments SET payment_id = ?, amount_paid = ?, payment_status = 'paid', hold_until = NULL,
+       status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END, updated_at = datetime('now') WHERE id = ?`,
+  ).run(paymentId, paid, appt.id);
+  logEvent(db, appt.id, "patient", appt.patient_name, "paid", `${rupees(paid)} · ${paymentId}`);
+  const updated = getAppointment(db, appt.id);
+  notify(db, "booked", updated, { base });
+  return { appointment: updated };
 }
 
 // ---------- Follow-ups ----------

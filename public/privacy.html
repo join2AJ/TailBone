@@ -9,13 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
-  <script>
-    (function () {
-      var t = null;
-      try { t = localStorage.getItem("theme"); } catch (e) {}
-      document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    })();
-  </script>
+  <script src="assets/js/theme.js"></script>
 </head>
 <body>
   <header class="header is-scrolled">
@@ -42,7 +36,9 @@
       <p>Clinical notes and reports are kept confidential and handled in line with applicable Indian law, including the Digital Personal Data Protection Act, 2023.</p>
 
       <h3>Third-party services</h3>
-      <p>Embedded maps are provided by Google, chat by WhatsApp (Meta), and Instagram videos by Instagram (Meta), which load only when you tap to play. Their own privacy policies apply when you use them.</p>
+      <p>Online payments are processed by Razorpay. Your card, UPI and bank details go directly to Razorpay and are never seen or stored by us; we keep only the payment reference and amount. Embedded maps are provided by Google, chat by WhatsApp (Meta), and Instagram videos by Instagram (Meta), which load only when you tap to play. Their own privacy policies apply when you use them.</p>
+      <h3>Security</h3>
+      <p>The site is served only over HTTPS. Clinical notes and your descriptions of symptoms are encrypted in our database, staff access requires an individual login, and every change to an appointment is logged.</p>
 
       <h3>Your rights</h3>
       <p>You can ask to see, correct or delete the personal information we hold about you. Email <a href="mailto:contact@tailbonetreatment.com">contact@tailbonetreatment.com</a> or call <a href="tel:+919886688323">+91 98866 88323</a>.</p>

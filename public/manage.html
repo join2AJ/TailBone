@@ -10,13 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
-  <script>
-    (function () {
-      var t = null;
-      try { t = localStorage.getItem("theme"); } catch (e) {}
-      document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    })();
-  </script>
+  <script src="assets/js/theme.js"></script>
 </head>
 <body class="page">
   <header class="mini-header">
@@ -55,6 +49,7 @@
         <h1 id="hello"></h1>
         <div id="apptBox"></div>
 
+        <p class="small muted" id="reschedNote" hidden></p>
         <div id="actions" class="row-gap" hidden>
           <button class="btn btn--primary" id="reschedBtn" type="button">Reschedule</button>
           <button class="btn btn--ghost" id="cancelBtn" type="button">Cancel appointment</button>
@@ -74,6 +69,7 @@
         <!-- Cancel panel -->
         <div id="cancelPanel" hidden style="margin-top:1.4rem">
           <h3>Cancel this appointment?</h3>
+          <div class="quote-box" id="refundQuote" hidden></div>
           <div class="field">
             <label for="cancelReason">Reason <span class="muted">(optional)</span></label>
             <input id="cancelReason" maxlength="300" placeholder="e.g. feeling better, schedule clash">
@@ -96,7 +92,7 @@
 
   <footer class="footer"><div class="container footer__bottom" style="margin-top:0">
     <span>© Tailbone Treatment. All rights reserved.</span>
-    <a href="privacy.html">Privacy statement</a>
+    <span><a href="policies.html">Terms & refund policy</a> · <a href="privacy.html">Privacy</a></span>
   </div></footer>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

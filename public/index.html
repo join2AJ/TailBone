@@ -14,13 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
-  <script>
-    (function () {
-      var t = null;
-      try { t = localStorage.getItem("theme"); } catch (e) {}
-      document.documentElement.dataset.theme = t || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    })();
-  </script>
+  <script src="assets/js/theme.js"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -512,7 +506,12 @@
 
             <div class="summary" id="bookingSummary" hidden></div>
             <button class="btn btn--primary btn--block btn--lg" type="submit" id="bookBtn">Confirm booking</button>
-            <p class="small muted center">You'll get a booking reference instantly. Our team confirms every appointment on WhatsApp.</p>
+            <div class="policy-note" id="policyNote" hidden>
+              <strong>Cancellation & refunds</strong>
+              <ul id="policyList"></ul>
+              <a href="policies.html" target="_blank" rel="noopener">Full terms, cancellation & refund policy</a>
+            </div>
+            <p class="small muted center" id="bookHint">You'll get a booking reference instantly. Our team confirms every appointment on WhatsApp.</p>
           </form>
 
           <div class="done" id="bookingDone" hidden tabindex="-1">
@@ -527,6 +526,16 @@
               <a class="btn btn--ghost" id="doneManage">Manage booking</a>
             </div>
             <button class="linkish" type="button" id="bookAnother">Book another appointment</button>
+          </div>
+
+          <div class="done" id="payPending" hidden tabindex="-1">
+            <div class="done__icon done__icon--wait" aria-hidden="true">₹</div>
+            <h3>Complete your payment</h3>
+            <p class="muted" id="payPendingMsg">Your slot is held for a few minutes while you pay.</p>
+            <div class="done__actions">
+              <button class="btn btn--primary btn--lg" type="button" id="payRetry">Pay now</button>
+              <button class="linkish" type="button" id="payCancel">Choose a different time</button>
+            </div>
           </div>
 
           <div class="fallback" id="bookingFallback" hidden>
@@ -621,6 +630,7 @@
           <li><a href="#locations">Contact us</a></li>
           <li><a href="#faq">FAQ</a></li>
           <li><a href="manage.html">My appointments</a></li>
+          <li><a href="policies.html">Terms & refund policy</a></li>
           <li><a href="privacy.html">Privacy statement</a></li>
         </ul>
       </div>

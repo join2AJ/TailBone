@@ -591,3 +591,14 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b
 @media (max-width: 640px) { .footer__grid { grid-template-columns: 1fr; } }
 
 .toast:empty { visibility: hidden; }
+
+/* ===== Payments & policy ===== */
+.policy-note { margin-top: var(--space-4); padding: var(--space-4); border-radius: var(--radius-sm); background: var(--bg-soft); border: 1px solid var(--line); font-size: .86rem; }
+.policy-note strong { display: block; margin-bottom: var(--space-2); font-family: var(--display); }
+.policy-note ul { margin: 0 0 var(--space-2); padding-left: 1.1rem; color: var(--muted); display: grid; gap: .2rem; }
+.done__icon--wait { background: var(--accent); box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 20%, transparent); }
+.quote-box { margin: var(--space-4) 0; padding: var(--space-4); border-radius: var(--radius-sm); background: var(--bg-soft); border: 1px solid var(--line); }
+.quote-box strong { font-size: 1.15rem; color: var(--brand); }
+.pay-chip { display: inline-flex; gap: .35rem; align-items: center; font-size: .8rem; font-weight: 600; margin-top: .35rem; }
+.legal h2 { font-size: var(--step-2); margin-top: var(--space-6); }
+.legal ul { padding-left: 1.2rem; display: grid; gap: .3rem; }

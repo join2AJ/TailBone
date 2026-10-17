@@ -19,6 +19,14 @@
   const phonePretty = (p) => (p && p.startsWith("91") && p.length === 12 ? `+91 ${p.slice(2, 7)} ${p.slice(7)}` : `+${p}`);
   const badge = (s) => `<span class="badge badge--${esc(s)}">${esc(STATUS[s] || s)}</span>`;
   const pain = (v) => (v == null ? "—" : `<span class="pain" style="--v:${Number(v)}">${Number(v)}</span>`);
+  const rupees = (paise) => `₹${(Number(paise || 0) / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  const PAY = { paid: "Paid", refunded: "Refunded", partially_refunded: "Part refunded", pay_at_clinic: "Pay at clinic", awaiting: "Awaiting payment", unpaid: "—" };
+  const payBadge = (a) => (a.fee ? `<span class="badge badge--${a.payment_status === "paid" ? "confirmed" : a.payment_status.includes("refund") ? "completed" : "pending"}">${esc(PAY[a.payment_status] || a.payment_status)}</span>` : "");
+  const EVENT = {
+    booked: "Booked", confirmed: "Confirmed", completed: "Completed", pending: "Set to pending", rescheduled: "Rescheduled", cancelled: "Cancelled",
+    no_show: "Marked no-show", paid: "Payment received", refunded: "Refund issued", refund_failed: "Refund failed", hold_expired: "Unpaid hold expired",
+    payment_error: "Payment error", paid_late: "Late payment",
+  };
 
   let toastTimer;
   function toast(text) {
@@ -95,6 +103,8 @@
     patients: ["Patients", renderPatients],
     patient: ["Patient", renderPatient],
     stories: ["Patient stories", renderStories],
+    inbox: ["Inbox", renderInbox],
+    payments: ["Payments", renderPayments],
     instagram: ["Instagram highlights", renderInstagram],
     settings: ["Settings", renderSettings],
   };
@@ -126,6 +136,10 @@
       const st = $("#storyCount");
       st.hidden = !stats.storiesPending;
       st.textContent = stats.storiesPending;
+      const ib = $("#inboxCount");
+      const inbox = stats.unread + stats.toSend;
+      ib.hidden = !inbox;
+      ib.textContent = inbox;
     } catch { /* ignore */ }
   }
 
@@ -145,7 +159,7 @@
       <div class="item__time">${time12(a.time)}</div>
       <div class="item__main"><strong>${esc(a.patient_name)}</strong>
         <small>${esc(CLINIC[a.clinic])} · ${esc(phonePretty(a.patient_phone))} ${a.prefers_female ? "· prefers female clinician" : ""}</small>
-        <div>${badge(a.status)}</div></div>
+        <div>${badge(a.status)} ${payBadge(a)}</div></div>
       <div class="item__actions">${apptActions(a)}</div>
     </div>`;
   }
@@ -202,6 +216,9 @@
         <div class="kpi"><small>Visits completed (30 days)</small><strong>${s.completed30}</strong></div>
         <div class="kpi"><small>Avg check-in pain (7 days)</small><strong>${s.avgPain7 ?? "—"}</strong></div>
         <div class="kpi ${s.storiesPending ? "kpi--warn" : ""}"><small>Stories to review</small><strong>${s.storiesPending}</strong></div>
+        <div class="kpi kpi--ok"><small>Collected (30 days, net)</small><strong>${esc(s.collected30Text)}</strong></div>
+        <div class="kpi ${s.unread ? "kpi--warn" : ""}"><small>Patient changes to read</small><strong><a href="#/inbox">${s.unread}</a></strong></div>
+        <div class="kpi ${s.toSend ? "kpi--warn" : ""}"><small>Messages waiting to send</small><strong><a href="#/inbox/patient">${s.toSend}</a></strong></div>
       </div>
       <div class="grid-2">
         <div class="stack">
@@ -258,8 +275,8 @@
           <td class="nowrap"><strong>${esc(day(a.date))}</strong><br><span class="muted">${time12(a.time)}</span></td>
           <td><a href="#/patient/${a.patient_id}"><strong>${esc(a.patient_name)}</strong></a><br><span class="muted">${esc(phonePretty(a.patient_phone))}</span></td>
           <td>${esc(CLINIC[a.clinic])}</td>
-          <td>${badge(a.status)}</td>
-          <td class="nowrap muted">${esc(a.ref)}</td>
+          <td>${badge(a.status)}<br>${payBadge(a)}</td>
+          <td class="nowrap muted">${esc(a.ref)}${a.fee ? `<br>${rupees(a.fee)}` : ""}</td>
           <td><div class="item__actions">${apptActions(a)}</div></td>
         </tr>`).join("") || '<tr><td colspan="6"><div class="empty">No appointments match these filters.</div></td></tr>'}</tbody>
       </table></div>`;
@@ -275,45 +292,80 @@
   }
 
   async function apptDialog(id) {
-    const { appointment: a } = await api(`/appointments/${id}`);
+    const { appointment: a, events, refunds, quotes } = await api(`/appointments/${id}`);
+    const open = ["pending", "confirmed"].includes(a.status);
+    const refundable = a.amount_paid - a.amount_refunded;
     openModal(`
       <h2>${esc(a.patient_name)} ${badge(a.status)}</h2>
       <dl class="kv">
         <dt>When</dt><dd>${esc(day(a.date, { weekday: "long", day: "numeric", month: "long", year: "numeric" }))}, ${time12(a.time)}</dd>
-        <dt>Clinic</dt><dd>${esc(CLINIC[a.clinic])}</dd>
+        <dt>Clinic</dt><dd>${esc(CLINIC[a.clinic])}${a.visit_type === "followup" ? " · follow-up visit" : ""}</dd>
         <dt>Phone</dt><dd><a href="tel:+${esc(a.patient_phone)}">${esc(phonePretty(a.patient_phone))}</a></dd>
         ${a.patient_email ? `<dt>Email</dt><dd>${esc(a.patient_email)}</dd>` : ""}
         <dt>Ref</dt><dd>${esc(a.ref)} · booked via ${esc(a.source)}</dd>
         ${a.prefers_female ? "<dt>Preference</dt><dd>Female clinician</dd>" : ""}
         ${a.reason ? `<dt>Patient says</dt><dd>${esc(a.reason)}</dd>` : ""}
+        ${a.fee ? `<dt>Payment</dt><dd>${rupees(a.fee)} · ${payBadge(a)}${a.amount_paid ? ` · paid ${rupees(a.amount_paid)}` : ""}${a.amount_refunded ? ` · refunded ${rupees(a.amount_refunded)}` : ""}${a.platform_fee ? `<br><span class="muted small">Split: doctor ${rupees(a.fee - a.platform_fee)} · platform ${rupees(a.platform_fee)}</span>` : ""}</dd>` : ""}
       </dl>
       <div class="row-gap" style="margin:1rem 0">
-        <a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(a.links.confirm)}">WhatsApp: confirmation</a>
-        <a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(a.links.reminder)}">WhatsApp: reminder</a>
-        <a class="btn btn--ghost btn--sm" target="_blank" rel="noopener" href="${esc(a.links.chat)}">Open chat</a>
+        <a class="btn btn--ghost btn--sm" target="_blank" rel="noopener" href="${esc(a.links.chat)}">Open WhatsApp chat</a>
         <a class="btn btn--ghost btn--sm" href="#/patient/${a.patient_id}" id="toPatient">Patient profile</a>
+        ${refundable > 0 ? '<button class="btn btn--ghost btn--sm" type="button" id="refundBtn">Issue refund</button>' : ""}
       </div>
       <form class="form" id="apptEdit">
-        <div class="field"><label>Clinical notes (private)</label><textarea name="notes" rows="4">${esc(a.notes)}</textarea></div>
-        <div class="field-row">
+        <div class="field"><label>Clinical notes (private, encrypted)</label><textarea name="notes" rows="4">${esc(a.notes)}</textarea></div>
+        ${open ? `<div class="field-row">
           <div class="field"><label>Date</label><input type="date" name="date" value="${esc(a.date)}"></div>
           <div class="field"><label>Time</label><input type="time" name="time" step="900" value="${esc(a.time)}"></div>
-        </div>
+        </div>` : ""}
         <div class="field"><label>Status</label><select name="status">${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${a.status === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>
-        <div class="row-gap"><button class="btn btn--primary" type="submit">Save changes</button>
-        ${a.status !== "cancelled" ? `<a class="btn btn--ghost" target="_blank" rel="noopener" href="${esc(a.links.cancelled)}">WhatsApp: cancellation note</a>` : ""}</div>
-      </form>`);
+        <div class="alert alert--ok" id="impact" hidden></div>
+        <div class="field" id="reasonField" hidden><label>Reason (sent to the patient)</label><input name="reason" maxlength="300" placeholder="e.g. Doctor travelling, emergency"></div>
+        <label class="check"><input type="checkbox" name="silent"> Don't notify the patient about this change</label>
+        <div class="row-gap"><button class="btn btn--primary" type="submit">Save changes</button></div>
+      </form>
+      ${refunds.length ? `<h3 style="margin-top:1.4rem">Refunds</h3><div class="list">${refunds.map((r) => `<div class="item"><div class="item__time">${rupees(r.amount)}</div>
+        <div class="item__main"><strong>${esc(r.status)}</strong><small>${esc(day(r.created_at))} · ${esc(r.reason)}${r.error ? ` · ${esc(r.error)}` : ""}</small></div><div></div></div>`).join("")}</div>` : ""}
+      <h3 style="margin-top:1.4rem">History</h3>
+      <ol class="timeline">${events.map((e) => `<li><strong>${esc(EVENT[e.action] || e.action)}</strong> <span class="muted small">by ${esc(e.actor === "clinic" ? e.actor_name || "clinic" : e.actor === "patient" ? "patient" : "system")} · ${esc(new Date(e.created_at.replace(" ", "T") + "Z").toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }))}</span>${e.detail ? `<br><span class="small">${esc(e.detail)}</span>` : ""}</li>`).join("") || '<li class="muted">No history yet.</li>'}</ol>`);
     $("#toPatient").addEventListener("click", closeModal);
-    $("#apptEdit").addEventListener("submit", async (e) => {
+    const form = $("#apptEdit");
+    const impact = () => {
+      const st = form.status.value;
+      const moved = open && (form.date.value !== a.date || form.time.value !== a.time);
+      let msg = "";
+      if (st === "cancelled" && a.status !== "cancelled") msg = `Cancelling as the clinic: the patient gets a message${quotes ? ` and a full refund of ${rupees(quotes.clinic.amount)}` : ""}.`;
+      else if (st === "no_show" && a.status !== "no_show") msg = `No-show: ${quotes ? "no refund (per policy). " : ""}The patient is informed.`;
+      else if (st === "confirmed" && a.status !== "confirmed") msg = "The patient receives a confirmation message.";
+      if (moved) msg += `${msg ? " " : ""}The patient is told about the new time and can reschedule or cancel free of charge.`;
+      $("#impact").hidden = !msg;
+      $("#impact").textContent = msg;
+      $("#reasonField").hidden = !(st === "cancelled" && a.status !== "cancelled");
+    };
+    form.addEventListener("input", impact);
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const body = Object.fromEntries(new FormData(e.target));
-      if (body.date === a.date && body.time === a.time) { delete body.date; delete body.time; }
+      const fd = new FormData(form);
+      const body = { notes: fd.get("notes"), status: fd.get("status"), reason: fd.get("reason") || "", silent: fd.get("silent") === "on" };
+      if (open && (fd.get("date") !== a.date || fd.get("time") !== a.time)) { body.date = fd.get("date"); body.time = fd.get("time"); }
       if (body.status === "completed" && a.status !== "completed") { closeModal(); return completeDialog(id, body.notes); }
+      if (body.status === "cancelled" && a.status !== "cancelled" && !confirm("Cancel this appointment and notify the patient?")) return;
       try {
-        await api(`/appointments/${id}`, { method: "PATCH", body });
+        const res = await api(`/appointments/${id}`, { method: "PATCH", body });
         closeModal();
-        toast("Saved.");
+        toast(res.refund ? `Saved. Refund ${rupees(res.refund.amount)}: ${res.refund.status}.` : "Saved.");
         route();
+      } catch (ex) { toast(ex.message); }
+    });
+    const rb = $("#refundBtn");
+    if (rb) rb.addEventListener("click", async () => {
+      const amount = prompt(`Refund amount in ₹ (up to ${refundable / 100}):`, String(refundable / 100));
+      if (!amount) return;
+      const reason = prompt("Reason (shown in the records):", "Goodwill refund") || "";
+      try {
+        const res = await api(`/appointments/${id}/refund`, { method: "POST", body: { amount: Number(amount), reason } });
+        toast(`Refund ${rupees(res.refund.amount)}: ${res.refund.status}${res.refund.error ? ` (${res.refund.error})` : ""}`);
+        apptDialog(id);
       } catch (ex) { toast(ex.message); }
     });
   }
@@ -470,7 +522,7 @@
     const first = checkins[0]?.pain_score;
     const last = checkins.at(-1)?.pain_score;
     content.innerHTML = `
-      <button class="back" onclick="history.back()">← Back</button>
+      <button class="back" type="button" id="backBtn">← Back</button>
       <div class="profile">
         <div class="stack">
           <section class="panel-card">
@@ -510,6 +562,7 @@
           </section>
         </div>
       </div>`;
+    $("#backBtn").addEventListener("click", () => history.back());
     $("#pEdit").addEventListener("submit", async (e) => {
       e.preventDefault();
       try { await api(`/patients/${p.id}`, { method: "PATCH", body: Object.fromEntries(new FormData(e.target)) }); toast("Patient saved."); } catch (ex) { toast(ex.message); }
@@ -622,10 +675,127 @@
     $$("[data-mdel]").forEach((b) => b.addEventListener("click", async () => { await api(`/media/${b.dataset.mdel}`, { method: "DELETE" }); route(); }));
   }
 
+  // ---------- Inbox ----------
+  async function renderInbox(tab = "doctor") {
+    const audience = tab === "patient" ? "patient" : "doctor";
+    const { notifications, automatic } = await api(`/notifications?audience=${audience}`);
+    content.innerHTML = `
+      <div class="chips">
+        <a class="chip ${audience === "doctor" ? "is-active" : ""}" href="#/inbox">Changes by patients</a>
+        <a class="chip ${audience === "patient" ? "is-active" : ""}" href="#/inbox/patient">Messages to patients</a>
+      </div>
+      ${audience === "doctor" ? `
+        <div class="panel-card__head"><p class="muted small" style="margin:0">New bookings, reschedules and cancellations made by patients. Also emailed to the doctor when email is set up.</p>
+        <button class="btn btn--ghost btn--sm" id="readAll">Mark all read</button></div>
+        <div class="list">${notifications.map((n) => `<div class="item" style="grid-template-columns:auto 1fr">
+          <div>${n.read_at ? "" : '<span class="badge badge--pending">New</span>'}</div>
+          <div class="item__main"><strong>${esc(n.body)}</strong><small>${esc(new Date(n.created_at.replace(" ", "T") + "Z").toLocaleString("en-IN"))}</small></div></div>`).join("") || '<div class="empty">Nothing yet.</div>'}</div>`
+      : `
+        <p class="muted small">${automatic
+          ? "WhatsApp Business API is connected: messages are sent automatically. Failed ones can be re-sent by hand."
+          : "Automatic WhatsApp isn't connected yet, so each message below is ready to send with one tap. It opens WhatsApp with the text filled in. Mark it sent afterwards."}</p>
+        <div class="table-wrap"><table><thead><tr><th>Status</th><th>To</th><th>Message</th><th></th></tr></thead><tbody>
+        ${notifications.map((n) => `<tr>
+          <td>${n.status === "sent" ? badge("confirmed").replace("Confirmed", "Sent") : n.status === "failed" ? badge("cancelled").replace("Cancelled", "Failed") : badge("pending").replace("Pending", "To send")}</td>
+          <td class="nowrap">${esc(phonePretty(n.recipient))}<br><span class="muted">${esc(n.ref || "")}</span></td>
+          <td style="max-width:460px">${esc(n.body)}${n.error ? `<br><span class="muted small">${esc(n.error)}</span>` : ""}</td>
+          <td><div class="item__actions">${n.status !== "sent" && n.sendUrl ? `<a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(n.sendUrl)}" data-sent="${n.id}">Send on WhatsApp</a>` : ""}</div></td>
+        </tr>`).join("") || '<tr><td colspan="4"><div class="empty">No messages yet.</div></td></tr>'}
+        </tbody></table></div>`}`;
+    const ra = $("#readAll");
+    if (ra) ra.addEventListener("click", async () => { await api("/notifications/read-all", { method: "POST" }); route(); });
+    // Opening the WhatsApp link counts as sending it.
+    $$("[data-sent]").forEach((aEl) => aEl.addEventListener("click", () => {
+      api(`/notifications/${aEl.dataset.sent}`, { method: "PATCH", body: { status: "sent" } }).then(() => setTimeout(route, 400)).catch(() => {});
+    }));
+    if (audience === "doctor" && notifications.some((n) => !n.read_at)) setTimeout(() => api("/notifications/read-all", { method: "POST" }).then(refreshBadges).catch(() => {}), 4000);
+  }
+
+  // ---------- Payments ----------
+  async function renderPayments() {
+    const from = state.payFrom || addDays(state.today, -30);
+    const to = state.payTo || state.today;
+    const { totals: t, rows } = await api(`/payments/summary?from=${from}&to=${to}`);
+    content.innerHTML = `
+      <section class="panel-card"><form class="toolbar" id="payFilter">
+        <div class="field"><label>From</label><input type="date" name="from" value="${esc(from)}"></div>
+        <div class="field"><label>To</label><input type="date" name="to" value="${esc(to)}"></div>
+        <button class="btn btn--primary btn--sm">Show</button>
+      </form></section>
+      <div class="kpis">
+        <div class="kpi"><small>Paid bookings</small><strong>${t.bookings}</strong></div>
+        <div class="kpi kpi--ok"><small>Collected</small><strong>${rupees(t.collected)}</strong></div>
+        <div class="kpi ${t.refunded ? "kpi--warn" : ""}"><small>Refunded</small><strong>${rupees(t.refunded)}</strong></div>
+        <div class="kpi kpi--ok"><small>Net</small><strong>${rupees(t.net)}</strong></div>
+        <div class="kpi"><small>Doctor's share</small><strong>${rupees(t.doctor)}</strong></div>
+        <div class="kpi"><small>Platform fee</small><strong>${rupees(t.platform)}</strong></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Patient</th><th>Fee</th><th>Paid</th><th>Refunded</th><th>Split (doctor / platform)</th><th>Status</th></tr></thead>
+        <tbody>${rows.map((r) => `<tr>
+          <td class="nowrap">${esc(day(r.date))}<br><span class="muted">${esc(r.ref)}</span></td>
+          <td>${esc(r.patient_name)}<br><span class="muted">${esc(CLINIC[r.clinic])}</span></td>
+          <td>${rupees(r.fee)}</td><td>${rupees(r.amount_paid)}</td><td>${r.amount_refunded ? rupees(r.amount_refunded) : "—"}</td>
+          <td class="nowrap">${r.platform_fee ? `${rupees(r.fee - r.platform_fee)} / ${rupees(r.platform_fee)}` : "No split"}</td>
+          <td>${badge(r.status)}<br><span class="muted small">${esc(r.payment_id || "")}</span></td>
+        </tr>`).join("") || '<tr><td colspan="7"><div class="empty">No online payments in this period.</div></td></tr>'}</tbody>
+      </table></div>`;
+    $("#payFilter").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      state.payFrom = fd.get("from");
+      state.payTo = fd.get("to");
+      route();
+    });
+  }
+
   // ---------- Settings ----------
   async function renderSettings() {
     const { blocked } = await api("/blocked");
+    const { policy: P, paymentsEnabled, whatsappApi } = await api("/settings/policy");
     content.innerHTML = `
+      <section class="panel-card">
+        <div class="panel-card__head"><h2>Fees, payments & policies</h2>
+          <span class="small">${paymentsEnabled ? '<span class="badge badge--confirmed">Razorpay connected</span>' : '<span class="badge badge--pending">Razorpay not connected: pay at clinic</span>'}
+          ${whatsappApi ? '<span class="badge badge--confirmed">WhatsApp API connected</span>' : '<span class="badge badge--pending">WhatsApp: one-tap manual sending</span>'}</span></div>
+        <form class="form" id="policyForm">
+          <h3>Consultation fees (₹)</h3>
+          <div class="field-row">
+            <div class="field"><label>Bengaluru</label><input type="number" min="0" name="fees.blr" value="${P.fees.blr}"></div>
+            <div class="field"><label>New Delhi</label><input type="number" min="0" name="fees.del" value="${P.fees.del}"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Online</label><input type="number" min="0" name="fees.online" value="${P.fees.online}"></div>
+            <div class="field"><label>Follow-up fee (₹) within N days</label><div class="field-row"><input type="number" min="0" name="followup.fee" value="${P.followup.fee}"><input type="number" min="0" max="365" name="followup.windowDays" value="${P.followup.windowDays}" title="days"></div></div>
+          </div>
+          <div class="field"><label>Payment</label><select name="payments.mode">
+            <option value="online" ${P.payments.mode === "online" ? "selected" : ""}>Pay online to confirm (needs Razorpay)</option>
+            <option value="clinic" ${P.payments.mode === "clinic" ? "selected" : ""}>Pay at the clinic</option></select></div>
+
+          <h3>Cancellation refunds (patient cancels)</h3>
+          <p class="muted small">The first matching row applies. Clinic cancellations are always refunded in full; no-shows are never refunded.</p>
+          ${P.cancellation.map((t, i) => `<div class="field-row">
+            <div class="field"><label>At least … hours before</label><input type="number" min="0" name="cancel.${i}.hoursBefore" value="${t.hoursBefore}" ${t.hoursBefore === 0 && i === P.cancellation.length - 1 ? "readonly" : ""}></div>
+            <div class="field"><label>Refund %</label><input type="number" min="0" max="100" name="cancel.${i}.refundPercent" value="${t.refundPercent}"></div></div>`).join("")}
+
+          <h3>Rescheduling by patients</h3>
+          <div class="field-row">
+            <div class="field"><label>Allowed until … hours before</label><input type="number" min="0" name="reschedule.minHoursBefore" value="${P.reschedule.minHoursBefore}"></div>
+            <div class="field"><label>Max times per booking</label><input type="number" min="0" max="10" name="reschedule.maxTimes" value="${P.reschedule.maxTimes}"></div>
+          </div>
+
+          <h3>Platform commission (Razorpay Route)</h3>
+          <p class="muted small">When on, each online payment is split automatically: the doctor's share goes to the doctor's Razorpay linked account and the platform fee stays with the platform account. Refunds reverse both shares proportionally.</p>
+          <label class="check"><input type="checkbox" name="commission.enabled" ${P.commission.enabled ? "checked" : ""}> Split payments</label>
+          <div class="field-row">
+            <div class="field"><label>Type</label><select name="commission.type"><option value="fixed" ${P.commission.type === "fixed" ? "selected" : ""}>Fixed ₹ per booking</option><option value="percent" ${P.commission.type === "percent" ? "selected" : ""}>% of fee</option></select></div>
+            <div class="field"><label>Value</label><input type="number" min="0" name="commission.value" value="${P.commission.value}"></div>
+          </div>
+          <div class="field"><label>Doctor's linked account id</label><input name="commission.doctorAccountId" placeholder="acc_XXXXXXXXXXXX" value="${esc(P.commission.doctorAccountId)}"></div>
+          <p class="small" id="splitPreview"></p>
+          <button class="btn btn--primary">Save fees & policies</button>
+        </form>
+      </section>
       <div class="grid-2">
         <section class="panel-card">
           <h2>Holidays & closed days</h2>
@@ -665,6 +835,34 @@
       } catch (ex) { toast(ex.message); }
     });
     $$("[data-unblock]").forEach((b) => b.addEventListener("click", async () => { await api(`/blocked/${b.dataset.unblock}`, { method: "DELETE" }); route(); }));
+
+    const pf = $("#policyForm");
+    const readPolicy = () => {
+      const fd = new FormData(pf);
+      const n = (k) => Number(fd.get(k));
+      return {
+        fees: { blr: n("fees.blr"), del: n("fees.del"), online: n("fees.online") },
+        followup: { fee: n("followup.fee"), windowDays: n("followup.windowDays") },
+        payments: { mode: fd.get("payments.mode") },
+        cancellation: P.cancellation.map((_, i) => ({ hoursBefore: n(`cancel.${i}.hoursBefore`), refundPercent: n(`cancel.${i}.refundPercent`) })),
+        reschedule: { minHoursBefore: n("reschedule.minHoursBefore"), maxTimes: n("reschedule.maxTimes") },
+        commission: { enabled: fd.get("commission.enabled") === "on", type: fd.get("commission.type"), value: n("commission.value"), doctorAccountId: fd.get("commission.doctorAccountId") },
+      };
+    };
+    const preview = () => {
+      const p = readPolicy();
+      const fee = p.fees.blr;
+      const cut = !p.commission.enabled ? 0 : Math.min(fee, p.commission.type === "percent" ? Math.round((fee * p.commission.value) / 100) : p.commission.value);
+      $("#splitPreview").textContent = p.commission.enabled
+        ? `Example: patient pays ₹${fee} → doctor receives ₹${fee - cut}, platform keeps ₹${cut} (before Razorpay's gateway charges).`
+        : "Split is off: the full amount goes to the account that owns the Razorpay keys.";
+    };
+    pf.addEventListener("input", preview);
+    preview();
+    pf.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try { await api("/settings/policy", { method: "PUT", body: readPolicy() }); toast("Fees and policies saved. They apply to new bookings."); route(); } catch (ex) { toast(ex.message); }
+    });
     $("#pwForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       try { await api("/password", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); e.target.reset(); toast("Password updated."); } catch (ex) { toast(ex.message); }

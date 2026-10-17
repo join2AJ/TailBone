@@ -1,0 +1,44 @@
+# Render blueprint for the backend (API + dashboard). New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: tailbone-api
+    runtime: node
+    plan: starter            # a paid plan is needed for a persistent disk
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: tailbone-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: SITE_URL
+        sync: false          # e.g. https://tailbonetreatment.com (your Netlify domain)
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        sync: false          # 64 hex chars: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"  KEEP A COPY
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: DOCTOR_EMAIL
+        sync: false

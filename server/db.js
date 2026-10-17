@@ -100,12 +100,81 @@ CREATE TABLE IF NOT EXISTS blocked_dates (
   reason TEXT NOT NULL DEFAULT '',
   UNIQUE (clinic, date)
 );
+
+-- Clinic-editable settings (fees, policies) stored as JSON values.
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+-- Audit trail: every change to an appointment, who made it and when.
+CREATE TABLE IF NOT EXISTS appointment_events (
+  id INTEGER PRIMARY KEY,
+  appointment_id INTEGER NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
+  actor TEXT NOT NULL CHECK (actor IN ('patient','clinic','system')),
+  actor_name TEXT NOT NULL DEFAULT '',
+  action TEXT NOT NULL,
+  detail TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_events_appt ON appointment_events(appointment_id, id);
+
+CREATE TABLE IF NOT EXISTS refunds (
+  id INTEGER PRIMARY KEY,
+  appointment_id INTEGER NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,                 -- paise
+  reason TEXT NOT NULL DEFAULT '',
+  provider_refund_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','processed','failed','manual')),
+  error TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Outbox of messages to patients and the doctor, with delivery status.
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY,
+  appointment_id INTEGER REFERENCES appointments(id) ON DELETE SET NULL,
+  audience TEXT NOT NULL CHECK (audience IN ('patient','doctor')),
+  event TEXT NOT NULL,
+  channel TEXT NOT NULL,                   -- whatsapp_api | email | manual
+  recipient TEXT NOT NULL DEFAULT '',
+  body TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','failed','manual')),
+  error TEXT NOT NULL DEFAULT '',
+  read_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_notif ON notifications(audience, read_at, id);
 `;
+
+// Columns added after the first release. SQLite can't "ADD COLUMN IF NOT EXISTS", so check first.
+const MIGRATIONS = {
+  appointments: {
+    visit_type: "TEXT NOT NULL DEFAULT 'new'",            // new | followup
+    fee: "INTEGER NOT NULL DEFAULT 0",                     // paise, price at time of booking
+    platform_fee: "INTEGER NOT NULL DEFAULT 0",            // paise kept by the platform
+    payment_status: "TEXT NOT NULL DEFAULT 'unpaid'",      // unpaid | awaiting | paid | refunded | partially_refunded | pay_at_clinic
+    payment_order_id: "TEXT",
+    payment_id: "TEXT",
+    amount_paid: "INTEGER NOT NULL DEFAULT 0",
+    amount_refunded: "INTEGER NOT NULL DEFAULT 0",
+    hold_until: "TEXT",                                    // unpaid online bookings release the slot after this
+    reschedule_count: "INTEGER NOT NULL DEFAULT 0",
+    cancelled_by: "TEXT",
+  },
+};
 
 export function openDb(file = config.dbFile) {
   const db = new DatabaseSync(file);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;");
   db.exec(SCHEMA);
+  for (const [table, cols] of Object.entries(MIGRATIONS)) {
+    const existing = new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name));
+    for (const [col, def] of Object.entries(cols)) {
+      if (!existing.has(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+    }
+  }
+  db.exec("CREATE INDEX IF NOT EXISTS idx_appt_order ON appointments(payment_order_id)");
   return db;
 }
 

@@ -5,7 +5,11 @@ The website and clinic system for [tailbonetreatment.com](https://tailbonetreatm
 - **Patients** book real slots online, manage their booking, fill in progress check-ins and share their stories.
 - **The clinic** runs everything from a dashboard at `/admin`: appointments, follow-ups, patient records with pain charts, story moderation, Instagram highlights, holidays and exports.
 
-See **[docs/CLINIC-AUTOMATION-CHECKLIST.md](docs/CLINIC-AUTOMATION-CHECKLIST.md)** for the workload, automation and marketing plan.
+- **Payments** go through Razorpay, with an optional automatic commission split (Route), policy-based refunds and automatic notifications both ways.
+
+Docs:
+- **[docs/PAYMENTS-SECURITY-HOSTING.md](docs/PAYMENTS-SECURITY-HOSTING.md)**: commission split, fees and refund rules, security, Netlify + Render setup
+- **[docs/CLINIC-AUTOMATION-CHECKLIST.md](docs/CLINIC-AUTOMATION-CHECKLIST.md)**: workload, automation and marketing plan
 
 ## Quick start
 
@@ -35,6 +39,7 @@ npm run admin:create -- doctor@example.com "Dr Rajveer Singh"   # add or reset a
 | `/manage.html` | Patients **reschedule or cancel** using their reference and phone number |
 | `/checkin.html?t=…` | **Follow-up check-in**: 0–10 pain score, better/same/worse, sitting tolerance. Happy patients are invited to share a story |
 | `/stories.html` | All published stories, plus a **share your story** form (with consent; published as first name and last initial only) |
+| `/policies.html` | Terms, fees, cancellation, rescheduling and refund policy (numbers load live from Settings) |
 
 ### Clinic dashboard (`/admin`)
 - **Overview:**
@@ -49,7 +54,10 @@ npm run admin:create -- doctor@example.com "Dr Rajveer Singh"   # add or reset a
 - **Patients:** search; a profile with editable contact details and private notes; full appointment history; follow-ups; a **pain-score chart** over time; an "Ask for a story" link.
 - **Stories:** approve, reject, edit, feature, or add feedback received elsewhere.
 - **Instagram:** paste post or reel links (most-viewed first) to show them on the homepage, using Instagram's own embed, loaded on tap.
-- **Settings:** block holidays per clinic, export all appointments to CSV, change password.
+- **Inbox:** every booking, reschedule and cancellation made by patients, plus the outbox of messages to patients (sent automatically via the WhatsApp API, or one tap each).
+- **Payments:** collected, refunded, net, doctor's share and platform fee per period.
+- **Settings:** fees per clinic, follow-up rate, pay-online or pay-at-clinic, cancellation refund tiers, reschedule limits, commission split; block holidays; CSV export; change password.
+- **Appointment details:** payment and refund panel, an "issue refund" button, the full change history, and a preview of what the patient will be told.
 
 ### Under the hood
 - Express 5 + SQLite (WAL mode). A partial unique index makes **double booking impossible**, even with simultaneous requests.
@@ -91,6 +99,10 @@ docs/               automation and marketing checklist
 ```
 
 ## Deploying
+
+**Netlify + Render (recommended):** see [docs/PAYMENTS-SECURITY-HOSTING.md](docs/PAYMENTS-SECURITY-HOSTING.md#4-hosting-netlify--a-backend). `netlify.toml` serves `public/` and proxies `/api/*`; `render.yaml` runs the backend with a persistent disk.
+
+Other options:
 
 The app is a single Node process plus one SQLite file, so it needs a **persistent disk** for `DATA_DIR`.
 

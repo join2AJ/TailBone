@@ -13,6 +13,21 @@ export function seedAdmin(db, { email = config.adminEmail, password = config.adm
   return true;
 }
 
+// Only our own scripts plus Razorpay Checkout may run; inline scripts are blocked entirely.
+export const CSP = [
+  "default-src 'self'",
+  "script-src 'self' https://checkout.razorpay.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: https:",
+  "frame-src https://api.razorpay.com https://checkout.razorpay.com https://www.instagram.com https://maps.google.com https://www.google.com",
+  "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join("; ");
+
 export function createApp(db) {
   const app = express();
   app.disable("x-powered-by");
@@ -20,14 +35,19 @@ export function createApp(db) {
 
   app.use((req, res, next) => {
     res.set({
+      "Content-Security-Policy": CSP,
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "strict-origin-when-cross-origin",
       "X-Frame-Options": "SAMEORIGIN",
-      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://checkout.razorpay.com\" \"https://api.razorpay.com\")",
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
     });
+    if (config.isProd) res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     next();
   });
 
+  // Razorpay signs the exact raw bytes of the webhook, so it must not be JSON-parsed first.
+  app.use("/api/payments/webhook", express.raw({ type: "*/*", limit: "1mb" }));
   app.use(express.json({ limit: "50kb" }));
 
   app.get("/api/health", (req, res) => res.json({ ok: true }));

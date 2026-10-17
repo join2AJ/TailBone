@@ -301,7 +301,21 @@
     $("#bookingFallback").hidden = false;
   };
 
+  // Fees and policy come from the server so the clinic can change them from the dashboard.
+  let siteCfg = null;
+  const rupee = (n) => `₹${Number(n).toLocaleString("en-IN")}`;
+  const feeFor = (clinic) => (siteCfg ? siteCfg.fees[clinic] : 0);
+
+  const updateButton = () => {
+    const fee = feeFor(booking.clinic);
+    bookBtn.textContent = siteCfg?.payOnline && fee ? `Pay ${rupee(fee)} & confirm` : "Confirm booking";
+    $("#bookHint").textContent = siteCfg?.payOnline && fee
+      ? "Secure payment by Razorpay (UPI, cards, net banking). You'll get a booking reference instantly."
+      : `You'll get a booking reference instantly.${fee ? ` Consultation fee ${rupee(fee)}, payable at the clinic.` : ""} Our team confirms every appointment on WhatsApp.`;
+  };
+
   const updateSummary = () => {
+    updateButton();
     if (!booking.date || !booking.time) { summary.hidden = true; return; }
     summary.hidden = false;
     summary.innerHTML = "";
@@ -310,7 +324,26 @@
     const strong = document.createElement("strong");
     strong.textContent = parts.join(" · ");
     summary.append(strong);
+    const fee = feeFor(booking.clinic);
+    if (fee) {
+      const small = document.createElement("div");
+      small.className = "small muted";
+      small.textContent = `Consultation fee ${rupee(fee)}${siteCfg.followup?.windowDays ? `. Returning within ${siteCfg.followup.windowDays} days of a visit? The ${rupee(siteCfg.followup.fee)} follow-up rate applies automatically.` : ""}`;
+      summary.append(small);
+    }
   };
+
+  api("/api/config").then((cfg) => {
+    siteCfg = cfg;
+    const list = $("#policyList");
+    [...cfg.policy.cancellation, cfg.policy.reschedule, cfg.policy.clinic].forEach((line) => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      list.appendChild(li);
+    });
+    $("#policyNote").hidden = false;
+    updateSummary();
+  }).catch(() => { /* static hosting: booking falls back to WhatsApp */ });
 
   const selectIn = (container, btn) => {
     $$("[aria-selected]", container).forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
@@ -430,9 +463,15 @@
     bookBtn.disabled = true;
     bookBtn.classList.add("is-loading");
     try {
-      const { appointment, whatsappUrl } = await api("/api/appointments", { method: "POST", body: JSON.stringify(payload) });
+      const { appointment, whatsappUrl, payment } = await api("/api/appointments", { method: "POST", body: JSON.stringify(payload) });
       lastBooking = appointment;
-      showDone(appointment, whatsappUrl);
+      lastWhatsapp = whatsappUrl || `https://wa.me/919886688323?text=${encodeURIComponent(`Hello Dr Rajveer Singh, my booking reference is ${appointment.ref}.`)}`;
+      if (payment) {
+        pendingPayment = payment;
+        await startPayment();
+      } else {
+        showDone(appointment, lastWhatsapp);
+      }
     } catch (err) {
       if (err.status === 409) loadSlots();
       if (!err.status) { showFallback(); return; }
@@ -443,6 +482,76 @@
     }
   });
 
+  // ---- Razorpay Checkout ----
+  let pendingPayment = null;
+  let lastWhatsapp = "";
+  let razorpayLoading = null;
+  const loadRazorpay = () => {
+    if (window.Razorpay) return Promise.resolve();
+    razorpayLoading ??= new Promise((resolve, reject) => {
+      const sc = document.createElement("script");
+      sc.src = "https://checkout.razorpay.com/v1/checkout.js";
+      sc.onload = resolve;
+      sc.onerror = () => { razorpayLoading = null; reject(new Error("Couldn't load the payment window. Check your connection and try again.")); };
+      document.head.appendChild(sc);
+    });
+    return razorpayLoading;
+  };
+
+  function showPayPending(message) {
+    form.hidden = true;
+    $("#bookingDone").hidden = true;
+    const panel = $("#payPending");
+    panel.hidden = false;
+    $("#payPendingMsg").textContent = message || `Your slot is held for ${pendingPayment.holdMinutes} minutes while you complete the payment.`;
+    panel.focus();
+  }
+
+  async function startPayment() {
+    const p = pendingPayment;
+    try {
+      await loadRazorpay();
+    } catch (err) {
+      showPayPending(err.message);
+      return;
+    }
+    const rzp = new window.Razorpay({
+      key: p.keyId,
+      amount: p.amount,
+      currency: p.currency,
+      name: p.name,
+      description: p.description,
+      order_id: p.orderId,
+      prefill: p.prefill,
+      theme: { color: "#16a34a" },
+      handler: async (resp) => {
+        try {
+          const { appointment } = await api("/api/payments/verify", {
+            method: "POST",
+            body: JSON.stringify({ orderId: resp.razorpay_order_id, paymentId: resp.razorpay_payment_id, signature: resp.razorpay_signature }),
+          });
+          pendingPayment = null;
+          lastBooking = appointment;
+          $("#payPending").hidden = true;
+          showDone(appointment, lastWhatsapp);
+        } catch (err) {
+          showPayPending(err.message);
+        }
+      },
+      modal: { ondismiss: () => showPayPending() },
+    });
+    rzp.on("payment.failed", (resp) => showPayPending(`Payment failed: ${resp.error?.description || "please try again"}. Your slot is still held for a few minutes.`));
+    rzp.open();
+  }
+
+  $("#payRetry").addEventListener("click", () => { if (pendingPayment) startPayment(); });
+  $("#payCancel").addEventListener("click", () => {
+    pendingPayment = null;
+    $("#payPending").hidden = true;
+    form.hidden = false;
+    loadDays();
+  });
+
   function showDone(a, whatsappUrl) {
     form.hidden = true;
     const done = $("#bookingDone");
@@ -450,7 +559,12 @@
     $("#doneRef").textContent = a.ref;
     const dl = $("#doneDetails");
     dl.innerHTML = "";
-    [["Patient", a.name], ["When", a.when], ["Where", a.clinicName], ["Address", a.address], ["Status", "Awaiting confirmation"]].forEach(([k, v]) => {
+    const paid = a.payment?.status === "paid";
+    const rows = [["Patient", a.name], ["When", a.when], ["Where", a.clinicName], ["Address", a.address]];
+    if (a.feeText) rows.push(["Fee", paid ? `${a.feeText} paid ✓` : `${a.feeText} (pay at clinic)`]);
+    rows.push(["Status", a.status === "confirmed" ? "Confirmed ✓" : "Awaiting confirmation"]);
+    $("#bookingDone h3").textContent = a.status === "confirmed" ? "You're confirmed!" : "You're booked in!";
+    rows.forEach(([k, v]) => {
       const dt = document.createElement("dt"); dt.textContent = k;
       const dd = document.createElement("dd"); dd.textContent = v;
       dl.append(dt, dd);

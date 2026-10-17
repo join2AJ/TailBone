@@ -2,10 +2,14 @@ import { Router } from "express";
 import { CLINICS } from "../config.js";
 import { requireAdmin, verifyPassword, hashPassword, createSessionCookie, clearSessionCookie, rateLimit } from "../auth.js";
 import { clinicNow, addDays, isDate } from "../time.js";
+import { encrypt, decrypt } from "../crypto.js";
+import { getPolicy, savePolicy, refundQuote, policySummary } from "../policy.js";
+import { paymentsEnabled, rupees } from "../payments.js";
+import { notify, readNotification, whatsappApiEnabled } from "../notify.js";
 import {
   HttpError, parseBooking, createAppointment, getAppointment, rescheduleAppointment, createFollowup,
   defaultFollowupDate, cleanText, normalizePhone, validEmail, siteUrl, waLink, messages, checkinMessage, FOLLOWUP_TYPES,
-  normalizeInstagramUrl,
+  normalizeInstagramUrl, readAppt, cancelAppointment, issueRefund, logEvent, appointmentEvents, prettyDate, prettyTime,
 } from "../services.js";
 
 const STATUSES = ["pending", "confirmed", "completed", "cancelled", "no_show"];
@@ -83,15 +87,19 @@ export function adminRoutes(db) {
       newPatients30: one("SELECT COUNT(*) n FROM patients WHERE created_at >= datetime('now','-30 days')"),
       completed30: one("SELECT COUNT(*) n FROM appointments WHERE status = 'completed' AND date >= ?", addDays(today, -30)),
       avgPain7: db.prepare("SELECT ROUND(AVG(pain_score),1) n FROM checkins WHERE created_at >= datetime('now','-7 days')").get().n,
+      unread: one("SELECT COUNT(*) n FROM notifications WHERE audience = 'doctor' AND channel = 'dashboard' AND read_at IS NULL"),
+      toSend: one("SELECT COUNT(*) n FROM notifications WHERE audience = 'patient' AND status IN ('manual','failed')"),
+      collected30: one("SELECT COALESCE(SUM(amount_paid - amount_refunded), 0) n FROM appointments WHERE updated_at >= datetime('now','-30 days')"),
     };
+    stats.collected30Text = rupees(stats.collected30);
     const schedule = db.prepare(
       `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email FROM appointments a JOIN patients p ON p.id = a.patient_id
        WHERE a.date = ? AND a.status != 'cancelled' ORDER BY a.time`,
-    ).all(today).map((a) => withLinks(a, req));
+    ).all(today).map((a) => withLinks(readAppt(a), req));
     const tomorrow = db.prepare(
       `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email FROM appointments a JOIN patients p ON p.id = a.patient_id
        WHERE a.date = ? AND a.status IN ('pending','confirmed') ORDER BY a.time`,
-    ).all(addDays(today, 1)).map((a) => withLinks(a, req));
+    ).all(addDays(today, 1)).map((a) => withLinks(readAppt(a), req));
     const due = db.prepare(
       `SELECT f.*, p.name patient_name, p.phone patient_phone FROM followups f JOIN patients p ON p.id = f.patient_id
        WHERE f.status = 'pending' AND f.due_date <= ? ORDER BY f.due_date LIMIT 20`,
@@ -99,7 +107,7 @@ export function adminRoutes(db) {
     const alerts = db.prepare(
       `SELECT c.*, p.name patient_name, p.id patient_id FROM checkins c JOIN patients p ON p.id = c.patient_id
        WHERE c.created_at >= ? AND (c.trend = 'worse' OR c.pain_score >= 7) ORDER BY c.created_at DESC LIMIT 10`,
-    ).all(weekAgo);
+    ).all(weekAgo).map((c) => ({ ...c, notes: decrypt(c.notes) }));
     const trend = db.prepare(
       `SELECT date, COUNT(*) n FROM appointments WHERE date BETWEEN ? AND ? AND status != 'cancelled' GROUP BY date ORDER BY date`,
     ).all(addDays(today, -13), today);
@@ -125,41 +133,70 @@ export function adminRoutes(db) {
       `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email FROM appointments a JOIN patients p ON p.id = a.patient_id
        ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY a.date ${order}, a.time ${order} LIMIT 500`,
     ).all(...params);
-    res.json({ appointments: rows.map((a) => withLinks(a, req)) });
+    res.json({ appointments: rows.map((a) => withLinks(readAppt(a), req)) });
   });
 
   r.post("/appointments", (req, res) => {
     const data = parseBooking(req.body, { allowAnyTime: true });
-    const appt = createAppointment(db, data, { source: "admin", status: req.body.status === "pending" ? "pending" : "confirmed" });
+    const appt = createAppointment(db, data, { source: "admin", status: req.body.status === "pending" ? "pending" : "confirmed", actorName: req.admin.name });
+    if (appt.status === "confirmed") notify(db, "confirmed", appt, { base: siteUrl(req) });
     res.status(201).json({ appointment: withLinks(appt, req) });
   });
 
   r.get("/appointments/:id", (req, res) => {
     const appt = getAppointment(db, id(req.params.id));
     if (!appt) throw new HttpError(404, "Appointment not found.");
-    res.json({ appointment: withLinks(appt, req) });
+    const policy = getPolicy(db);
+    res.json({
+      appointment: withLinks(appt, req),
+      events: appointmentEvents(db, appt.id),
+      refunds: db.prepare("SELECT * FROM refunds WHERE appointment_id = ? ORDER BY id").all(appt.id),
+      quotes: appt.amount_paid ? {
+        clinic: refundQuote(appt, policy, { actor: "clinic" }),
+        patient: refundQuote(appt, policy, { actor: "patient" }),
+        noShow: refundQuote(appt, policy, { noShow: true }),
+      } : null,
+    });
   });
 
-  r.patch("/appointments/:id", (req, res) => {
+  // Every clinic-side change is logged and, where it affects the patient, sent to them automatically.
+  r.patch("/appointments/:id", async (req, res) => {
     const appt = getAppointment(db, id(req.params.id));
     if (!appt) throw new HttpError(404, "Appointment not found.");
-    let updated = appt;
-    if (req.body.date || req.body.time) {
-      updated = rescheduleAppointment(db, appt, req.body.date || appt.date, req.body.time || appt.time, { allowAnyTime: true });
+    const base = siteUrl(req);
+    const who = req.admin.name;
+    const silent = !!req.body.silent; // e.g. fixing a typo in the time without messaging the patient
+
+    if (req.body.notes !== undefined) {
+      db.prepare("UPDATE appointments SET notes = ?, updated_at = datetime('now') WHERE id = ?").run(encrypt(cleanText(req.body.notes, 4000)), appt.id);
     }
-    if (req.body.status !== undefined) {
-      if (!STATUSES.includes(req.body.status)) throw new HttpError(400, "Invalid status.");
-      try {
-        db.prepare("UPDATE appointments SET status = ?, updated_at = datetime('now') WHERE id = ?").run(req.body.status, appt.id);
-      } catch (err) {
-        if (String(err.message).includes("UNIQUE")) throw new HttpError(409, "Another active booking already holds that slot.");
-        throw err;
+
+    if ((req.body.date && req.body.date !== appt.date) || (req.body.time && req.body.time !== appt.time)) {
+      if (!["pending", "confirmed"].includes(appt.status)) throw new HttpError(409, "Only upcoming appointments can be moved.");
+      const from = `${prettyDate(appt.date)} at ${prettyTime(appt.time)}`;
+      const moved = rescheduleAppointment(db, appt, req.body.date || appt.date, req.body.time || appt.time, { allowAnyTime: true, actor: "clinic", actorName: who });
+      if (!silent) notify(db, "rescheduled", moved, { base, actor: "clinic", from });
+    }
+
+    let refund = null;
+    const status = req.body.status;
+    if (status !== undefined && status !== appt.status) {
+      if (!STATUSES.includes(status)) throw new HttpError(400, "Invalid status.");
+      const current = getAppointment(db, appt.id);
+      if (status === "cancelled" || status === "no_show") {
+        ({ refund } = await cancelAppointment(db, current, { actor: "clinic", actorName: who, reason: cleanText(req.body.reason, 300), noShow: status === "no_show", base }));
+      } else {
+        try {
+          db.prepare("UPDATE appointments SET status = ?, cancelled_by = NULL, updated_at = datetime('now') WHERE id = ?").run(status, appt.id);
+        } catch (err) {
+          if (String(err.message).includes("UNIQUE")) throw new HttpError(409, "Another active booking already holds that slot.");
+          throw err;
+        }
+        logEvent(db, appt.id, "clinic", who, status);
+        if (status === "confirmed" && !silent) notify(db, "confirmed", getAppointment(db, appt.id), { base });
       }
     }
-    if (req.body.notes !== undefined) {
-      db.prepare("UPDATE appointments SET notes = ?, updated_at = datetime('now') WHERE id = ?").run(cleanText(req.body.notes, 4000), appt.id);
-    }
-    updated = getAppointment(db, appt.id);
+    const updated = getAppointment(db, appt.id);
 
     // Completing a visit can schedule the follow-up in the same step.
     let followup = null;
@@ -174,7 +211,75 @@ export function adminRoutes(db) {
       });
       followup = followupView({ ...followup, patient_name: appt.patient_name, patient_phone: appt.patient_phone }, req);
     }
-    res.json({ appointment: withLinks(updated, req), followup });
+    res.json({ appointment: withLinks(updated, req), followup, refund });
+  });
+
+  // Manual or extra refund (e.g. goodwill, or completing a refund that failed at the bank).
+  r.post("/appointments/:id/refund", async (req, res) => {
+    const appt = getAppointment(db, id(req.params.id));
+    if (!appt) throw new HttpError(404, "Appointment not found.");
+    const amount = Math.round(Number(req.body.amount) * 100);
+    const refundable = appt.amount_paid - appt.amount_refunded;
+    if (!(amount > 0) || amount > refundable) throw new HttpError(400, `Enter an amount between ₹1 and ${rupees(refundable)}.`);
+    const refund = await issueRefund(db, appt, amount, { reason: cleanText(req.body.reason, 250) || "refund by clinic", actor: "clinic", actorName: req.admin.name });
+    if (refund?.status !== "failed") notify(db, "refunded", getAppointment(db, appt.id), { base: siteUrl(req), amount: refund.amount });
+    res.json({ refund, appointment: withLinks(getAppointment(db, appt.id), req) });
+  });
+
+  // ---------- Notifications ----------
+  r.get("/notifications", (req, res) => {
+    const audience = req.query.audience === "patient" ? "patient" : "doctor";
+    const rows = audience === "doctor"
+      ? db.prepare("SELECT n.*, a.ref FROM notifications n LEFT JOIN appointments a ON a.id = n.appointment_id WHERE n.audience = 'doctor' AND n.channel = 'dashboard' ORDER BY n.id DESC LIMIT 100").all()
+      : db.prepare("SELECT n.*, a.ref FROM notifications n LEFT JOIN appointments a ON a.id = n.appointment_id WHERE n.audience = 'patient' ORDER BY (n.status IN ('manual','failed')) DESC, n.id DESC LIMIT 150").all();
+    res.json({
+      notifications: rows.map((n) => {
+        const v = readNotification(n);
+        return { ...v, sendUrl: audience === "patient" && v.recipient ? waLink(v.recipient, v.body) : null };
+      }),
+      automatic: whatsappApiEnabled(),
+    });
+  });
+
+  r.post("/notifications/read-all", (req, res) => {
+    db.prepare("UPDATE notifications SET read_at = datetime('now') WHERE audience = 'doctor' AND read_at IS NULL").run();
+    res.json({ ok: true });
+  });
+
+  r.patch("/notifications/:id", (req, res) => {
+    if (req.body.status === "sent") db.prepare("UPDATE notifications SET status = 'sent', error = '' WHERE id = ? AND audience = 'patient'").run(id(req.params.id));
+    res.json({ ok: true });
+  });
+
+  // ---------- Fees & policies ----------
+  r.get("/settings/policy", (req, res) => {
+    res.json({ policy: getPolicy(db), summary: policySummary(getPolicy(db)), paymentsEnabled: paymentsEnabled(), whatsappApi: whatsappApiEnabled() });
+  });
+
+  r.put("/settings/policy", (req, res) => {
+    const policy = savePolicy(db, req.body);
+    res.json({ policy, summary: policySummary(policy) });
+  });
+
+  // ---------- Payments report ----------
+  r.get("/payments/summary", (req, res) => {
+    const from = isDate(req.query.from) ? req.query.from : addDays(clinicNow().date, -30);
+    const to = isDate(req.query.to) ? req.query.to : clinicNow().date;
+    const t = db.prepare(
+      `SELECT COUNT(*) bookings, COALESCE(SUM(amount_paid),0) collected, COALESCE(SUM(amount_refunded),0) refunded,
+         COALESCE(SUM(CASE WHEN amount_paid > 0 THEN platform_fee * (amount_paid - amount_refunded) / amount_paid ELSE 0 END),0) platform
+       FROM appointments WHERE amount_paid > 0 AND date BETWEEN ? AND ?`,
+    ).get(from, to);
+    const net = t.collected - t.refunded;
+    const rows = db.prepare(
+      `SELECT a.ref, a.date, a.time, a.clinic, a.status, a.payment_status, a.fee, a.amount_paid, a.amount_refunded, a.platform_fee, a.payment_id, p.name patient_name
+       FROM appointments a JOIN patients p ON p.id = a.patient_id WHERE a.amount_paid > 0 AND a.date BETWEEN ? AND ? ORDER BY a.date DESC, a.time DESC LIMIT 500`,
+    ).all(from, to);
+    res.json({
+      from, to,
+      totals: { bookings: t.bookings, collected: t.collected, refunded: t.refunded, net, platform: Math.round(t.platform), doctor: net - Math.round(t.platform) },
+      rows,
+    });
   });
 
   // ---------- Follow-ups ----------
@@ -256,10 +361,11 @@ export function adminRoutes(db) {
     const patient = db.prepare("SELECT * FROM patients WHERE id = ?").get(pid);
     if (!patient) throw new HttpError(404, "Patient not found.");
     const appointments = db.prepare("SELECT a.*, ? patient_name, ? patient_phone FROM appointments a WHERE patient_id = ? ORDER BY date DESC, time DESC")
-      .all(patient.name, patient.phone, pid).map((a) => withLinks(a, req));
+      .all(patient.name, patient.phone, pid).map((a) => withLinks(readAppt(a), req));
     const followups = db.prepare("SELECT f.*, ? patient_name, ? patient_phone FROM followups f WHERE patient_id = ? ORDER BY due_date DESC")
       .all(patient.name, patient.phone, pid).map((f) => followupView(f, req));
-    const checkins = db.prepare("SELECT * FROM checkins WHERE patient_id = ? ORDER BY created_at ASC").all(pid);
+    const checkins = db.prepare("SELECT * FROM checkins WHERE patient_id = ? ORDER BY created_at ASC").all(pid).map((c) => ({ ...c, notes: decrypt(c.notes) }));
+    patient.notes = decrypt(patient.notes);
     const first = patient.name.split(" ")[0];
     const storyInvite = waLink(patient.phone, `Hi ${first}, we're so glad you're feeling better! Would you share a few words about your experience to help others with tailbone pain? It takes 2 minutes: ${siteUrl(req)}/stories.html#share`);
     res.json({ patient, appointments, followups, checkins, storyInvite });
@@ -274,14 +380,15 @@ export function adminRoutes(db) {
     const phone = req.body.phone !== undefined ? normalizePhone(req.body.phone) : patient.phone;
     if (!phone) throw new HttpError(400, "Invalid phone number.");
     const email = req.body.email !== undefined ? validEmail(req.body.email) || null : patient.email;
-    const notes = req.body.notes !== undefined ? cleanText(req.body.notes, 8000) : patient.notes;
+    const notes = req.body.notes !== undefined ? encrypt(cleanText(req.body.notes, 8000)) : patient.notes;
     try {
       db.prepare("UPDATE patients SET name = ?, phone = ?, email = ?, notes = ? WHERE id = ?").run(name, phone, email, notes, pid);
     } catch (err) {
       if (String(err.message).includes("UNIQUE")) throw new HttpError(409, "Another patient already uses that phone number.");
       throw err;
     }
-    res.json({ patient: db.prepare("SELECT * FROM patients WHERE id = ?").get(pid) });
+    const saved = db.prepare("SELECT * FROM patients WHERE id = ?").get(pid);
+    res.json({ patient: { ...saved, notes: decrypt(saved.notes) } });
   });
 
   // ---------- Stories ----------
@@ -388,16 +495,17 @@ export function adminRoutes(db) {
   // ---------- Export ----------
   r.get("/export/appointments.csv", (req, res) => {
     const rows = db.prepare(
-      `SELECT a.ref, a.date, a.time, a.clinic, a.status, p.name, p.phone, IFNULL(p.email,'') email, a.reason, a.notes, a.source, a.created_at
+      `SELECT a.ref, a.date, a.time, a.clinic, a.status, p.name, p.phone, IFNULL(p.email,'') email, a.reason, a.notes, a.source,
+         a.fee / 100.0 fee, a.payment_status, a.amount_paid / 100.0 paid, a.amount_refunded / 100.0 refunded, a.created_at
        FROM appointments a JOIN patients p ON p.id = a.patient_id ORDER BY a.date DESC, a.time DESC`,
-    ).all();
+    ).all().map((r0) => ({ ...r0, reason: decrypt(r0.reason), notes: decrypt(r0.notes) }));
     // Prefix risky leading characters so spreadsheet apps don't evaluate them as formulas.
     const cell = (v) => {
       let s = String(v ?? "");
       if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
       return `"${s.replace(/"/g, '""')}"`;
     };
-    const header = ["ref", "date", "time", "clinic", "status", "name", "phone", "email", "reason", "notes", "source", "created_at"];
+    const header = ["ref", "date", "time", "clinic", "status", "name", "phone", "email", "reason", "notes", "source", "fee", "payment_status", "paid", "refunded", "created_at"];
     const csv = [header.join(","), ...rows.map((r0) => header.map((h) => cell(r0[h])).join(","))].join("\r\n");
     res.set("Content-Type", "text/csv; charset=utf-8");
     res.set("Content-Disposition", `attachment; filename="appointments-${clinicNow().date}.csv"`);
