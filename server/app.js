@@ -13,15 +13,16 @@ export function seedAdmin(db, { email = config.adminEmail, password = config.adm
   return true;
 }
 
-// Only our own scripts plus Razorpay Checkout may run; inline scripts are blocked entirely.
+// Only our own scripts plus Razorpay Checkout and the Google tag (loaded only after cookie consent) may run;
+// inline scripts are blocked entirely.
 export const CSP = [
   "default-src 'self'",
-  "script-src 'self' https://checkout.razorpay.com",
+  "script-src 'self' https://checkout.razorpay.com https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data: https:",
-  "frame-src https://api.razorpay.com https://checkout.razorpay.com https://www.instagram.com https://maps.google.com https://www.google.com",
-  "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com",
+  "frame-src https://api.razorpay.com https://checkout.razorpay.com https://www.instagram.com https://maps.google.com https://www.google.com https://td.doubleclick.net https://www.googletagmanager.com",
+  "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.g.doubleclick.net https://www.google.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

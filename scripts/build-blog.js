@@ -155,6 +155,7 @@ ${body}
 
   <script src="/assets/js/site-nav.js" defer></script>
   <script src="/assets/js/anim.js" defer></script>
+  <script src="/assets/js/consent.js" defer></script>
 </body>
 </html>
 `;

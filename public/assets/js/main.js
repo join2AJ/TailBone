@@ -568,7 +568,7 @@
     try {
       const { appointment, whatsappUrl, payment } = await api("/api/appointments", { method: "POST", body: JSON.stringify(payload) });
       lastBooking = appointment;
-      lastWhatsapp = whatsappUrl || `https://wa.me/919886688323?text=${encodeURIComponent(`Hi Dr Rajveer, got your details from your website. I have booked an appointment (ref ${appointment.ref}).`)}`;
+      lastWhatsapp = whatsappUrl || `https://wa.me/919886688323?text=${encodeURIComponent(`Hi Dr Rajveer, got your details from your website. I have booked an appointment (no. ${appointment.ref}).`)}`;
       if (payment) {
         pendingPayment = payment;
         await startPayment();
@@ -675,6 +675,11 @@
   });
 
   function showDone(a, whatsappUrl) {
+    // Measurement (only if the visitor accepted cookies): no names, phone numbers or health details.
+    if (window.tbTrack) {
+      if (a.apptNo) window.tbTrack("book_appointment", { value: (a.fee || 0) / 100, currency: "INR", transaction_id: a.apptNo, clinic: a.clinic });
+      else window.tbTrack("booking_request", { clinic: booking.clinic });
+    }
     form.hidden = true;
     const done = $("#bookingDone");
     done.hidden = false;

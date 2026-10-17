@@ -214,7 +214,7 @@ test("sensitive notes are encrypted at rest", async () => {
 test("security headers are set", async () => {
   const res = await fetch(`${base}/`);
   const csp = res.headers.get("content-security-policy");
-  assert.ok(csp.includes("script-src 'self' https://checkout.razorpay.com"));
+  assert.ok(csp.includes("script-src 'self' https://checkout.razorpay.com https://www.googletagmanager.com"));
   assert.ok(!/script-src[^;]*unsafe-inline/.test(csp), "no inline scripts allowed");
   assert.equal(res.headers.get("x-frame-options"), "SAMEORIGIN");
 });
