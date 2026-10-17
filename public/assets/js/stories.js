@@ -46,7 +46,13 @@
     try {
       const res = await fetch(`/api/stories?limit=${PAGE}&offset=${offset}`);
       if (!res.ok) throw new Error();
-      const { stories, total, average } = await res.json();
+      const { stories, total, average, disabled } = await res.json();
+      if (disabled) {
+        grid.replaceChildren(el("p", "muted center", "Patient stories are not available right now."));
+        $("#share").hidden = true;
+        more.hidden = true;
+        return;
+      }
       stories.forEach((s) => grid.append(card(s)));
       offset += stories.length;
       more.hidden = offset >= total;

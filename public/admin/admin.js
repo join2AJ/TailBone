@@ -108,7 +108,8 @@
   async function boot() {
     try {
       const me = await api("/me");
-      Object.assign(state, { admin: me.admin, clinics: me.clinics, today: me.today });
+      Object.assign(state, { admin: me.admin, clinics: me.clinics, today: me.today, demo: me.demo, features: me.features });
+      applyAccess();
       state.apptFilter.from ??= me.today;
       $("#meName").textContent = me.admin.name;
       $("#meEmail").textContent = me.admin.email;
@@ -141,11 +142,28 @@
     payments: ["Payments", renderPayments],
     instagram: ["Instagram highlights", renderInstagram],
     settings: ["Settings", renderSettings],
+    control: ["Control panel", renderControl],
   };
+
+  // Which dashboard section needs which permission (the server enforces the same rules).
+  const VIEW_PERM = {
+    appointments: "appointments", inbox: "inbox", followups: "followups", patients: "patients", patient: "patients",
+    stories: "stories", instagram: "instagram", payments: "payments", privacy: "privacy", control: "superadmin",
+  };
+  const allowed = (view) => !VIEW_PERM[view] || state.admin.permissions.includes(VIEW_PERM[view]);
+  function applyAccess() {
+    $$(".side__nav a").forEach((a) => { a.hidden = !allowed(a.dataset.view); });
+    $("#newApptBtn").hidden = !allowed("appointments");
+  }
 
   async function route() {
     if (!state.admin) return;
     const [, name = "overview", param] = location.hash.split("/");
+    if (!allowed(name)) {
+      $("#viewTitle").textContent = "No access";
+      content.innerHTML = '<div class="empty">You don\'t have access to this section. Ask the super admin to enable it for you.</div>';
+      return;
+    }
     const [title, render] = VIEWS[name] || VIEWS.overview;
     $("#viewTitle").textContent = title;
     $$(".side__nav a").forEach((a) => a.classList.toggle("is-active", a.dataset.view === (name === "patient" ? "patients" : name)));
@@ -170,7 +188,7 @@
       const st = $("#storyCount");
       st.hidden = !stats.storiesPending;
       st.textContent = stats.storiesPending;
-      api("/privacy/requests").then(({ requests }) => {
+      if (allowed("privacy")) api("/privacy/requests").then(({ requests }) => {
         const open = requests.filter((q) => ["open", "verifying"].includes(q.status)).length;
         $("#privCount").hidden = !open;
         $("#privCount").textContent = open;
@@ -839,14 +857,20 @@
   }
 
   // ---------- Settings ----------
+  // ---------- Settings (each part shown only to those allowed to use it) ----------
   async function renderSettings() {
-    const { blocked } = await api("/blocked");
-    const { policy: P, paymentsEnabled, whatsappApi } = await api("/settings/policy");
-    content.innerHTML = `
+    const can = (p) => state.admin.permissions.includes(p);
+    const isSuper = state.admin.role === "superadmin";
+    const blocked = can("settings") ? (await api("/blocked")).blocked : [];
+    const pol = can("settings") ? await api("/settings/policy") : null;
+    const P = pol?.policy;
+    const C = P?.commission; // only present for the super admin
+
+    const policyCard = !P ? "" : `
       <section class="panel-card">
         <div class="panel-card__head"><h2>Fees, payments & policies</h2>
-          <span class="small">${paymentsEnabled ? '<span class="badge badge--confirmed">Razorpay connected</span>' : '<span class="badge badge--pending">Razorpay not connected: pay at clinic</span>'}
-          ${whatsappApi ? '<span class="badge badge--confirmed">WhatsApp API connected</span>' : '<span class="badge badge--pending">WhatsApp: one-tap manual sending</span>'}</span></div>
+          <span class="small">${pol.paymentsEnabled ? '<span class="badge badge--confirmed">Razorpay connected</span>' : '<span class="badge badge--pending">Razorpay not connected: pay at clinic</span>'}
+          ${pol.whatsappApi ? '<span class="badge badge--confirmed">WhatsApp API connected</span>' : '<span class="badge badge--pending">WhatsApp: one-tap manual sending</span>'}</span></div>
         <form class="form" id="policyForm">
           <h3>Consultation fees (₹)</h3>
           <div class="field-row">
@@ -873,19 +897,20 @@
             <div class="field"><label>Max times per booking</label><input type="number" min="0" max="10" name="reschedule.maxTimes" value="${P.reschedule.maxTimes}"></div>
           </div>
 
-          <h3>Platform commission (Razorpay Route)</h3>
+          ${C ? `<h3>Platform commission (Razorpay Route) <span class="badge badge--pending">Super admin only</span></h3>
           <p class="muted small">When on, each online payment is split automatically: the doctor's share goes to the doctor's Razorpay linked account and the platform fee stays with the platform account. Refunds reverse both shares proportionally.</p>
-          <label class="check"><input type="checkbox" name="commission.enabled" ${P.commission.enabled ? "checked" : ""}> Split payments</label>
+          <label class="check"><input type="checkbox" name="commission.enabled" ${C.enabled ? "checked" : ""}> Split payments</label>
           <div class="field-row">
-            <div class="field"><label>Type</label><select name="commission.type"><option value="fixed" ${P.commission.type === "fixed" ? "selected" : ""}>Fixed ₹ per booking</option><option value="percent" ${P.commission.type === "percent" ? "selected" : ""}>% of fee</option></select></div>
-            <div class="field"><label>Value</label><input type="number" min="0" name="commission.value" value="${P.commission.value}"></div>
+            <div class="field"><label>Type</label><select name="commission.type"><option value="fixed" ${C.type === "fixed" ? "selected" : ""}>Fixed ₹ per booking</option><option value="percent" ${C.type === "percent" ? "selected" : ""}>% of fee</option></select></div>
+            <div class="field"><label>Value</label><input type="number" min="0" name="commission.value" value="${C.value}"></div>
           </div>
-          <div class="field"><label>Doctor's linked account id</label><input name="commission.doctorAccountId" placeholder="acc_XXXXXXXXXXXX" value="${esc(P.commission.doctorAccountId)}"></div>
-          <p class="small" id="splitPreview"></p>
+          <div class="field"><label>Doctor's linked account id</label><input name="commission.doctorAccountId" placeholder="acc_XXXXXXXXXXXX" value="${esc(C.doctorAccountId)}"></div>
+          <p class="small" id="splitPreview"></p>` : ""}
           <button class="btn btn--primary">Save fees & policies</button>
         </form>
-      </section>
-      <div class="grid-2">
+      </section>`;
+
+    const holidaysCard = !can("settings") ? "" : `
         <section class="panel-card">
           <h2>Holidays & closed days</h2>
           <p class="muted small">Patients can't book a clinic on a blocked day. Existing bookings stay, so contact those patients to move them.</p>
@@ -898,15 +923,15 @@
           <div class="list" style="margin-top:1rem">${blocked.map((b) => `<div class="item"><div class="item__time">${esc(day(b.date))}</div>
             <div class="item__main"><strong>${esc(b.clinic === "all" ? "All clinics" : CLINIC[b.clinic])}</strong><small>${esc(b.reason)}</small></div>
             <div class="item__actions"><button class="btn btn--ghost btn--sm" data-unblock="${b.id}">Remove</button></div></div>`).join("") || '<div class="empty">No upcoming closed days.</div>'}</div>
-        </section>
+        </section>`;
+
+    content.innerHTML = `
+      ${policyCard}
+      <div class="grid-2">
         <div class="stack">
-          <section class="panel-card">
-            <h2>Export</h2>
-            <p class="muted small">Download every appointment as a spreadsheet (CSV opens in Excel and Google Sheets).</p>
-            <a class="btn btn--ghost" href="/api/admin/export/appointments.csv">Download appointments.csv</a>
-          </section>
+          ${holidaysCard}
           <section class="panel-card" id="securityPanel">
-            <h2>Account security</h2>
+            <h2>My account security</h2>
             <p class="small">${state.admin.twoFactor ? '<span class="badge badge--confirmed">Two-factor sign-in on</span>' : '<span class="badge badge--cancelled">Two-factor sign-in off</span> Turn it on to protect patient data.'}</p>
             <div id="twofa"></div>
             <div class="row-gap" style="margin-top:.6rem">
@@ -914,13 +939,20 @@
               <button class="btn btn--ghost btn--sm" id="revokeBtn" type="button">Sign out all other devices</button>
             </div>
           </section>
-          <section class="panel-card">
+        </div>
+        <div class="stack">
+          ${can("export") ? `<section class="panel-card">
+            <h2>Export</h2>
+            <p class="muted small">Download every appointment as a spreadsheet (CSV opens in Excel and Google Sheets).</p>
+            <a class="btn btn--ghost" href="/api/admin/export/appointments.csv">Download appointments.csv</a>
+          </section>` : ""}
+          ${isSuper ? `<section class="panel-card">
             <div class="panel-card__head"><h2>Backups</h2><button class="btn btn--ghost btn--sm" id="backupNow" type="button">Back up now</button></div>
             <p class="muted small">Encrypted backups run daily; the last 14 are kept. Download one each week and store it somewhere else, such as an encrypted drive.</p>
             <div class="list" id="backupList"><div class="empty">Loading…</div></div>
-          </section>
+          </section>` : ""}
           <section class="panel-card">
-            <h2>Change password</h2>
+            <h2>Change my password</h2>
             <form class="form" id="pwForm">
               <div class="field"><label>Current password</label><input type="password" name="current" autocomplete="current-password" required></div>
               <div class="field"><label>New password (10+ characters)</label><input type="password" name="next" autocomplete="new-password" minlength="10" required></div>
@@ -929,17 +961,20 @@
           </section>
         </div>
       </div>
-      <section class="panel-card">
+      ${isSuper ? `<section class="panel-card">
         <div class="panel-card__head"><h2>Security log</h2><button class="btn btn--ghost btn--sm" id="logBtn" type="button">Show</button></div>
-        <p class="muted small" style="margin:0">Sign-ins, failed attempts, lockouts, patient record views, exports, erasures and setting changes. Kept for 2 years.</p>
+        <p class="muted small" style="margin:0">Sign-ins, failed attempts, lockouts, patient record views, exports, erasures, feature and user changes. Kept for 2 years.</p>
         <div id="secLog"></div>
-      </section>`;
-    $("#logBtn").addEventListener("click", async () => {
+      </section>` : ""}`;
+
+    const on = (sel, ev, fn) => { const el = $(sel); if (el) el.addEventListener(ev, fn); };
+
+    on("#logBtn", "click", async () => {
       const { log } = await api("/security/log");
       $("#secLog").innerHTML = `<div class="table-wrap" style="margin-top:.8rem;max-height:420px;overflow:auto"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>IP</th></tr></thead><tbody>
         ${log.map((l) => `<tr><td class="nowrap">${esc(new Date(l.created_at.replace(" ", "T") + "Z").toLocaleString("en-IN"))}</td><td>${esc(l.actor)}</td><td>${esc(l.action.replace(/_/g, " "))}</td><td>${esc(l.target)}</td><td class="muted">${esc(l.ip)}</td></tr>`).join("") || '<tr><td colspan="5"><div class="empty">Empty</div></td></tr>'}</tbody></table></div>`;
     });
-    $("#blockForm").addEventListener("submit", async (e) => {
+    on("#blockForm", "submit", async (e) => {
       e.preventDefault();
       try {
         const res = await api("/blocked", { method: "POST", body: Object.fromEntries(new FormData(e.target)) });
@@ -949,53 +984,65 @@
     });
     $$("[data-unblock]").forEach((b) => b.addEventListener("click", async () => { await api(`/blocked/${b.dataset.unblock}`, { method: "DELETE" }); route(); }));
 
-    // ---- Security panel ----
-    const loadBackups = async () => {
-      const { backups } = await api("/backups");
-      $("#backupList").innerHTML = backups.slice(0, 5).map((b) => `<div class="item" style="grid-template-columns:1fr auto">
-        <div class="item__main"><strong>${esc(new Date(b.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }))}</strong><small>${(b.size / 1024).toFixed(0)} KB · encrypted</small></div>
-        <div class="item__actions"><a class="btn btn--ghost btn--sm" href="/api/admin/backups/${encodeURIComponent(b.file)}">Download</a></div></div>`).join("") || '<div class="empty">No backups yet. The first runs tonight, or use "Back up now".</div>';
-    };
-    loadBackups().catch(() => {});
-    $("#backupNow").addEventListener("click", async () => { try { await api("/backups", { method: "POST" }); toast("Backup created."); loadBackups(); } catch (ex) { toast(ex.message); } });
-    $("#revokeBtn").addEventListener("click", async () => { await api("/sessions/revoke", { method: "POST" }); toast("All other devices have been signed out."); });
-    const setup = $("#tfaSetup");
-    if (setup) setup.addEventListener("click", async () => {
-      const { secret, uri } = await api("/2fa/setup", { method: "POST" });
-      $("#twofa").innerHTML = `<ol class="small">
-          <li>Install Google Authenticator or Microsoft Authenticator on your phone.</li>
-          <li>Tap <em>+</em> → <em>Enter a setup key</em>. Account: <strong>Tailbone Clinic</strong>, key: <code class="key">${esc(secret)}</code> (time-based).</li>
-          <li>Enter the 6-digit code the app shows:</li></ol>
-        <form class="toolbar" id="tfaForm"><div class="field"><input name="code" inputmode="numeric" maxlength="7" placeholder="123456" required></div><button class="btn btn--primary btn--sm">Turn on</button></form>
-        <p class="muted small">On a phone, you can also <a href="${esc(uri)}">open this link</a> to add it automatically.</p>`;
-      $("#tfaForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        try { await api("/2fa/enable", { method: "POST", body: { code: e.target.code.value } }); state.admin.twoFactor = true; toast("Two-factor sign-in is on."); route(); } catch (ex) { toast(ex.message); }
-      });
+    // ---- Backups (super admin) ----
+    if (isSuper) {
+      const loadBackups = async () => {
+        const { backups } = await api("/backups");
+        $("#backupList").innerHTML = backups.slice(0, 5).map((b) => `<div class="item" style="grid-template-columns:1fr auto">
+          <div class="item__main"><strong>${esc(new Date(b.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }))}</strong><small>${(b.size / 1024).toFixed(0)} KB · encrypted</small></div>
+          <div class="item__actions"><a class="btn btn--ghost btn--sm" href="/api/admin/backups/${encodeURIComponent(b.file)}">Download</a></div></div>`).join("") || '<div class="empty">No backups yet. The first runs tonight, or use "Back up now".</div>';
+      };
+      loadBackups().catch((ex) => { $("#backupList").innerHTML = `<div class="empty">${esc(ex.message)}</div>`; });
+      on("#backupNow", "click", async () => { try { await api("/backups", { method: "POST" }); toast("Backup created."); loadBackups(); } catch (ex) { toast(ex.message); } });
+    }
+
+    // ---- My account ----
+    on("#revokeBtn", "click", async () => { try { await api("/sessions/revoke", { method: "POST" }); toast("All other devices have been signed out."); } catch (ex) { toast(ex.message); } });
+    on("#tfaSetup", "click", async () => {
+      try {
+        const { secret, uri } = await api("/2fa/setup", { method: "POST" });
+        $("#twofa").innerHTML = `<ol class="small">
+            <li>Install Google Authenticator or Microsoft Authenticator on your phone.</li>
+            <li>Tap <em>+</em> → <em>Enter a setup key</em>. Account: <strong>Tailbone Clinic</strong>, key: <code class="key">${esc(secret)}</code> (time-based).</li>
+            <li>Enter the 6-digit code the app shows:</li></ol>
+          <form class="toolbar" id="tfaForm"><div class="field"><input name="code" inputmode="numeric" maxlength="7" placeholder="123456" required></div><button class="btn btn--primary btn--sm">Turn on</button></form>
+          <p class="muted small">On a phone, you can also <a href="${esc(uri)}">open this link</a> to add it automatically.</p>`;
+        $("#tfaForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          try { await api("/2fa/enable", { method: "POST", body: { code: e.target.code.value } }); state.admin.twoFactor = true; toast("Two-factor sign-in is on."); route(); } catch (ex) { toast(ex.message); }
+        });
+      } catch (ex) { toast(ex.message); }
     });
-    const off = $("#tfaOff");
-    if (off) off.addEventListener("click", async () => {
+    on("#tfaOff", "click", async () => {
       const password = prompt("Your password:");
       if (!password) return;
       const code = prompt("Current 6-digit code:");
       if (!code) return;
       try { await api("/2fa/disable", { method: "POST", body: { password, code } }); state.admin.twoFactor = false; toast("Two-factor sign-in turned off."); route(); } catch (ex) { toast(ex.message); }
     });
+    on("#pwForm", "submit", async (e) => {
+      e.preventDefault();
+      try { await api("/password", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); e.target.reset(); toast("Password updated."); } catch (ex) { toast(ex.message); }
+    });
 
+    // ---- Fees & policies ----
     const pf = $("#policyForm");
+    if (!pf) return;
     const readPolicy = () => {
       const fd = new FormData(pf);
       const n = (k) => Number(fd.get(k));
-      return {
+      const body = {
         fees: { blr: n("fees.blr"), del: n("fees.del"), online: n("fees.online") },
         followup: { fee: n("followup.fee"), windowDays: n("followup.windowDays") },
         payments: { mode: fd.get("payments.mode") },
         cancellation: P.cancellation.map((_, i) => ({ hoursBefore: n(`cancel.${i}.hoursBefore`), refundPercent: n(`cancel.${i}.refundPercent`) })),
         reschedule: { minHoursBefore: n("reschedule.minHoursBefore"), maxTimes: n("reschedule.maxTimes") },
-        commission: { enabled: fd.get("commission.enabled") === "on", type: fd.get("commission.type"), value: n("commission.value"), doctorAccountId: fd.get("commission.doctorAccountId") },
       };
+      if (C) body.commission = { enabled: fd.get("commission.enabled") === "on", type: fd.get("commission.type"), value: n("commission.value"), doctorAccountId: fd.get("commission.doctorAccountId") };
+      return body;
     };
     const preview = () => {
+      if (!C) return;
       const p = readPolicy();
       const fee = p.fees.blr;
       const cut = !p.commission.enabled ? 0 : Math.min(fee, p.commission.type === "percent" ? Math.round((fee * p.commission.value) / 100) : p.commission.value);
@@ -1009,10 +1056,117 @@
       e.preventDefault();
       try { await api("/settings/policy", { method: "PUT", body: readPolicy() }); toast("Fees and policies saved. They apply to new bookings."); route(); } catch (ex) { toast(ex.message); }
     });
-    $("#pwForm").addEventListener("submit", async (e) => {
+  }
+
+  // ---------- Control panel (super admin): site features and dashboard users ----------
+  async function renderControl() {
+    const d = await api("/superadmin");
+    const permBoxes = (selected, name = "perm") => Object.entries(d.permissionInfo).map(([k, label]) =>
+      `<label class="check"><input type="checkbox" name="${name}" value="${k}" ${selected.includes(k) ? "checked" : ""}> ${esc(label)}</label>`).join("");
+    content.innerHTML = `
+      ${state.demo ? '<div class="alert alert--ok">Demo: you can look around, but changes here are disabled because they would affect every demo visitor.</div>' : ""}
+      <section class="panel-card">
+        <div class="panel-card__head"><h2>Website features</h2><span class="muted small">Switch parts of the site on or off. Changes apply immediately.</span></div>
+        <form id="featForm" class="toggles">
+          ${Object.entries(d.featureInfo).map(([k, f]) => `
+            <label class="toggle">
+              <input type="checkbox" name="${k}" ${d.features[k] ? "checked" : ""}>
+              <span class="toggle__switch" aria-hidden="true"></span>
+              <span class="toggle__text"><strong>${esc(f.label)}</strong><small>${esc(f.help)}</small></span>
+            </label>`).join("")}
+          <p class="muted small">Always on (required by law): privacy notice, data-rights requests, "download my data", consent records.</p>
+          <button class="btn btn--primary" type="submit">Save features</button>
+        </form>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-card__head"><h2>Dashboard users</h2><button class="btn btn--primary btn--sm" id="addUser" type="button">+ Add user</button></div>
+        <p class="muted small">Super admins can do everything, including this page, commission settings, backups and the security log. Admins only see the sections you tick for them.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>User</th><th>Role</th><th>Access</th><th>Status</th><th></th></tr></thead>
+          <tbody>${d.users.map((u) => `<tr>
+            <td><strong>${esc(u.name)}</strong>${u.id === state.admin.id ? ' <span class="badge">You</span>' : ""}<br><span class="muted">${esc(u.email)}</span></td>
+            <td>${u.role === "superadmin" ? '<span class="badge badge--completed">Super admin</span>' : '<span class="badge">Admin</span>'}</td>
+            <td class="small">${u.role === "superadmin" ? "Everything" : esc(u.permissions.map((p) => p).join(", ") || "Overview only")}</td>
+            <td class="small">${u.disabled ? badge("cancelled").replace("Cancelled", "Disabled") : badge("confirmed").replace("Confirmed", "Active")}
+              <br>${u.twoFactor ? "2FA on" : '<span class="trend-worse">2FA off</span>'}<br><span class="muted">Last sign-in: ${u.lastLoginAt ? esc(day(u.lastLoginAt)) : "never"}</span></td>
+            <td><div class="item__actions">
+              <button class="btn btn--ghost btn--sm" data-edit="${u.id}">Edit access</button>
+              <button class="btn btn--ghost btn--sm" data-reset="${u.id}">Reset password</button>
+              ${u.twoFactor ? `<button class="btn btn--ghost btn--sm" data-reset2fa="${u.id}">Reset 2FA</button>` : ""}
+              ${u.id !== state.admin.id ? `<button class="btn ${u.disabled ? "btn--primary" : "btn--danger"} btn--sm" data-toggle="${u.id}" data-disabled="${u.disabled ? 1 : 0}">${u.disabled ? "Enable" : "Disable"}</button>` : ""}
+            </div></td>
+          </tr>`).join("")}</tbody>
+        </table></div>
+      </section>`;
+
+    $("#featForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      try { await api("/password", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); e.target.reset(); toast("Password updated."); } catch (ex) { toast(ex.message); }
+      const body = Object.fromEntries(Object.keys(d.featureInfo).map((k) => [k, e.target[k].checked]));
+      try { await api("/superadmin/features", { method: "PUT", body }); toast("Features saved. The website updates straight away."); route(); } catch (ex) { toast(ex.message); }
     });
+
+    const showTemp = (email, pw) => {
+      openModal(`<h2>Temporary password</h2>
+        <p>Share this with <strong>${esc(email)}</strong> privately (in person or by phone call). It's shown only once.</p>
+        <p><code class="key" style="font-size:1.2rem">${esc(pw)}</code></p>
+        <p class="muted small">They should sign in at <strong>/admin</strong>, change it in Settings → Change my password, and turn on two-factor sign-in.</p>
+        <button class="btn btn--primary" type="button" id="okBtn">Done</button>`);
+      $("#okBtn").addEventListener("click", () => { closeModal(); route(); });
+    };
+
+    $("#addUser").addEventListener("click", () => {
+      openModal(`<h2>Add a dashboard user</h2>
+        <form class="form" id="userForm">
+          <div class="field-row">
+            <div class="field"><label>Name</label><input name="name" required></div>
+            <div class="field"><label>Email</label><input name="email" type="email" required></div>
+          </div>
+          <div class="field"><label>Role</label><select name="role"><option value="admin">Admin (only the sections ticked below)</option><option value="superadmin">Super admin (everything)</option></select></div>
+          <fieldset class="field"><legend>Sections this admin can open</legend><div class="perm-grid">${permBoxes(d.defaultPermissions)}</div></fieldset>
+          <button class="btn btn--primary btn--block">Create user</button>
+        </form>`);
+      $("#userForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        try {
+          const res = await api("/superadmin/users", { method: "POST", body: { name: fd.get("name"), email: fd.get("email"), role: fd.get("role"), permissions: fd.getAll("perm") } });
+          showTemp(res.email, res.temporaryPassword);
+        } catch (ex) { toast(ex.message); }
+      });
+    });
+
+    const byId = Object.fromEntries(d.users.map((u) => [u.id, u]));
+    $$("[data-edit]").forEach((b) => b.addEventListener("click", () => {
+      const u = byId[b.dataset.edit];
+      openModal(`<h2>Access for ${esc(u.name)}</h2>
+        <form class="form" id="accessForm">
+          <div class="field"><label>Role</label><select name="role"><option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option><option value="superadmin" ${u.role === "superadmin" ? "selected" : ""}>Super admin</option></select></div>
+          <fieldset class="field"><legend>Sections (admins only; super admins see everything)</legend><div class="perm-grid">${permBoxes(u.permissions)}</div></fieldset>
+          <button class="btn btn--primary btn--block">Save access</button>
+        </form>`);
+      $("#accessForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        try { await api(`/superadmin/users/${u.id}`, { method: "PATCH", body: { role: fd.get("role"), permissions: fd.getAll("perm") } }); closeModal(); toast("Access updated. It applies on their next click."); route(); } catch (ex) { toast(ex.message); }
+      });
+    }));
+    $$("[data-reset]").forEach((b) => b.addEventListener("click", async () => {
+      const u = byId[b.dataset.reset];
+      if (!confirm(`Reset ${u.name}'s password? They'll be signed out everywhere.`)) return;
+      try { const res = await api(`/superadmin/users/${u.id}`, { method: "PATCH", body: { resetPassword: true } }); showTemp(u.email, res.temporaryPassword); } catch (ex) { toast(ex.message); }
+    }));
+    $$("[data-reset2fa]").forEach((b) => b.addEventListener("click", async () => {
+      const u = byId[b.dataset.reset2fa];
+      if (!confirm(`Turn off two-factor sign-in for ${u.name}? Use this if they lost their phone; ask them to set it up again.`)) return;
+      try { await api(`/superadmin/users/${u.id}`, { method: "PATCH", body: { reset2fa: true } }); toast("Two-factor reset."); route(); } catch (ex) { toast(ex.message); }
+    }));
+    $$("[data-toggle]").forEach((b) => b.addEventListener("click", async () => {
+      const u = byId[b.dataset.toggle];
+      const disable = b.dataset.disabled === "0";
+      if (disable && !confirm(`Disable ${u.name}? They're signed out immediately and can't sign in.`)) return;
+      try { await api(`/superadmin/users/${u.id}`, { method: "PATCH", body: { disabled: disable } }); toast(disable ? "User disabled." : "User enabled."); route(); } catch (ex) { toast(ex.message); }
+    }));
   }
 
   // ---------- Chrome ----------

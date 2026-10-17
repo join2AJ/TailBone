@@ -6,6 +6,7 @@ import { encrypt, decryptFields } from "./crypto.js";
 import { getPolicy, priceFor, refundQuote } from "./policy.js";
 import { paymentsEnabled, refundPayment, rupees } from "./payments.js";
 import { notify } from "./notify.js";
+import { isOn } from "./features.js";
 
 export class HttpError extends Error {
   constructor(status, message) {
@@ -164,7 +165,7 @@ export function createAppointment(db, data, { source = "web", status = "pending"
         if (active >= 3) throw new HttpError(409, "You already have several upcoming bookings. Please manage them from 'My appointments' or call us.");
       }
       const price = priceFor(db, policy, { clinic: data.clinic, patientId, date: data.date });
-      const payOnline = source === "web" && paymentsEnabled() && policy.payments.mode === "online" && price.fee > 0;
+      const payOnline = source === "web" && paymentsEnabled() && policy.payments.mode === "online" && isOn(db, "online_payments") && price.fee > 0;
       const split = payOnline && policy.commission.enabled && policy.commission.doctorAccountId ? price.platformFee : 0;
       const paymentStatus = payOnline ? "awaiting" : price.fee > 0 ? "pay_at_clinic" : "unpaid";
       const holdUntil = payOnline ? new Date(Date.now() + policy.holdMinutes * 60_000).toISOString().replace("T", " ").slice(0, 19) : null;

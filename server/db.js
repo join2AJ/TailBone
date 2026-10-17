@@ -210,6 +210,9 @@ const MIGRATIONS = {
     failed_logins: "INTEGER NOT NULL DEFAULT 0",
     locked_until: "TEXT",
     last_login_at: "TEXT",
+    role: "TEXT NOT NULL DEFAULT 'admin'",                 // superadmin | admin
+    permissions: "TEXT",                                   // JSON array of dashboard sections (admins only)
+    disabled: "INTEGER NOT NULL DEFAULT 0",
   },
   patients: {
     anonymised_at: "TEXT",
@@ -227,6 +230,10 @@ export function openDb(file = config.dbFile) {
     }
   }
   db.exec("CREATE INDEX IF NOT EXISTS idx_appt_order ON appointments(payment_order_id)");
+  // There must always be a super admin: promote the first account if none exists (upgrades, first run).
+  if (!db.prepare("SELECT 1 FROM admins WHERE role = 'superadmin' AND disabled = 0").get()) {
+    db.prepare("UPDATE admins SET role = 'superadmin' WHERE id = (SELECT MIN(id) FROM admins WHERE disabled = 0)").run();
+  }
   return db;
 }
 

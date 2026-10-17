@@ -369,6 +369,11 @@
   api("/api/config").then((cfg) => {
     siteCfg = cfg;
     if (cfg.demo) showDemoBar();
+    applyFeatures(cfg.features || {});
+    if (cfg.features && cfg.features.online_booking === false) {
+      showFallback(); // booking switched off by the super admin → WhatsApp request form
+      if (dayStrip.querySelector(".day")) loadDays();
+    }
     const list = $("#policyList");
     [...cfg.policy.cancellation, cfg.policy.reschedule, cfg.policy.clinic].forEach((line) => {
       const li = document.createElement("li");
@@ -550,6 +555,14 @@
       bookBtn.classList.remove("is-loading");
     }
   });
+
+  // Parts of the site the super admin has switched off. Router-hidden sections stay hidden either way.
+  function applyFeatures(features) {
+    $$("[data-feature]").forEach((el) => {
+      const off = features[el.dataset.feature] === false;
+      el.classList.toggle("feature-off", off);
+    });
+  }
 
   function showDemoBar() {
     if ($("#demoBar")) return;

@@ -8,6 +8,8 @@ import { config } from "../config.js";
 import { exportPatientData, erasePatient, readDataRequest, recordConsent, NOTICE_VERSION } from "../privacy.js";
 import { createBackup, listBackups } from "../backup.js";
 import { DEMO_ADMIN } from "../demo.js";
+import { FEATURES, PERMISSIONS, DEFAULT_PERMISSIONS, getFeatures, saveFeatures, permissionsOf, sanitizePermissions } from "../features.js";
+import crypto from "node:crypto";
 import path from "node:path";
 import fs from "node:fs";
 import { clinicNow, addDays, isDate } from "../time.js";
@@ -40,6 +42,10 @@ export function adminRoutes(db) {
     if (admin?.locked_until && admin.locked_until > new Date().toISOString()) {
       securityLog(db, req, "login_blocked_locked", email, null);
       throw new HttpError(423, `Too many failed attempts. The account is locked for up to ${LOCKOUT.minutes} minutes.`);
+    }
+    if (admin?.disabled) {
+      securityLog(db, req, "login_blocked_disabled", email, null);
+      throw new HttpError(403, "This account has been disabled. Contact the super admin.");
     }
     const passwordOk = !!admin && verifyPassword(String(req.body.password || ""), admin.password_hash);
     if (!passwordOk) {
@@ -87,12 +93,34 @@ export function adminRoutes(db) {
   const DEMO_BLOCKED = [/^\/password$/, /^\/2fa\//, /^\/sessions\/revoke$/, /^\/backups/];
   r.use((req, res, next) => {
     if (config.demo && DEMO_BLOCKED.some((rx) => rx.test(req.path))) return res.status(403).json({ error: "Disabled in the demo." });
+    if (config.demo && req.path.startsWith("/superadmin") && req.method !== "GET") return res.status(403).json({ error: "Viewing only in the demo: changes here would affect every demo visitor." });
+    next();
+  });
+
+  // Section permissions. The super admin can do everything; other admins only what was granted.
+  const RULES = [
+    [/^\/superadmin/, "superadmin"], [/^\/backups/, "superadmin"], [/^\/security\/log/, "superadmin"],
+    [/^\/appointments\/\d+\/refund$/, "payments"],
+    [/^\/patients\/\d+\/(export|erase)$/, "privacy"],
+    [/^\/appointments/, "appointments"], [/^\/followups/, "followups"], [/^\/patients/, "patients"],
+    [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"],
+    [/^\/payments/, "payments"], [/^\/privacy/, "privacy"],
+    [/^\/settings\/policy$/, "settings", "PUT"], [/^\/blocked/, "settings"],
+    [/^\/export/, "export"],
+  ];
+  r.use((req, res, next) => {
+    req.perms = permissionsOf(req.admin);
+    const rule = RULES.find(([rx, , method]) => rx.test(req.path) && (!method || method === req.method));
+    if (rule && !req.perms.includes(rule[1])) {
+      return res.status(403).json({ error: rule[1] === "superadmin" ? "Only the super admin can do this." : "You don't have access to this section. Ask the super admin." });
+    }
     next();
   });
 
   r.get("/me", (req, res) => res.json({
     demo: config.demo,
-    admin: { id: req.admin.id, email: req.admin.email, name: req.admin.name, twoFactor: !!req.admin.totp_enabled },
+    admin: { id: req.admin.id, email: req.admin.email, name: req.admin.name, twoFactor: !!req.admin.totp_enabled, role: req.admin.role, permissions: req.perms },
+    features: getFeatures(db),
     clinics: Object.values(CLINICS),
     today: clinicNow().date,
   }));
@@ -141,6 +169,86 @@ export function adminRoutes(db) {
     db.prepare("UPDATE admins SET totp_enabled = 0, totp_secret = NULL WHERE id = ?").run(req.admin.id);
     securityLog(db, req, "2fa_disabled");
     res.json({ ok: true });
+  });
+
+  // ---------- Super admin: features and users ----------
+  const userView = (a) => ({
+    id: a.id, email: a.email, name: a.name, role: a.role, disabled: !!a.disabled, twoFactor: !!a.totp_enabled,
+    lastLoginAt: a.last_login_at, createdAt: a.created_at, permissions: permissionsOf(a).filter((p) => p !== "superadmin"),
+  });
+  const activeSupers = () => db.prepare("SELECT COUNT(*) n FROM admins WHERE role = 'superadmin' AND disabled = 0").get().n;
+  const tempPassword = () => crypto.randomBytes(9).toString("base64url");
+
+  r.get("/superadmin", (req, res) => {
+    res.json({
+      features: getFeatures(db),
+      featureInfo: FEATURES,
+      permissionInfo: PERMISSIONS,
+      defaultPermissions: DEFAULT_PERMISSIONS,
+      users: db.prepare("SELECT * FROM admins ORDER BY role DESC, name").all().map(userView),
+    });
+  });
+
+  r.put("/superadmin/features", (req, res) => {
+    const before = getFeatures(db);
+    const features = saveFeatures(db, req.body);
+    const changed = Object.keys(features).filter((k) => features[k] !== before[k]).map((k) => `${k}=${features[k] ? "on" : "off"}`);
+    if (changed.length) securityLog(db, req, "features_changed", changed.join(", "));
+    res.json({ features });
+  });
+
+  r.post("/superadmin/users", (req, res) => {
+    const email = cleanText(req.body.email, 200).toLowerCase();
+    const name = cleanText(req.body.name, 120);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, "Enter a valid email address.");
+    if (name.length < 2) throw new HttpError(400, "Enter the person's name.");
+    const role = req.body.role === "superadmin" ? "superadmin" : "admin";
+    const perms = JSON.stringify(sanitizePermissions(req.body.permissions ?? DEFAULT_PERMISSIONS));
+    const password = tempPassword();
+    try {
+      db.prepare("INSERT INTO admins (email, name, password_hash, role, permissions) VALUES (?, ?, ?, ?, ?)").run(email, name, hashPassword(password), role, perms);
+    } catch (err) {
+      if (String(err.message).includes("UNIQUE")) throw new HttpError(409, "A user with that email already exists.");
+      throw err;
+    }
+    securityLog(db, req, "user_created", `${email} (${role})`);
+    res.status(201).json({ email, temporaryPassword: password });
+  });
+
+  r.patch("/superadmin/users/:id", (req, res) => {
+    const uid = id(req.params.id);
+    const user = db.prepare("SELECT * FROM admins WHERE id = ?").get(uid);
+    if (!user) throw new HttpError(404, "User not found.");
+    const isLastSuper = user.role === "superadmin" && !user.disabled && activeSupers() <= 1;
+    const changes = [];
+    if (req.body.role !== undefined && req.body.role !== user.role) {
+      if (!["superadmin", "admin"].includes(req.body.role)) throw new HttpError(400, "Invalid role.");
+      if (isLastSuper) throw new HttpError(409, "There must always be at least one super admin.");
+      db.prepare("UPDATE admins SET role = ?, session_version = session_version + 1 WHERE id = ?").run(req.body.role, uid);
+      changes.push(`role=${req.body.role}`);
+    }
+    if (req.body.permissions !== undefined) {
+      db.prepare("UPDATE admins SET permissions = ? WHERE id = ?").run(JSON.stringify(sanitizePermissions(req.body.permissions)), uid);
+      changes.push("permissions");
+    }
+    if (req.body.disabled !== undefined && !!req.body.disabled !== !!user.disabled) {
+      if (req.body.disabled && uid === req.admin.id) throw new HttpError(409, "You can't disable your own account.");
+      if (req.body.disabled && isLastSuper) throw new HttpError(409, "There must always be at least one super admin.");
+      db.prepare("UPDATE admins SET disabled = ?, session_version = session_version + 1 WHERE id = ?").run(req.body.disabled ? 1 : 0, uid);
+      changes.push(req.body.disabled ? "disabled" : "enabled");
+    }
+    let temporaryPassword = null;
+    if (req.body.resetPassword) {
+      temporaryPassword = tempPassword();
+      db.prepare("UPDATE admins SET password_hash = ?, failed_logins = 0, locked_until = NULL, session_version = session_version + 1 WHERE id = ?").run(hashPassword(temporaryPassword), uid);
+      changes.push("password reset");
+    }
+    if (req.body.reset2fa) {
+      db.prepare("UPDATE admins SET totp_enabled = 0, totp_secret = NULL WHERE id = ?").run(uid);
+      changes.push("2FA reset");
+    }
+    if (changes.length) securityLog(db, req, "user_updated", `${user.email}: ${changes.join(", ")}`);
+    res.json({ user: userView(db.prepare("SELECT * FROM admins WHERE id = ?").get(uid)), temporaryPassword });
   });
 
   // ---------- Security log ----------
@@ -411,11 +519,16 @@ export function adminRoutes(db) {
 
   // ---------- Fees & policies ----------
   r.get("/settings/policy", (req, res) => {
-    res.json({ policy: getPolicy(db), summary: policySummary(getPolicy(db)), paymentsEnabled: paymentsEnabled(), whatsappApi: whatsappApiEnabled() });
+    const policy = getPolicy(db);
+    if (req.admin.role !== "superadmin") delete policy.commission;
+    res.json({ policy, summary: policySummary(getPolicy(db)), paymentsEnabled: paymentsEnabled(), whatsappApi: whatsappApiEnabled() });
   });
 
   r.put("/settings/policy", (req, res) => {
-    const policy = savePolicy(db, req.body);
+    const input = { ...req.body };
+    if (req.admin.role !== "superadmin") delete input.commission; // only the super admin sets the platform fee
+    const policy = savePolicy(db, input);
+    if (req.admin.role !== "superadmin") delete policy.commission;
     securityLog(db, req, "settings_changed", "fees & policies");
     res.json({ policy, summary: policySummary(policy) });
   });

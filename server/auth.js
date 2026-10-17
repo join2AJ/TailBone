@@ -72,11 +72,11 @@ export function readSession(req) {
 
 /** Express middleware: require a signed-in admin. Also blocks cross-site state changes. */
 export function requireAdmin(db) {
-  const findAdmin = db.prepare("SELECT id, email, name, session_version, totp_enabled FROM admins WHERE id = ?");
+  const findAdmin = db.prepare("SELECT id, email, name, session_version, totp_enabled, role, permissions, disabled FROM admins WHERE id = ?");
   return (req, res, next) => {
     const session = readSession(req);
     const admin = session && findAdmin.get(session.aid);
-    if (!admin || admin.session_version !== session.sv) {
+    if (!admin || admin.disabled || admin.session_version !== session.sv) {
       if (session) clearSessionCookie(res);
       return res.status(401).json({ error: "Your session has ended. Please sign in again." });
     }

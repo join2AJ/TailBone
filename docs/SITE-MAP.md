@@ -43,8 +43,29 @@ tailbone.netlify.app
 ├── #/instagram           Choose the reels and posts shown on /treatment
 ├── #/payments            Collected · refunded · net · doctor's share / platform fee
 ├── #/privacy             Data-rights requests with 30-day deadlines
-└── #/settings            Fees and refund rules · commission split · holidays · CSV export · password · 2FA · backups · security log
+├── #/settings            My password and 2FA · fees and refund rules · holidays · CSV export (by permission)
+│                         + commission split, backups, security log (super admin only)
+└── #/control             ★ Super admin only: switch website features on or off · add, disable or reset users · choose each admin's sections
 ```
+
+## Who can do what
+
+| Role | Access |
+|---|---|
+| **Super admin** (the platform owner; the first account, from `ADMIN_EMAIL`) | Everything, plus the Control panel, commission settings, backups and the security log. There is always at least one super admin. |
+| **Admin** (e.g. Dr Rajveer, front desk) | Overview and their own password and 2FA, plus only the sections the super admin ticks: appointments, follow-ups, patients, inbox, stories, Instagram, payments, privacy, settings, export. |
+
+**Website features the super admin can switch off:**
+- online booking (the Book page then sends a WhatsApp request)
+- online payments
+- patient reschedule/cancel
+- follow-up check-ins
+- stories
+- Instagram
+- the symptom checker
+- the WhatsApp bubble
+
+Privacy rights (the notice, requests and "download my data") always stay on.
 
 ## API (used by the pages; not for visitors)
 
@@ -57,7 +78,8 @@ tailbone.netlify.app
 ├── checkin/:token                                     follow-up check-in
 ├── stories · media                                    published stories, Instagram posts
 ├── privacy/request                                    data-rights request
-└── admin/*                                            dashboard (sign-in required)
+├── admin/*                                            dashboard (sign-in required, per-section permissions)
+└── admin/superadmin/*                                 features and users (super admin only)
 ```
 
 ## Demo mode (`DEMO_MODE=true`, a separate sample database that resets every 24 h)

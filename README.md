@@ -15,6 +15,12 @@ The website and clinic system for [tailbonetreatment.com](https://tailbonetreatm
   - 2FA, lockout and the security log
   - encrypted daily backups
 
+- **Super admin control panel:**
+  - switch website features on or off
+  - add, disable or reset dashboard users
+  - choose which sections each admin can open
+  - commission, backups and the security log are super admin only
+
 **Deploying to Netlify? Start with [DEPLOY.md](DEPLOY.md).** · **Site tree: [docs/SITE-MAP.md](docs/SITE-MAP.md).** · **Demo with one-click doctor and patient logins: `DEMO_MODE=true` (see DEPLOY.md).**
 
 Docs:

@@ -18,7 +18,7 @@ export function seedDemo(db) {
   try {
     for (const t of TABLES) db.exec(`DELETE FROM ${t}`);
     // Unusable random password: the demo admin can only sign in with the demo button.
-    db.prepare("INSERT INTO admins (email, name, password_hash) VALUES (?, ?, ?)")
+    db.prepare("INSERT INTO admins (email, name, password_hash, role) VALUES (?, ?, ?, 'superadmin')")
       .run(DEMO_ADMIN.email, DEMO_ADMIN.name, hashPassword(crypto.randomBytes(24).toString("hex")));
 
     const today = clinicNow().date;

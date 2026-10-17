@@ -30,7 +30,7 @@ Also choose the admin email and a strong password (12+ characters).
    |---|---|
    | `SITE_URL` | `https://tailbone.netlify.app` (later your own domain) |
    | `ENCRYPTION_KEY` | the value from step 1 |
-   | `ADMIN_EMAIL` | the doctor's email |
+   | `ADMIN_EMAIL` | **your** email: this first account is the **super admin** (all features, users, commission) |
    | `ADMIN_PASSWORD` | a strong password (change it after the first login) |
    | Razorpay, WhatsApp, Resend keys | **leave empty for now**: the site then uses pay-at-clinic and one-tap WhatsApp |
 
@@ -53,11 +53,11 @@ Also choose the admin email and a strong password (12+ characters).
    - **Account security → Set up two-factor sign-in** (Google or Microsoft Authenticator).
    - **Fees, payments & policies:** check the fees and refund rules.
    - **Backups → Back up now**, then **Download**. Store it on an encrypted drive.
-3. For each additional staff member, run this in the Render **Shell**:
-   ```bash
-   npm run admin:create -- staff@example.com "Staff Name"
-   ```
-   Each person must set up their own 2FA.
+3. Go to **Control panel**:
+   - **+ Add user** for Dr Rajveer (role *Admin*). Tick the sections he should see, such as appointments, follow-ups, patients, inbox, stories, payments, privacy and settings.
+   - Share the temporary password privately. Each person changes it and turns on 2FA.
+   - Switch website features on or off as needed (e.g. turn **Online payments** on only after Razorpay is live).
+4. Locked out? In the Render **Shell**, run `npm run admin:create -- you@example.com "Your Name" --super`. It resets the password and unlocks the account.
 
 ## Step 5: Monitoring (3 min)
 - At **uptimerobot.com** (free), add an HTTP monitor for `https://tailbone.netlify.app/api/health` every 5 minutes, with alerts to the doctor's phone or email.

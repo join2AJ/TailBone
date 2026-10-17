@@ -5,11 +5,11 @@ import { hashPassword } from "./auth.js";
 import { publicRoutes } from "./routes/public.js";
 import { adminRoutes } from "./routes/admin.js";
 
-/** Create the first admin from ADMIN_EMAIL / ADMIN_PASSWORD if there are none yet. */
-export function seedAdmin(db, { email = config.adminEmail, password = config.adminPassword, name = "Clinic Admin" } = {}) {
+/** Create the first account (the super admin) from ADMIN_EMAIL / ADMIN_PASSWORD if there are none yet. */
+export function seedAdmin(db, { email = config.adminEmail, password = config.adminPassword, name = "Super Admin" } = {}) {
   const count = db.prepare("SELECT COUNT(*) n FROM admins").get().n;
   if (count > 0 || !email || !password) return false;
-  db.prepare("INSERT INTO admins (email, name, password_hash) VALUES (?, ?, ?)").run(email, name, hashPassword(password));
+  db.prepare("INSERT INTO admins (email, name, password_hash, role) VALUES (?, ?, ?, 'superadmin')").run(email, name, hashPassword(password));
   return true;
 }
 

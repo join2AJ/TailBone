@@ -7,6 +7,7 @@ import { getPolicy, policySummary, refundQuote, rescheduleCheck } from "../polic
 import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, verifyWebhookSignature, rupees } from "../payments.js";
 import { notify } from "../notify.js";
 import { DEMO_PATIENT } from "../demo.js";
+import { getFeatures, isOn } from "../features.js";
 import { recordConsent, withdrawConsent, exportPatientData, createDataRequest, NOTICE_VERSION, CONSENT_PURPOSES } from "../privacy.js";
 import {
   HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment,
@@ -38,7 +39,8 @@ export function publicRoutes(db) {
       fee: a.fee,
       feeText: a.fee ? rupees(a.fee) : "",
       payment: { status: a.payment_status, paid: a.amount_paid, refunded: a.amount_refunded },
-      canChange: open && a.payment_status !== "awaiting",
+      canChange: open && a.payment_status !== "awaiting" && isOn(db, "patient_self_service"),
+      selfService: isOn(db, "patient_self_service"),
       cancelQuote: open && a.amount_paid ? refundQuote(a, policy) : null,
       reschedule: open ? rescheduleCheck(a, policy) : { allowed: false },
       manageUrl: `${siteUrl(req)}/manage.html?ref=${a.ref}`,
@@ -55,10 +57,11 @@ export function publicRoutes(db) {
       today: clinicNow().date,
       fees: policy.fees,
       followup: policy.followup,
-      payOnline: paymentsEnabled() && policy.payments.mode === "online",
+      payOnline: paymentsEnabled() && policy.payments.mode === "online" && isOn(db, "online_payments"),
       policy: policySummary(policy),
       privacy: { noticeVersion: NOTICE_VERSION, purposes: CONSENT_PURPOSES },
       demo: config.demo ? { patient: { ref: DEMO_PATIENT.ref, phone: DEMO_PATIENT.phone } } : null,
+      features: getFeatures(db),
     });
   });
 
@@ -73,6 +76,7 @@ export function publicRoutes(db) {
   r.post("/appointments", bookingLimit, async (req, res) => {
     if (req.body.website) throw new HttpError(400, "Invalid submission."); // honeypot field
     // DPDP s.6 / GDPR Art. 7 & 9: explicit, informed consent before processing health information.
+    if (!isOn(db, "online_booking")) throw new HttpError(403, "Online booking is turned off. Please WhatsApp or call the clinic.");
     if (req.body.consent !== true) throw new HttpError(400, "Please agree to the privacy notice so we can book and treat you.");
     const data = parseBooking(req.body);
     const appt = createAppointment(db, data, { source: "web" });
@@ -224,12 +228,14 @@ export function publicRoutes(db) {
   ).get(cleanText(token, 64));
 
   r.get("/checkin/:token", lookupLimit, (req, res) => {
+    if (!isOn(db, "followup_checkins")) throw new HttpError(404, "Online check-ins are turned off. Please WhatsApp the clinic.");
     const fu = findFollowup(req.params.token);
     if (!fu) throw new HttpError(404, "This check-in link is not valid.");
     res.json({ firstName: fu.patient_name.split(" ")[0], dueDate: fu.due_date, done: fu.status !== "pending" });
   });
 
   r.post("/checkin/:token", lookupLimit, (req, res) => {
+    if (!isOn(db, "followup_checkins")) throw new HttpError(404, "Online check-ins are turned off. Please WhatsApp the clinic.");
     const fu = findFollowup(req.params.token);
     if (!fu) throw new HttpError(404, "This check-in link is not valid.");
     if (fu.status !== "pending") throw new HttpError(409, "Thanks, we've already received this check-in.");
@@ -248,6 +254,7 @@ export function publicRoutes(db) {
   const storyLimit = rateLimit({ windowMs: 60 * 60_000, max: 5, message: "Thanks! You've already shared a story recently." });
 
   r.get("/stories", (req, res) => {
+    if (!isOn(db, "stories")) return res.json({ stories: [], total: 0, average: null, disabled: true });
     const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 60);
     const offset = Math.max(Number(req.query.offset) || 0, 0);
     const rows = db.prepare(
@@ -263,6 +270,7 @@ export function publicRoutes(db) {
   });
 
   r.post("/stories", storyLimit, (req, res) => {
+    if (!isOn(db, "stories")) throw new HttpError(403, "Story sharing is currently turned off.");
     if (req.body.website) throw new HttpError(400, "Invalid submission.");
     const name = cleanText(req.body.name, 80);
     const body = cleanText(req.body.body, 2000);
@@ -278,6 +286,7 @@ export function publicRoutes(db) {
 
   // ---------- Instagram highlights ----------
   r.get("/media", (req, res) => {
+    if (!isOn(db, "instagram")) return res.json({ media: [] });
     res.json({ media: db.prepare("SELECT id, url, kind, caption FROM media WHERE visible = 1 ORDER BY sort, id DESC LIMIT 12").all() });
   });
 

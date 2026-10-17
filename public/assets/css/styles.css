@@ -674,3 +674,7 @@ html[data-route="book"] .mbar__primary { opacity: .6; pointer-events: none; }
 .demo-login { display: grid; gap: .6rem; margin-top: var(--space-2); }
 .demo-login__or { display: flex; align-items: center; gap: .8rem; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; }
 .demo-login__or::before, .demo-login__or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* Switched off by the super admin */
+.feature-off { display: none !important; }
+.two-col:has(> .feature-off) { grid-template-columns: minmax(0, 1fr); }

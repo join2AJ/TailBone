@@ -32,7 +32,11 @@
     if (!token) return show("invalid");
     try {
       const res = await fetch(`/api/checkin/${encodeURIComponent(token)}`);
-      if (!res.ok) return show("invalid");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error && /turned off/.test(data.error)) $("#invalid p").textContent = data.error;
+        return show("invalid");
+      }
       const data = await res.json();
       if (data.done) return thanks("We've already received this check-in. Thank you!");
       $("#hello").textContent = `Hi ${data.firstName}, how are you feeling?`;

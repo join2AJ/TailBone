@@ -61,6 +61,10 @@
     $("#reschedBtn").hidden = !rs.allowed;
     $("#reschedNote").hidden = !current.canChange || rs.allowed;
     $("#reschedNote").textContent = rs.reason || "";
+    if (current.selfService === false && ["pending", "confirmed"].includes(current.status)) {
+      $("#reschedNote").hidden = false;
+      $("#reschedNote").textContent = "To change or cancel this appointment, please call or WhatsApp the clinic on +91 98866 88323.";
+    }
     $("#reschedPanel").hidden = true;
     $("#cancelPanel").hidden = true;
     const msg = $("#resultMsg");
