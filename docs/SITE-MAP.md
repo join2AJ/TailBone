@@ -20,7 +20,8 @@ tailbone.netlify.app
 │     └── no server reachable → same form sends a WhatsApp request
 │
 ├── /blog/                Articles (built from content/blog/*.md with `npm run build:blog`)
-│     └── /blog/<slug>.html one article: animated explainer(s), sources, disclaimer, Book / WhatsApp
+│     └── /blog/<slug>.html one article (16: 4 new + 12 by Dr Rajveer from the old site): author, sources, Book / WhatsApp
+├── /press.html           In the news: 11 newspaper clippings (2013–2016)
 │
 ├── /stories.html         All patient stories + "Share your story" form
 ├── /manage.html          My appointments (booking reference + phone)
@@ -33,7 +34,8 @@ tailbone.netlify.app
 ├── /privacy.html         Privacy notice (DPDP / GDPR) + data-rights request form
 ├── /404.html             Page not found
 │
-├── /sitemap.xml · /robots.txt · /.well-known/security.txt
+├── /sitemap.xml · /robots.txt · /llms.txt · /llms-full.txt · /.well-known/security.txt
+├── Old tailbonetreatment.com addresses → 301 to the matching new page (public/_redirects)
 └── Always available:     top bar (open/closed now, My appointments) · menu (Tailbone pain · Treatment · Doctor · Blog ·
                           Clinics · Book) · floating WhatsApp · phone bottom bar (Call · WhatsApp · Book)
 ```

@@ -11,7 +11,8 @@ The website and clinic system for [tailbonetreatment.com](https://tailbonetreatm
 - **Google Calendar:** bookings sync to the doctor's calendar both ways (his busy times block slots), plus a private subscription link. See DEPLOY.md.
 - **Blog:** articles live as Markdown in `content/blog/`. Run `npm run build` to publish them to `/blog/`. Add a line `::anim sitting` (or `cushion`, `pregnancy`, `red-flags`, `visit-steps`) to place an animated explainer.
 - **Animated explainers** (`content/animations/`): lightweight SVG animations used on the homepage and in the blog, with a pause button and a still frame for reduced motion. `resources/videos/` has the same animations as MP4s for YouTube, Instagram and Google Ads.
-- **One footer** (in `public/index.html`), copied to every page by `npm run build`.
+- **One source for the pages:** `content/site.html` holds every short page; `npm run build` turns it into a separate file per page (own title, description, canonical link, structured data), plus the blog, the press page, the sitemap, `robots.txt`, `llms.txt` and the old-site redirects. Commit the output in `public/`.
+- **SEO and AI assistants:** see [docs/SEO-AND-AI-VISIBILITY.md](docs/SEO-AND-AI-VISIBILITY.md).
 - **Payments** go through Razorpay, with an optional automatic commission split (Route), policy-based refunds and automatic notifications both ways.
 
 - **Security & privacy controls** for ISO 27001 / 22301 / 31000, NIST CSF, DPDP and GDPR:
@@ -138,6 +139,6 @@ The app is a single Node process plus one SQLite file, so it needs a **persisten
 Set `SITE_URL` to the public URL so links in WhatsApp messages are correct. Back up the `data/` folder regularly, since it holds all patient records.
 
 ## Customising
-- Clinics, hours and slot length: `server/config.js` (and the hours list in `public/index.html`).
+- Clinics, hours and slot length: `server/config.js` (and the hours list in `content/site.html`, then `npm run build`).
 - WhatsApp message wording: `messages()` and `checkinMessage()` in `server/services.js`.
 - Phone and WhatsApp number: `WHATSAPP_NUMBER` in `.env`, and the links in `public/*.html`.
