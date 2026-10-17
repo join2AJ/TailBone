@@ -7,6 +7,7 @@ test("blog markdown escapes HTML and only allows safe links", () => {
   const html = markdown("Hi <script>x</script> **bold** [ok](https://nhs.uk) [bad](javascript:alert(1))\n\n- a\n- b\n\n1. one");
   assert.ok(!html.includes("<script>"));
   assert.ok(html.includes("<strong>bold</strong>"));
+  assert.equal(markdown("the *and* part, 2*3*4"), "<p>the <em>and</em> part, 2*3*4</p>");
   assert.ok(html.includes('<a href="https://nhs.uk" target="_blank" rel="noopener">ok</a>'));
   assert.ok(!html.includes("javascript:"));
   assert.ok(html.includes("<ul><li>a</li><li>b</li></ul>") && html.includes("<ol><li>one</li></ol>"));
@@ -85,5 +86,20 @@ test("old WordPress addresses redirect permanently to the new pages", async () =
     assert.ok(fs.readFileSync("public/_redirects", "utf8").split("\n").every((l) => !/^\/faq\s/.test(l)), "no self-redirects for Netlify");
   } finally {
     srv.close();
+  }
+});
+
+test("article tables, figures and citations", () => {
+  const html = markdown("| A | B |\n|---|---|\n| x | <y> |\nTable: Cap\n\n::anim treatment-ladder");
+  assert.ok(html.includes("<caption>Cap</caption>") && html.includes('<th scope="row">x</th><td>&lt;y&gt;</td>'));
+  assert.ok(html.includes('data-anim="treatment-ladder"'));
+  const posts = loadPosts();
+  const internal = new Set(posts.map((p) => `/blog/${p.meta.slug}.html`));
+  for (const p of posts) {
+    for (const [, href] of p.body.matchAll(/\]\((\/blog\/[^)\s]+)\)/g)) assert.ok(internal.has(href), `${p.meta.slug} links to missing ${href}`);
+    if (/^## Sources/m.test(p.body) && p.meta.tags?.includes("Research")) {
+      const built = fs.readFileSync(`public/blog/${p.meta.slug}.html`, "utf8");
+      assert.ok(built.includes('"citation"'), `${p.meta.slug} has no citations in its structured data`);
+    }
   }
 });

@@ -15,6 +15,14 @@ export const ANIMS = {
   cushion: { caption: "On a flat seat the tailbone takes pressure; a cut-out cushion lets it float free.", still: 6 },
   pregnancy: { caption: "How childbirth can push the coccyx backwards, and how hands-on treatment helps it move normally again.", still: 5 },
   "red-flags": { caption: "When to use self-care, when to book a specialist, and when to see a doctor urgently.", still: 7 },
+  "coccyx-types": { caption: "The four coccyx shapes described by Postacchini and Massobrio (1983), seen from the side. Types II–IV are more common in people with tailbone pain.", still: 9 },
+  "bmi-pelvis": { caption: "How body weight changes the way the pelvis tilts when you sit, and what that does to the coccyx (after Maigne et al., 2000).", still: 4 },
+  "women-5x": { caption: "Women develop coccydynia about five times as often as men (Lirette et al., 2014; Garg and Ahuja, 2020).", still: 7 },
+  "study-groups": { caption: "Tailbone pain in specific groups that were studied. These are not population rates. Sources: Deniz 2014, Fatima 2025, Sanobar 2024, Neville 2022.", still: 5 },
+  "pelvic-floor": { caption: "Pelvic-floor findings in women with pelvic pain, with and without coccydynia (Neville et al., 2022, n = 127).", still: 5 },
+  "treatment-ladder": { caption: "Coccydynia is treated step by step. About 9 in 10 people improve with the first, non-surgical steps (Lirette 2014; MSD Manual).", still: 8 },
+  "history-timeline": { caption: "Milestones in understanding tailbone pain, from the 16th century to today.", still: 7 },
+  "bike-vibration": { caption: "On a two-wheeler, each bump is passed up through the seat to the base of the spine.", still: 0.5 },
   "visit-steps": { caption: "Your visit in four steps: listen and assess, pinpoint the cause, hands-on treatment, recover and prevent.", still: 9 },
 };
 

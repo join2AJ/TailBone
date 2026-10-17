@@ -1,0 +1,23 @@
+<svg class="anim__svg" viewBox="0 0 640 342" aria-hidden="true" focusable="false">
+  <text x="16" y="26" class="a-t2 a-t2--sm">Tailbone pain in studied groups (not population rates)</text>
+  <line x1="250" y1="44" x2="250" y2="324" class="a-axis"/>
+  <text x="240" y="68" text-anchor="end" class="a-lbl a-lbl--left">Ankylosing spondylitis</text>
+    <text x="240" y="84" text-anchor="end" class="a-t3 a-t3--small">Turkey, 2014 (n=107)</text>
+    <rect x="250" y="56" width="126.4" height="26" rx="5" class="a-bar"><animate attributeName="width" values="0;126.4;126.4" keyTimes="0;.2;1" dur="6s" repeatCount="1" fill="freeze"/></rect>
+    <text x="384.4" y="74" class="a-val">38.3%</text><text x="240" y="114" text-anchor="end" class="a-lbl a-lbl--left">Back pain, no AS: women</text>
+    <text x="240" y="130" text-anchor="end" class="a-t3 a-t3--small">same study, controls</text>
+    <rect x="250" y="102" width="60.7" height="26" rx="5" class="a-bar a-bar--muted"><animate attributeName="width" values="0;60.7;60.7" keyTimes="0;.2;1" dur="6s" repeatCount="1" fill="freeze"/></rect>
+    <text x="318.7" y="120" class="a-val">18.4%</text><text x="240" y="160" text-anchor="end" class="a-lbl a-lbl--left">Back pain, no AS: men</text>
+    <text x="240" y="176" text-anchor="end" class="a-t3 a-t3--small">same study, controls</text>
+    <rect x="250" y="148" width="26.4" height="26" rx="5" class="a-bar a-bar--muted"><animate attributeName="width" values="0;26.4;26.4" keyTimes="0;.2;1" dur="6s" repeatCount="1" fill="freeze"/></rect>
+    <text x="284.4" y="166" class="a-val">8%</text><text x="240" y="206" text-anchor="end" class="a-lbl a-lbl--left">Male bike riders</text>
+    <text x="240" y="222" text-anchor="end" class="a-t3 a-t3--small">Pakistan, 2025 (n=190)</text>
+    <rect x="250" y="194" width="109.6" height="26" rx="5" class="a-bar"><animate attributeName="width" values="0;109.6;109.6" keyTimes="0;.2;1" dur="6s" repeatCount="1" fill="freeze"/></rect>
+    <text x="367.6" y="212" class="a-val">33.2%</text><text x="240" y="252" text-anchor="end" class="a-lbl a-lbl--left">Wheelchair users</text>
+    <text x="240" y="268" text-anchor="end" class="a-t3 a-t3--small">Pakistan, 2024 (n=250)</text>
+    <rect x="250" y="240" width="250.8" height="26" rx="5" class="a-bar"><animate attributeName="width" values="0;250.8;250.8" keyTimes="0;.2;1" dur="6s" repeatCount="1" fill="freeze"/></rect>
+    <text x="508.8" y="258" class="a-val">76%</text><text x="240" y="298" text-anchor="end" class="a-lbl a-lbl--left">Women with pelvic pain</text>
+    <text x="240" y="314" text-anchor="end" class="a-t3 a-t3--small">USA, 2022 (n=127)</text>
+    <rect x="250" y="286" width="163.7" height="26" rx="5" class="a-bar"><animate attributeName="width" values="0;163.7;163.7" keyTimes="0;.2;1" dur="6s" repeatCount="1" fill="freeze"/></rect>
+    <text x="421.7" y="304" class="a-val">49.6%</text>
+</svg>

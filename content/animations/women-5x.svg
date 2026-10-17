@@ -1,0 +1,16 @@
+<svg class="anim__svg" viewBox="0 0 640 300" aria-hidden="true" focusable="false">
+  <text x="225" y="40" text-anchor="middle" class="a-t1">Women</text>
+  <text x="520" y="40" text-anchor="middle" class="a-t1">Men</text>
+  <line x1="460" y1="70" x2="460" y2="230" class="a-floor"/>
+  <g opacity="0" transform="translate(80 120)"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.05;0.1;0.95;1" dur="8s" repeatCount="indefinite"/>
+      <circle cx="0" cy="0" r="16" class="a-person"/><path d="M-22 70 L-22 40 Q-22 22 0 22 Q22 22 22 40 L22 70 Z" class="a-person"/></g><g opacity="0" transform="translate(150 120)"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.13;0.18;0.95;1" dur="8s" repeatCount="indefinite"/>
+      <circle cx="0" cy="0" r="16" class="a-person"/><path d="M-22 70 L-22 40 Q-22 22 0 22 Q22 22 22 40 L22 70 Z" class="a-person"/></g><g opacity="0" transform="translate(220 120)"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.21000000000000002;0.26;0.95;1" dur="8s" repeatCount="indefinite"/>
+      <circle cx="0" cy="0" r="16" class="a-person"/><path d="M-22 70 L-22 40 Q-22 22 0 22 Q22 22 22 40 L22 70 Z" class="a-person"/></g><g opacity="0" transform="translate(290 120)"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.29;0.33999999999999997;0.95;1" dur="8s" repeatCount="indefinite"/>
+      <circle cx="0" cy="0" r="16" class="a-person"/><path d="M-22 70 L-22 40 Q-22 22 0 22 Q22 22 22 40 L22 70 Z" class="a-person"/></g><g opacity="0" transform="translate(360 120)"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.37;0.42;0.95;1" dur="8s" repeatCount="indefinite"/>
+      <circle cx="0" cy="0" r="16" class="a-person"/><path d="M-22 70 L-22 40 Q-22 22 0 22 Q22 22 22 40 L22 70 Z" class="a-person"/></g>
+  <g opacity="0" transform="translate(520 120)"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.5;0.55;0.95;1" dur="8s" repeatCount="indefinite"/>
+      <circle cx="0" cy="0" r="16" class="a-person a-person--alt"/><path d="M-22 70 L-22 40 Q-22 22 0 22 Q22 22 22 40 L22 70 Z" class="a-person a-person--alt"/></g>
+  <text x="225" y="250" text-anchor="middle" class="a-num a-num--big">5</text>
+  <text x="520" y="250" text-anchor="middle" class="a-num a-num--big">1</text>
+  <text x="320" y="288" text-anchor="middle" class="a-t2">For every man with coccydynia, about five women have it</text>
+</svg>

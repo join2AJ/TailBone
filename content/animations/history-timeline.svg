@@ -1,0 +1,35 @@
+<svg class="anim__svg" viewBox="0 0 640 320" aria-hidden="true" focusable="false">
+  <line x1="40" y1="170" x2="600" y2="170" class="a-track"/>
+  <line x1="40" y1="170" x2="40" y2="170" class="a-progress"><animate attributeName="x2" values="40;600" dur="7s" repeatCount="1" fill="freeze"/></line>
+  <g opacity="0"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.05;0.10;1" dur="8s" repeatCount="1" fill="freeze"/>
+      <circle cx="60" cy="170" r="12" class="a-node-on"/>
+      <line x1="60" y1="158" x2="60" y2="126" class="a-guide-solid"/>
+      <text x="60" y="88" text-anchor="middle" class="a-num">1500s</text>
+      <text x="60" y="108" text-anchor="middle" class="a-t3 a-t3--small">First written</text><text x="60" y="126" text-anchor="middle" class="a-t3 a-t3--small">accounts of</text><text x="60" y="144" text-anchor="middle" class="a-t3 a-t3--small">tailbone pain</text>
+    </g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.19;0.24;1" dur="8s" repeatCount="1" fill="freeze"/>
+      <circle cx="164" cy="170" r="12" class="a-node-on"/>
+      <line x1="164" y1="182" x2="164" y2="214" class="a-guide-solid"/>
+      <text x="164" y="234" text-anchor="middle" class="a-num">1859</text>
+      <text x="164" y="254" text-anchor="middle" class="a-t3 a-t3--small">Sir James Simpson</text><text x="164" y="272" text-anchor="middle" class="a-t3 a-t3--small">names it</text><text x="164" y="290" text-anchor="middle" class="a-t3 a-t3--small">'coccygodynia'</text>
+    </g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.33;0.38;1" dur="8s" repeatCount="1" fill="freeze"/>
+      <circle cx="268" cy="170" r="12" class="a-node-on"/>
+      <line x1="268" y1="158" x2="268" y2="126" class="a-guide-solid"/>
+      <text x="268" y="88" text-anchor="middle" class="a-num">1950–63</text>
+      <text x="268" y="108" text-anchor="middle" class="a-t3 a-t3--small">Thiele links it to</text><text x="268" y="126" text-anchor="middle" class="a-t3 a-t3--small">pelvic-floor</text><text x="268" y="144" text-anchor="middle" class="a-t3 a-t3--small">muscle spasm</text>
+    </g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.47;0.52;1" dur="8s" repeatCount="1" fill="freeze"/>
+      <circle cx="372" cy="170" r="12" class="a-node-on"/>
+      <line x1="372" y1="182" x2="372" y2="214" class="a-guide-solid"/>
+      <text x="372" y="234" text-anchor="middle" class="a-num">1983</text>
+      <text x="372" y="254" text-anchor="middle" class="a-t3 a-t3--small">Postacchini &</text><text x="372" y="272" text-anchor="middle" class="a-t3 a-t3--small">Massobrio: four</text><text x="372" y="290" text-anchor="middle" class="a-t3 a-t3--small">coccyx shapes</text>
+    </g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.61;0.66;1" dur="8s" repeatCount="1" fill="freeze"/>
+      <circle cx="476" cy="170" r="12" class="a-node-on"/>
+      <line x1="476" y1="158" x2="476" y2="126" class="a-guide-solid"/>
+      <text x="476" y="88" text-anchor="middle" class="a-num">2000</text>
+      <text x="476" y="108" text-anchor="middle" class="a-t3 a-t3--small">Maigne: sitting vs</text><text x="476" y="126" text-anchor="middle" class="a-t3 a-t3--small">standing X-rays,</text><text x="476" y="144" text-anchor="middle" class="a-t3 a-t3--small">body weight</text>
+    </g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;0.75;0.80;1" dur="8s" repeatCount="1" fill="freeze"/>
+      <circle cx="580" cy="170" r="12" class="a-node-on"/>
+      <line x1="580" y1="182" x2="580" y2="214" class="a-guide-solid"/>
+      <text x="580" y="234" text-anchor="middle" class="a-num">2014</text>
+      <text x="580" y="254" text-anchor="middle" class="a-t3 a-t3--small">Link with</text><text x="580" y="272" text-anchor="middle" class="a-t3 a-t3--small">ankylosing</text><text x="580" y="290" text-anchor="middle" class="a-t3 a-t3--small">spondylitis</text><text x="580" y="308" text-anchor="middle" class="a-t3 a-t3--small">reported</text>
+    </g>
+</svg>

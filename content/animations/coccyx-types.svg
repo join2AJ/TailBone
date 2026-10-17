@@ -1,0 +1,35 @@
+<svg class="anim__svg" viewBox="0 0 640 330" aria-hidden="true" focusable="false">
+  <text x="16" y="26" class="a-t3">← Front of body</text><text x="624" y="26" text-anchor="end" class="a-t3">Back →</text>
+  <g transform="translate(0 30)">
+    <g>
+      <rect x="6" y="0" width="148" height="290" rx="14" class="a-row"><animate attributeName="opacity" values="1;1;.35;.35;1" keyTimes="0;.22;.25;.97;1" dur="10s" repeatCount="indefinite"/></rect>
+      <path d="M78 14 C102 18 112 70 98 118 L86 116 C96 72 90 34 70 26 Z" class="a-bone"/>
+      <circle cx="90" cy="130" r="7" class="a-coccyx"/><circle cx="85" cy="144" r="6" class="a-coccyx"/><circle cx="79" cy="156" r="5" class="a-coccyx"/><circle cx="72" cy="166" r="4" class="a-coccyx"/>
+      <text x="80" y="214" text-anchor="middle" class="a-t1">Type I</text>
+      <text x="80" y="240" text-anchor="middle" class="a-t3">Slight forward</text><text x="80" y="258" text-anchor="middle" class="a-t3">curve, tip down</text>
+    </g>
+    <g transform="translate(160 0)">
+      <rect x="6" y="0" width="148" height="290" rx="14" class="a-row" opacity=".35"><animate attributeName="opacity" values=".35;.35;1;1;.35;.35" keyTimes="0;.22;.25;.47;.5;1" dur="10s" repeatCount="indefinite"/></rect>
+      <path d="M78 14 C102 18 112 70 98 118 L86 116 C96 72 90 34 70 26 Z" class="a-bone"/>
+      <circle cx="88" cy="130" r="7" class="a-coccyx"/><circle cx="79" cy="141" r="6" class="a-coccyx"/><circle cx="68" cy="148" r="5" class="a-coccyx"/><circle cx="57" cy="152" r="4" class="a-coccyx"/>
+      <text x="80" y="214" text-anchor="middle" class="a-t1">Type II</text>
+      <text x="80" y="240" text-anchor="middle" class="a-t3">Marked curve,</text><text x="80" y="258" text-anchor="middle" class="a-t3">tip points forward</text>
+    </g>
+    <g transform="translate(320 0)">
+      <rect x="6" y="0" width="148" height="290" rx="14" class="a-row" opacity=".35"><animate attributeName="opacity" values=".35;.35;1;1;.35;.35" keyTimes="0;.47;.5;.72;.75;1" dur="10s" repeatCount="indefinite"/></rect>
+      <path d="M78 14 C102 18 112 70 98 118 L86 116 C96 72 90 34 70 26 Z" class="a-bone"/>
+      <circle cx="91" cy="131" r="7" class="a-coccyx"/><circle cx="90" cy="146" r="6" class="a-coccyx"/><circle cx="77" cy="152" r="5" class="a-coccyx"/><circle cx="65" cy="154" r="4" class="a-coccyx"/>
+      <text x="80" y="214" text-anchor="middle" class="a-t1">Type III</text>
+      <text x="80" y="240" text-anchor="middle" class="a-t3">Sharp forward</text><text x="80" y="258" text-anchor="middle" class="a-t3">angle</text>
+    </g>
+    <g transform="translate(480 0)">
+      <rect x="6" y="0" width="148" height="290" rx="14" class="a-row" opacity=".35"><animate attributeName="opacity" values=".35;.35;1;1;.35" keyTimes="0;.72;.75;.97;1" dur="10s" repeatCount="indefinite"/></rect>
+      <path d="M78 14 C102 18 112 70 98 118 L86 116 C96 72 90 34 70 26 Z" class="a-bone"/>
+      <circle cx="90" cy="130" r="7" class="a-coccyx"/>
+      <circle cx="100" cy="148" r="6" class="a-coccyx"/><circle cx="96" cy="160" r="5" class="a-coccyx"/><circle cx="91" cy="170" r="4" class="a-coccyx"/>
+      <circle cx="95" cy="139" r="13" class="a-red" opacity=".35"><animate attributeName="r" values="9;15;9" dur="1s" repeatCount="indefinite"/></circle>
+      <text x="80" y="214" text-anchor="middle" class="a-t1">Type IV</text>
+      <text x="80" y="240" text-anchor="middle" class="a-t3">A joint has slipped</text><text x="80" y="258" text-anchor="middle" class="a-t3">(subluxation)</text>
+    </g>
+  </g>
+</svg>

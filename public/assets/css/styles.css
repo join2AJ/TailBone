@@ -879,3 +879,48 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .press-strip span:first-child { font-family: var(--font); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; }
 .press-strip a { color: var(--text); text-decoration: none; }
 .press-strip a:hover { color: var(--ink); text-decoration: underline; }
+/* Research figures */
+.a-person { fill: color-mix(in srgb, var(--brand) 70%, var(--surface)); }
+.a-person--alt { fill: #64748b; }
+.a-num--big { font-size: 44px; }
+.a-bar { fill: var(--brand); }
+.a-bar--muted { fill: color-mix(in srgb, var(--muted) 45%, var(--surface)); }
+.a-axis { stroke: var(--line); stroke-width: 2; }
+.a-val { font: 700 15px var(--font); fill: var(--text); }
+.a-val--small { font-size: 13px; }
+.a-lbl--left { text-anchor: end; font-size: 14px; }
+.a-lbl--sm { font-size: 13px; }
+.a-t3--small { font-size: 13px; }
+.a-t3--red { fill: var(--danger-ink); font-weight: 700; }
+.a-t3--green { fill: var(--ink); font-weight: 700; }
+.a-arrow--red { stroke: #dc2626; }
+.a-step { fill: var(--surface); stroke: var(--line); stroke-width: 2; }
+.a-step--first { stroke: var(--brand); }
+.a-step-on { fill: color-mix(in srgb, var(--brand) 18%, var(--surface)); stroke: var(--brand); stroke-width: 2; }
+.a-tag-green { fill: color-mix(in srgb, var(--brand) 14%, var(--surface)); }
+.a-guide-solid { stroke: var(--line); stroke-width: 2; }
+.a-road { fill: none; stroke: var(--muted); stroke-width: 4; stroke-linecap: round; }
+.a-wheel { fill: none; stroke: var(--text); stroke-width: 6; }
+.a-frame { fill: none; stroke: var(--muted); stroke-width: 6; stroke-linejoin: round; }
+/* Tables in articles and the evidence summary */
+:is(.post-body, .evidence) .table-wrap { overflow-x: auto; margin: 1.4rem 0; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+:is(.post-body, .evidence) .table-wrap:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+:is(.post-body, .evidence) table { width: 100%; border-collapse: collapse; font-size: .92rem; line-height: 1.5; }
+:is(.post-body, .evidence) caption { caption-side: bottom; text-align: left; padding: .6rem .8rem; font-size: .82rem; color: var(--muted); }
+:is(.post-body, .evidence) th, :is(.post-body, .evidence) td { text-align: left; vertical-align: top; padding: .6rem .8rem; border-bottom: 1px solid var(--line); }
+:is(.post-body, .evidence) thead th { background: var(--bg-soft); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+:is(.post-body, .evidence) tbody th { font-weight: 600; }
+:is(.post-body, .evidence) tbody tr:last-child > * { border-bottom: 0; }
+.post-body blockquote strong { color: var(--ink); }
+.a-t2--sm { font-size: 17px; }
+/* Research summary on /coccydynia */
+.evidence { margin-top: 2.5rem; }
+.evidence .table-wrap { background: var(--surface); }
+.research-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .75rem; list-style: none; padding: 0; margin: 1rem 0 0; }
+.research-links a { display: block; height: 100%; padding: .9rem 1rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); text-decoration: none; font-weight: 600; }
+.research-links a:hover, .research-links a:focus-visible { border-color: var(--brand); }
+.research-links span { display: block; margin-top: .25rem; font-weight: 400; font-size: .85rem; color: var(--muted); }
+.research-links li a, .research-links li a span { text-decoration: none; }
+.research-links li a:hover { text-decoration: underline; }
+/* Wide tables scroll sideways on phones instead of squeezing into narrow columns */
+:is(.post-body, .evidence) table:has(thead th:nth-child(3)) { min-width: 36rem; }

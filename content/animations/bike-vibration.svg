@@ -1,0 +1,23 @@
+<svg class="anim__svg" viewBox="0 0 640 380" aria-hidden="true" focusable="false">
+  <text x="320" y="30" text-anchor="middle" class="a-t1">Every bump travels up through the seat</text>
+  <text x="320" y="58" text-anchor="middle" class="a-t2">Riders exposed to more vibration had far more tailbone pain</text>
+  <g transform="translate(0 40)">
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 0;-160 0" dur="2s" repeatCount="indefinite"/>
+      <path d="M0 300 L60 300 Q80 282 100 300 L220 300 Q240 282 260 300 L380 300 Q400 282 420 300 L540 300 Q560 282 580 300 L700 300 Q720 282 740 300 L800 300" class="a-road"/>
+    </g>
+    <circle cx="200" cy="262" r="36" class="a-wheel"/><circle cx="440" cy="262" r="36" class="a-wheel"/>
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 -10;0 0;0 0" keyTimes="0;.42;.5;.6;1" dur="1s" repeatCount="indefinite"/>
+      <path d="M200 262 L300 200 L420 200 L440 262" class="a-frame"/>
+      <rect x="270" y="184" width="110" height="16" rx="8" class="a-seat"/>
+      <rect x="290" y="76" width="60" height="110" rx="28" class="a-body"/>
+      <circle cx="318" cy="56" r="22" class="a-body"/>
+      <rect x="230" y="150" width="70" height="26" rx="13" class="a-body"/>
+      <rect x="327" y="90" width="14" height="14" rx="4" class="a-bone"/><rect x="327" y="108" width="14" height="14" rx="4" class="a-bone"/><rect x="327" y="126" width="14" height="14" rx="4" class="a-bone"/>
+      <path d="M324 146 L344 146 Q350 164 342 180 L334 178 Q338 164 324 154 Z" class="a-bone"/>
+      <circle cx="338" cy="186" r="14" class="a-red" opacity="0"><animate attributeName="opacity" values="0;0;.6;0;0" keyTimes="0;.45;.52;.7;1" dur="1s" repeatCount="indefinite"/></circle>
+      <circle cx="340" cy="182" r="4" class="a-coccyx"/><circle cx="338" cy="188" r="3.5" class="a-coccyx"/>
+    </g>
+  </g>
+</svg>

@@ -28,10 +28,11 @@ export function parseFrontMatter(src) {
   return { meta, body: src.replace(/\r\n/g, "\n").slice(m[0].length) };
 }
 
-// Inline Markdown: escape first, then **bold** and [links](url). Only http(s), root-relative and mailto links are allowed.
+// Inline Markdown: escape first, then **bold**, *italic* and [links](url). Only http(s), root-relative and mailto links are allowed.
 function inline(text) {
   return esc(text)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*\w])\*([^*\s](?:[^*]*?[^*\s])?)\*(?![*\w])/g, "$1<em>$2</em>")
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (all, label, href) => {
       const url = href.replace(/&amp;/g, "&");
       if (!/^(https?:\/\/|\/|mailto:)/.test(url)) return label;
@@ -45,11 +46,24 @@ export function markdown(md) {
   const lines = md.split("\n");
   let para = [];
   let list = null; // { tag, items }
+  let table = null; // rows of cells; a line "Table: caption" right after a table becomes its caption
   const flushPara = () => { if (para.length) out.push(`<p>${inline(para.join(" "))}</p>`); para = []; };
+  const cells = (row) => row.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+  const flushTable = (caption = "") => {
+    if (!table) return;
+    const [head, , ...rows] = table;
+    const label = caption || cells(head).join(", ");
+    out.push(`<div class="table-wrap" role="region" aria-label="${esc(label)}" tabindex="0"><table>${caption ? `<caption>${inline(caption)}</caption>` : ""}`
+      + `<thead><tr>${cells(head).map((c) => `<th scope="col">${inline(c)}</th>`).join("")}</tr></thead>`
+      + `<tbody>${rows.map((r) => `<tr>${cells(r).map((c, i) => (i === 0 ? `<th scope="row">${inline(c)}</th>` : `<td>${inline(c)}</td>`)).join("")}</tr>`).join("")}</tbody></table></div>`);
+    table = null;
+  };
   const flushList = () => { if (list) out.push(`<${list.tag}>${list.items.map((i) => `<li>${inline(i)}</li>`).join("")}</${list.tag}>`); list = null; };
   for (const raw of lines) {
     const line = raw.trimEnd();
     let m;
+    if (/^\|.*\|$/.test(line.trim())) { flushPara(); flushList(); (table ||= []).push(line); continue; }
+    if (table) { if ((m = /^Table:\s*(.+)$/.exec(line.trim()))) { flushTable(m[1]); continue; } flushTable(); }
     if (!line.trim()) { flushPara(); flushList(); continue; }
     if ((m = /^::anim\s+([\w-]+)$/.exec(line.trim()))) { flushPara(); flushList(); out.push(animFigure(m[1])); continue; }
     if ((m = /^!\[([^\]]*)\]\((\/[^)\s]+)(?:\s+"(\d+)x(\d+)")?\)$/.exec(line.trim()))) {
@@ -80,6 +94,7 @@ export function markdown(md) {
     }
   }
   flushPara(); flushList();
+  flushTable();
   return out.join("\n");
 }
 
@@ -218,6 +233,8 @@ ${post.html}
         : { "@type": "Organization", name: "Tailbone Treatment Clinic", url: `${SITE}/` },
       publisher,
       keywords: meta.tags.join(", "),
+      about: { "@type": "MedicalCondition", name: "Coccydynia", alternateName: ["Tailbone pain", "Coccyx pain"], "@id": `${SITE}/coccydynia#condition` },
+      ...(post.sources.length ? { citation: post.sources } : {}),
     },
     body,
     image: meta.image ? `${SITE}${meta.image}` : undefined,
@@ -258,7 +275,10 @@ ${cards}
 export function loadPosts(dir = SRC) {
   return fs.readdirSync(dir).filter((f) => f.endsWith(".md")).map((f) => {
     const { meta, body } = parseFrontMatter(fs.readFileSync(path.join(dir, f), "utf8"));
-    return { meta, body, html: markdown(body).replace(/^/gm, "          ") };
+    // Links listed under "## Sources" are also published as the article's citations (structured data).
+    const srcBlock = (/^## Sources\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m.exec(body) || [, ""])[1];
+    const sources = [...srcBlock.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map((x) => x[1]);
+    return { meta, body, sources, html: markdown(body).replace(/^/gm, "          ") };
   }).sort((a, b) => b.meta.date.localeCompare(a.meta.date));
 }
 
