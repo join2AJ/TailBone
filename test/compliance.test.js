@@ -30,6 +30,8 @@ async function api(method, url, body, { auth = false } = {}) {
   if (sc && sc.includes("tb_session=")) cookie = sc.split(";")[0];
   return { status: res.status, body: await res.json().catch(() => ({})), headers: res.headers };
 }
+// The clinic confirming a booking (it has been in touch with that phone number) is what opens data requests online.
+const clinicConfirms = (ref) => db.prepare("INSERT INTO appointment_events (appointment_id, actor, action) SELECT id, 'clinic', 'confirmed' FROM appointments WHERE appt_no = ? OR ref = ?").run(ref, ref);
 const slot = (offset, i = 0) => { const date = addDays(clinicNow().date, offset); return { date, time: slotsForDate(date)[i] }; };
 const login = (extra = {}) => api("POST", "/api/admin/login", { email: "admin@test.local", password: "correct-horse-battery", ...extra });
 
@@ -54,6 +56,9 @@ test("booking requires consent and records it against the notice version", async
   const creds = { ref: ok.body.appointment.ref, phone: "9812300001" };
   const c = await api("POST", "/api/manage/consent", { ...creds, whatsappUpdates: false });
   assert.deepEqual(c.body.consents, ["care"]);
+  // Data requests open only once the clinic has confirmed the booking.
+  assert.equal((await api("POST", "/api/manage/privacy", { ...creds, type: "access" })).status, 403);
+  clinicConfirms(creds.ref);
   // Download is a request to the clinic: not available until completed (by staff, or automatically after 3 days).
   assert.equal((await api("POST", "/api/manage/export", creds)).status, 403);
   const reqd = await api("POST", "/api/manage/privacy", { ...creds, type: "access" });
@@ -79,6 +84,7 @@ test("correction requests are applied by staff or automatically; erasure waits f
   const body = { name: "Ritu Sharma", phone: "9812300077", clinic: "online", ...slot(6), consent: true };
   const ok = await api("POST", "/api/appointments", body);
   const creds = { ref: ok.body.appointment.ref, phone: "9812300077" };
+  clinicConfirms(creds.ref);
   assert.equal((await api("POST", "/api/manage/privacy", { ...creds, type: "correction", changes: {} })).status, 400);
   const corr = await api("POST", "/api/manage/privacy", { ...creds, type: "correction", changes: { name: "Ritu S. Sharma", email: "ritu@example.com" } });
   assert.equal(corr.status, 201);
@@ -193,4 +199,25 @@ test("no third-party font or script hosts in the security policy", async () => {
   const html = await (await fetch(`${base}/`)).text();
   assert.ok(!html.includes("fonts.googleapis.com"));
   assert.ok(!/<script>(?!\s*$)/.test(html), "no inline scripts");
+});
+
+test("a website booking with someone else's phone number can't read, change or erase their record", async () => {
+  const victim = await api("POST", "/api/appointments", { name: "Asha Verma", phone: "9812300555", email: "asha@example.com", clinic: "del", ...slot(8), reason: "Pain after childbirth", consent: true });
+  clinicConfirms(victim.body.appointment.ref);
+  const attacker = await api("POST", "/api/appointments", { name: "Someone Else", phone: "9812300555", email: "bad@example.com", clinic: "online", ...slot(9), consent: true });
+  assert.equal(attacker.status, 201);
+  const patient = db.prepare("SELECT name, email FROM patients WHERE phone = '919812300555'").get();
+  assert.deepEqual({ ...patient }, { name: "Asha Verma", email: "asha@example.com" }, "a website booking never overwrites an existing patient");
+  const creds = { ref: attacker.body.appointment.ref, phone: "9812300555" };
+  const look = await api("POST", "/api/manage/lookup", creds);
+  assert.deepEqual(look.body.others, [], "other bookings stay hidden");
+  assert.equal(look.body.privacy.verified, false);
+  for (const type of ["access", "correction", "erasure"]) {
+    assert.equal((await api("POST", "/api/manage/privacy", { ...creds, type, changes: { phone: "9000000000" } })).status, 403, type);
+  }
+  assert.equal((await api("POST", "/api/manage/export", creds)).status, 403);
+  // Guessing appointment numbers for one phone number is stopped after a few tries.
+  let last;
+  for (let i = 0; i < 11; i++) last = await api("POST", "/api/manage/lookup", { ref: `TBA-0000-${i}`, phone: "9812300555" });
+  assert.equal(last.status, 429);
 });

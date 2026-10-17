@@ -35,8 +35,25 @@ const id = (v) => {
   return n;
 };
 
+/** Lower-case path without trailing slashes, for permission checks (defence in depth alongside the strict router). */
+const canonicalPath = (req) => req.path.toLowerCase().replace(/\/+$/, "") || "/";
+
+/** Send rows as a spreadsheet-safe CSV (Excel-friendly BOM; leading =+-@ are neutralised so cells are never run as formulas). */
+function sendCsv(res, filename, header, rows) {
+  const cell = (v) => {
+    let s = String(v ?? "");
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  const csv = [header.join(","), ...rows.map((r0) => header.map((h) => cell(r0[h])).join(","))].join("\r\n");
+  res.set("Content-Type", "text/csv; charset=utf-8");
+  res.set("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(`\ufeff${csv}`);
+}
+
 export function adminRoutes(db) {
-  const r = Router();
+  // Case-sensitive and strict, so /SUPERADMIN or /refund/ can't reach a route while slipping past the permission rules below.
+  const r = Router({ caseSensitive: true, strict: true });
   const loginLimit = rateLimit({ windowMs: 15 * 60_000, max: Number(process.env.LOGIN_RATE_MAX) || 10, message: "Too many sign-in attempts. Try again in 15 minutes." });
 
   // ---------- Auth ----------
@@ -98,8 +115,8 @@ export function adminRoutes(db) {
   // In the demo, account-security actions are disabled so visitors can't lock each other out.
   const DEMO_BLOCKED = [/^\/password$/, /^\/2fa\//, /^\/sessions\/revoke$/, /^\/backups/];
   r.use((req, res, next) => {
-    if (config.demo && DEMO_BLOCKED.some((rx) => rx.test(req.path))) return res.status(403).json({ error: "Disabled in the demo." });
-    if (config.demo && req.path.startsWith("/superadmin") && req.method !== "GET") return res.status(403).json({ error: "Viewing only in the demo: changes here would affect every demo visitor." });
+    if (config.demo && DEMO_BLOCKED.some((rx) => rx.test(canonicalPath(req)))) return res.status(403).json({ error: "Disabled in the demo." });
+    if (config.demo && canonicalPath(req).startsWith("/superadmin") && req.method !== "GET") return res.status(403).json({ error: "Viewing only in the demo: changes here would affect every demo visitor." });
     next();
   });
 
@@ -116,7 +133,7 @@ export function adminRoutes(db) {
   ];
   r.use((req, res, next) => {
     req.perms = permissionsOf(req.admin);
-    const rule = RULES.find(([rx, , method]) => rx.test(req.path) && (!method || method === req.method));
+    const rule = RULES.find(([rx, , method]) => rx.test(canonicalPath(req)) && (!method || method === req.method));
     if (rule && !req.perms.includes(rule[1])) {
       return res.status(403).json({ error: rule[1] === "superadmin" ? "Only the super admin can do this." : "You don't have access to this section. Ask the super admin." });
     }
@@ -368,8 +385,14 @@ export function adminRoutes(db) {
       unread: one("SELECT COUNT(*) n FROM notifications WHERE audience = 'doctor' AND channel = 'dashboard' AND read_at IS NULL"),
       toSend: one("SELECT COUNT(*) n FROM notifications WHERE audience = 'patient' AND status IN ('manual','failed')"),
       collected30: one("SELECT COALESCE(SUM(amount_paid - amount_refunded), 0) n FROM appointments WHERE date BETWEEN ? AND ?", addDays(today, -30), today),
+      collectedToday: one("SELECT COALESCE(SUM(amount_paid - amount_refunded), 0) n FROM appointments WHERE date = ?", today),
+      collectedMonth: one("SELECT COALESCE(SUM(amount_paid - amount_refunded), 0) n FROM appointments WHERE date BETWEEN ? AND ?", `${today.slice(0, 8)}01`, today),
+      // Fees still to collect at the clinic for today's visits.
+      toCollectToday: one("SELECT COALESCE(SUM(fee), 0) n FROM appointments WHERE date = ? AND payment_status = 'pay_at_clinic' AND status IN ('pending','confirmed','completed')", today),
+      toCollectCount: one("SELECT COUNT(*) n FROM appointments WHERE date = ? AND payment_status = 'pay_at_clinic' AND fee > 0 AND status IN ('pending','confirmed','completed')", today),
     };
     stats.collected30Text = rupees(stats.collected30);
+    for (const k of ["collectedToday", "collectedMonth", "toCollectToday"]) stats[`${k}Text`] = rupees(stats[k]);
     const schedule = db.prepare(
       `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code FROM appointments a JOIN patients p ON p.id = a.patient_id
        WHERE a.date = ? AND a.status != 'cancelled' ORDER BY a.time`,
@@ -492,6 +515,20 @@ export function adminRoutes(db) {
       followup = followupView({ ...followup, patient_name: appt.patient_name, patient_phone: appt.patient_phone }, req);
     }
     res.json({ appointment: withLinks(updated, req), followup, refund });
+  });
+
+  // Fee paid at the clinic (cash, UPI or card at the desk), so the payments report is complete.
+  r.post("/appointments/:id/received", (req, res) => {
+    const appt = getAppointment(db, id(req.params.id));
+    if (!appt) throw new HttpError(404, "Appointment not found.");
+    const method = { cash: "Cash", upi: "UPI", card: "Card" }[req.body.method];
+    if (!method) throw new HttpError(400, "Choose cash, UPI or card.");
+    if (!appt.fee) throw new HttpError(400, "There is no fee on this appointment.");
+    if (appt.payment_status !== "pay_at_clinic" && appt.payment_status !== "unpaid") throw new HttpError(409, "This fee is already settled online.");
+    db.prepare("UPDATE appointments SET payment_status = 'paid', amount_paid = fee, payment_id = ? WHERE id = ? AND payment_status IN ('pay_at_clinic','unpaid')")
+      .run(`clinic-${req.body.method}`, appt.id);
+    logEvent(db, appt.id, "clinic", req.admin.name, "paid", `${rupees(appt.fee)} received at the clinic (${method})`);
+    res.json({ appointment: withLinks(getAppointment(db, appt.id), req) });
   });
 
   // Manual or extra refund (e.g. goodwill, or completing a refund that failed at the bank).
@@ -823,24 +860,28 @@ export function adminRoutes(db) {
   });
 
   // ---------- Export ----------
+  r.get("/payments/export.csv", (req, res) => {
+    const from = isDate(req.query.from) ? req.query.from : addDays(clinicNow().date, -30);
+    const to = isDate(req.query.to) ? req.query.to : clinicNow().date;
+    const rows = db.prepare(
+      `SELECT a.appt_no, a.date, a.time, a.clinic, a.status, a.payment_status, p.patient_code, p.name, a.fee / 100.0 fee, a.amount_paid / 100.0 paid,
+         a.amount_refunded / 100.0 refunded, (a.amount_paid - a.amount_refunded) / 100.0 net, a.platform_fee / 100.0 platform_fee, IFNULL(a.payment_id, '') payment_id
+       FROM appointments a JOIN patients p ON p.id = a.patient_id WHERE a.amount_paid > 0 AND a.date BETWEEN ? AND ? ORDER BY a.date, a.time`,
+    ).all(from, to);
+    const header = ["appt_no", "date", "time", "clinic", "status", "payment_status", "patient_code", "name", "fee", "paid", "refunded", "net", "platform_fee", "payment_id"];
+    securityLog(db, req, "payments_csv_exported", `${from}..${to}, ${rows.length} rows`);
+    sendCsv(res, `payments-${from}-to-${to}.csv`, header, rows);
+  });
+
   r.get("/export/appointments.csv", (req, res) => {
     const rows = db.prepare(
       `SELECT a.ref, a.date, a.time, a.clinic, a.status, p.name, p.phone, IFNULL(p.email,'') email, a.reason, a.notes, a.source,
          a.fee / 100.0 fee, a.payment_status, a.amount_paid / 100.0 paid, a.amount_refunded / 100.0 refunded, a.created_at
        FROM appointments a JOIN patients p ON p.id = a.patient_id ORDER BY a.date DESC, a.time DESC`,
     ).all().map((r0) => ({ ...r0, reason: decrypt(r0.reason), notes: decrypt(r0.notes) }));
-    // Prefix risky leading characters so spreadsheet apps don't evaluate them as formulas.
-    const cell = (v) => {
-      let s = String(v ?? "");
-      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-      return `"${s.replace(/"/g, '""')}"`;
-    };
     const header = ["ref", "date", "time", "clinic", "status", "name", "phone", "email", "reason", "notes", "source", "fee", "payment_status", "paid", "refunded", "created_at"];
-    const csv = [header.join(","), ...rows.map((r0) => header.map((h) => cell(r0[h])).join(","))].join("\r\n");
     securityLog(db, req, "appointments_csv_exported", `${rows.length} rows`);
-    res.set("Content-Type", "text/csv; charset=utf-8");
-    res.set("Content-Disposition", `attachment; filename="appointments-${clinicNow().date}.csv"`);
-    res.send(`﻿${csv}`);
+    sendCsv(res, `appointments-${clinicNow().date}.csv`, header, rows);
   });
 
   return r;

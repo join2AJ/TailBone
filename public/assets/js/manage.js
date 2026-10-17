@@ -207,6 +207,9 @@
   const fmtDay = (d) => (d ? new Date(d.replace(" ", "T") + (d.length <= 10 ? "T00:00:00" : "Z")).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "");
   function renderPrivacy(p) {
     const open = (type) => p.requests.some((r) => r.type === type && ["open", "verifying"].includes(r.status));
+    // Data requests open once the clinic has confirmed this booking with the patient, or after the visit.
+    $(".privacy-actions").hidden = p.verified === false;
+    $("#privacyLocked").hidden = p.verified !== false;
     $("#exportBtn").hidden = !p.downloadReady;
     $("#accessBtn").hidden = p.downloadReady || open("access");
     $("#correctBtn").disabled = open("correction");

@@ -13,7 +13,11 @@
   const CLINIC = { del: "New Delhi", online: "Online", lko: "Lucknow", blr: "Bengaluru" };
   const STATUS = { pending: "Pending", confirmed: "Confirmed", completed: "Completed", cancelled: "Cancelled", no_show: "No-show" };
   const FU_TYPE = { checkin: "Check-in form", call: "Phone call", visit: "Review visit", whatsapp: "WhatsApp message" };
-  const day = (d, opts = { weekday: "short", day: "numeric", month: "short" }) => (d ? new Date(`${d.slice(0, 10)}T00:00:00`).toLocaleDateString("en-IN", opts) : "");
+  // All dates and times are shown in clinic time (IST), whatever the computer's own time zone.
+  // A plain date ("2026-10-17") is a calendar day; a timestamp ("2026-10-17 20:15:00", stored in UTC) is converted to IST.
+  const asDate = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? new Date(`${d}T00:00:00+05:30`) : new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(d) ? d : `${d.replace(" ", "T")}Z`));
+  const day = (d, opts = { weekday: "short", day: "numeric", month: "short" }) => (d ? asDate(d).toLocaleDateString("en-IN", { ...opts, timeZone: "Asia/Kolkata" }) : "");
+  const when = (d, opts = { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) => (d ? asDate(d).toLocaleString("en-IN", { ...opts, timeZone: "Asia/Kolkata" }) : "");
   const time12 = (t) => { const [h, m] = t.split(":").map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
   const addDays = (d, n) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
   const phonePretty = (p) => (p && p.startsWith("91") && p.length === 12 ? `+91 ${p.slice(2, 7)} ${p.slice(7)}` : `+${p}`);
@@ -69,11 +73,37 @@
       label.htmlFor = control.id;
     });
     root.querySelectorAll("th:empty").forEach((th) => { th.innerHTML = '<span class="visually-hidden">Actions</span>'; });
+    // On phones each table row is shown as a card; data-label gives every cell its column name (see admin.css).
+    root.querySelectorAll("table").forEach((table) => {
+      const heads = [...table.querySelectorAll("thead th")].map((th) => th.textContent.trim());
+      table.querySelectorAll("tbody tr").forEach((tr) => [...tr.children].forEach((td, i) => {
+        if (heads[i] && !td.hasAttribute("data-label") && !td.hasAttribute("colspan")) td.dataset.label = heads[i];
+      }));
+    });
+    // Scrollable tables must be reachable with the keyboard.
+    root.querySelectorAll(".table-wrap:not([tabindex])").forEach((w) => { w.tabIndex = 0; w.setAttribute("role", "region"); w.setAttribute("aria-label", "Table"); });
   }
   new MutationObserver(() => { linkLabels(content); linkLabels(modalBody); }).observe(document.body, { childList: true, subtree: true });
 
-  const openModal = (html) => { modalBody.innerHTML = html; modal.showModal(); };
-  const closeModal = () => modal.close();
+  const openModal = (html) => { modalBody.innerHTML = html; delete modal.dataset.dirty; modal.showModal(); };
+  const closeModal = () => { delete modal.dataset.dirty; modal.close(); };
+  // Typing in a dialog marks it changed; closing it then asks first, so a stray click or Esc can't wipe a form.
+  modalBody.addEventListener("input", () => { modal.dataset.dirty = "1"; });
+  const mayClose = () => !modal.dataset.dirty || confirm("Close without saving? What you typed will be lost.");
+  /** Ask, then run an action; errors are shown instead of failing silently. */
+  async function confirmThen(question, action) {
+    if (question && !confirm(question)) return;
+    try { await action(); } catch (ex) { toast(ex.message); }
+  }
+  /** Toast with an Undo button (used for quick, reversible changes). */
+  function undoToast(text, undo) {
+    const t = $("#toast");
+    t.innerHTML = `${esc(text)} <button type="button" class="toast__undo">Undo</button>`;
+    t.classList.add("is-show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("is-show"), 6000);
+    t.querySelector("button").addEventListener("click", async () => { t.classList.remove("is-show"); try { await undo(); route(); } catch (ex) { toast(ex.message); } }, { once: true });
+  }
 
   // ---------- Auth ----------
   function showLogin() {
@@ -274,8 +304,11 @@
       if (act === "confirm") { await api(`/appointments/${id}`, { method: "PATCH", body: { status: "confirmed" } }); toast("Confirmed. Send the WhatsApp confirmation from Details."); route(); }
       if (act === "complete") completeDialog(id);
       if (act === "open") apptDialog(id);
-      if (act === "fu-done") { await api(`/followups/${id}`, { method: "PATCH", body: { status: "done" } }); toast("Follow-up marked done."); route(); }
-      if (act === "fu-skip") { await api(`/followups/${id}`, { method: "PATCH", body: { status: "skipped" } }); toast("Follow-up skipped."); route(); }
+      if (act === "fu-done" || act === "fu-skip") {
+        await api(`/followups/${id}`, { method: "PATCH", body: { status: act === "fu-done" ? "done" : "skipped" } });
+        route();
+        undoToast(act === "fu-done" ? "Follow-up marked done." : "Follow-up skipped.", () => api(`/followups/${id}`, { method: "PATCH", body: { status: "pending" } }));
+      }
       if (act === "fu-copy") { await navigator.clipboard.writeText(btn.dataset.url); toast("Check-in link copied."); }
     } catch (ex) {
       toast(ex.message);
@@ -445,14 +478,28 @@
     });
     const rb = $("#refundBtn");
     if (rb) rb.addEventListener("click", async () => {
-      const amount = prompt(`Refund amount in ₹ (up to ${refundable / 100}):`, String(refundable / 100));
-      if (!amount) return;
-      const reason = prompt("Reason (shown in the records):", "Goodwill refund") || "";
-      try {
-        const res = await api(`/appointments/${id}/refund`, { method: "POST", body: { amount: Number(amount), reason } });
-        toast(`Refund ${rupees(res.refund.amount)}: ${res.refund.status}${res.refund.error ? ` (${res.refund.error})` : ""}`);
-        apptDialog(id);
-      } catch (ex) { toast(ex.message); }
+      openModal(`<h2>Refund</h2>
+        <form class="form" id="refundForm">
+          <div class="field"><label>Amount in ₹ (up to ${refundable / 100})</label><input name="amount" type="number" inputmode="decimal" min="1" max="${refundable / 100}" step="0.01" value="${refundable / 100}" required></div>
+          <div class="field"><label>Reason (kept in the records)</label><input name="reason" maxlength="200" value="Goodwill refund" required></div>
+          <p class="small muted">The money goes back to the patient's original payment method through Razorpay. This can't be undone.</p>
+          <div class="row-gap"><button class="btn btn--primary">Refund</button><button class="btn btn--ghost" type="button" id="refundCancel">Cancel</button></div>
+        </form>`);
+      $("#refundCancel").addEventListener("click", () => apptDialog(id));
+      $("#refundForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const amount = Number(e.target.amount.value);
+        if (!(amount > 0 && amount <= refundable / 100)) { toast(`Enter an amount between ₹1 and ₹${refundable / 100}.`); return; }
+        if (!confirm(`Refund ${rupees(amount * 100)} to the patient now?`)) return;
+        const btn = e.target.querySelector("button");
+        btn.disabled = true;
+        try {
+          const res = await api(`/appointments/${id}/refund`, { method: "POST", body: { amount, reason: e.target.reason.value } });
+          toast(`Refund ${rupees(res.refund.amount)}: ${res.refund.status}${res.refund.error ? ` (${res.refund.error})` : ""}`);
+          delete modal.dataset.dirty;
+          apptDialog(id);
+        } catch (ex) { btn.disabled = false; toast(ex.message); }
+      });
     });
   }
 
@@ -716,7 +763,7 @@
     }));
     $$("[data-story-del]").forEach((b) => b.addEventListener("click", async () => {
       if (!confirm("Delete this story permanently?")) return;
-      await api(`/stories/${b.dataset.storyDel}`, { method: "DELETE" });
+      try { await api(`/stories/${b.dataset.storyDel}`, { method: "DELETE" }); } catch (ex) { toast(ex.message); return; }
       toast("Deleted.");
       route();
     }));
@@ -774,9 +821,12 @@
       e.preventDefault();
       try { await api("/media", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); toast("Added to homepage."); route(); } catch (ex) { toast(ex.message); }
     });
-    $$("[data-move]").forEach((b) => b.addEventListener("click", async () => { await api(`/media/${b.dataset.id}`, { method: "PATCH", body: { move: b.dataset.move } }); route(); }));
-    $$("[data-vis]").forEach((c) => c.addEventListener("change", async () => { await api(`/media/${c.dataset.vis}`, { method: "PATCH", body: { visible: c.checked } }); toast(c.checked ? "Shown on site." : "Hidden."); }));
-    $$("[data-mdel]").forEach((b) => b.addEventListener("click", async () => { await api(`/media/${b.dataset.mdel}`, { method: "DELETE" }); route(); }));
+    $$("[data-move]").forEach((b) => b.addEventListener("click", () => confirmThen(null, async () => { await api(`/media/${b.dataset.id}`, { method: "PATCH", body: { move: b.dataset.move } }); route(); })));
+    $$("[data-vis]").forEach((c) => c.addEventListener("change", () => confirmThen(null, async () => {
+      try { await api(`/media/${c.dataset.vis}`, { method: "PATCH", body: { visible: c.checked } }); } catch (ex) { c.checked = !c.checked; throw ex; }
+      toast(c.checked ? "Shown on site." : "Hidden.");
+    })));
+    $$("[data-mdel]").forEach((b) => b.addEventListener("click", () => confirmThen("Remove this post from the homepage?", async () => { await api(`/media/${b.dataset.mdel}`, { method: "DELETE" }); toast("Removed."); route(); })));
   }
 
   // ---------- Blog articles ----------
@@ -828,11 +878,11 @@
         <button class="btn btn--ghost btn--sm" id="readAll">Mark all read</button></div>
         <div class="list">${notifications.map((n) => `<div class="item" style="grid-template-columns:auto 1fr">
           <div>${n.read_at ? "" : '<span class="badge badge--pending">New</span>'}</div>
-          <div class="item__main"><strong>${esc(n.body)}</strong><small>${esc(new Date(n.created_at.replace(" ", "T") + "Z").toLocaleString("en-IN"))}</small></div></div>`).join("") || '<div class="empty">Nothing yet.</div>'}</div>`
+          <div class="item__main"><strong>${esc(n.body)}</strong><small>${esc(when(n.created_at))}</small></div></div>`).join("") || '<div class="empty">Nothing yet.</div>'}</div>`
       : `
         <p class="muted small">${automatic
           ? "WhatsApp Business API is connected: messages are sent automatically. Failed ones can be re-sent by hand."
-          : "Automatic WhatsApp isn't connected yet, so each message below is ready to send with one tap. It opens WhatsApp with the text filled in. Mark it sent afterwards."}</p>
+          : "Automatic WhatsApp isn't connected yet, so each message below is ready to send with one tap. It opens WhatsApp with the text filled in and marks the message as sent."}</p>
         <div class="table-wrap"><table><thead><tr><th>Status</th><th>To</th><th>Message</th><th></th></tr></thead><tbody>
         ${notifications.map((n) => `<tr>
           <td>${n.status === "sent" ? badge("confirmed").replace("Confirmed", "Sent") : n.status === "failed" ? badge("cancelled").replace("Cancelled", "Failed") : badge("pending").replace("Pending", "To send")}</td>
@@ -842,12 +892,11 @@
         </tr>`).join("") || '<tr><td colspan="4"><div class="empty">No messages yet.</div></td></tr>'}
         </tbody></table></div>`}`;
     const ra = $("#readAll");
-    if (ra) ra.addEventListener("click", async () => { await api("/notifications/read-all", { method: "POST" }); route(); });
+    if (ra) ra.addEventListener("click", () => confirmThen(null, async () => { await api("/notifications/read-all", { method: "POST" }); route(); }));
     // Opening the WhatsApp link counts as sending it.
     $$("[data-sent]").forEach((aEl) => aEl.addEventListener("click", () => {
       api(`/notifications/${aEl.dataset.sent}`, { method: "PATCH", body: { status: "sent" } }).then(() => setTimeout(route, 400)).catch(() => {});
     }));
-    if (audience === "doctor" && notifications.some((n) => !n.read_at)) setTimeout(() => api("/notifications/read-all", { method: "POST" }).then(refreshBadges).catch(() => {}), 4000);
   }
 
   // ---------- Privacy requests (DPDP / GDPR) ----------
@@ -1058,7 +1107,7 @@
     on("#logBtn", "click", async () => {
       const { log } = await api("/security/log");
       $("#secLog").innerHTML = `<div class="table-wrap" style="margin-top:.8rem;max-height:420px;overflow:auto"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>IP</th></tr></thead><tbody>
-        ${log.map((l) => `<tr><td class="nowrap">${esc(new Date(l.created_at.replace(" ", "T") + "Z").toLocaleString("en-IN"))}</td><td>${esc(l.actor)}</td><td>${esc(l.action.replace(/_/g, " "))}</td><td>${esc(l.target)}</td><td class="muted">${esc(l.ip)}</td></tr>`).join("") || '<tr><td colspan="5"><div class="empty">Empty</div></td></tr>'}</tbody></table></div>`;
+        ${log.map((l) => `<tr><td class="nowrap">${esc(when(l.created_at))}</td><td>${esc(l.actor)}</td><td>${esc(l.action.replace(/_/g, " "))}</td><td>${esc(l.target)}</td><td class="muted">${esc(l.ip)}</td></tr>`).join("") || '<tr><td colspan="5"><div class="empty">Empty</div></td></tr>'}</tbody></table></div>`;
     });
     on("#blockForm", "submit", async (e) => {
       e.preventDefault();
@@ -1068,7 +1117,7 @@
         route();
       } catch (ex) { toast(ex.message); }
     });
-    $$("[data-unblock]").forEach((b) => b.addEventListener("click", async () => { await api(`/blocked/${b.dataset.unblock}`, { method: "DELETE" }); route(); }));
+    $$("[data-unblock]").forEach((b) => b.addEventListener("click", () => confirmThen("Open this day for bookings again?", async () => { await api(`/blocked/${b.dataset.unblock}`, { method: "DELETE" }); toast("Day reopened for bookings."); route(); })));
 
     on("#copyFeed", "click", async () => { try { await navigator.clipboard.writeText($("#feedUrl").value); toast("Link copied."); } catch { $("#feedUrl").select(); } });
     on("#rotateFeed", "click", async () => {
@@ -1106,11 +1155,20 @@
       } catch (ex) { toast(ex.message); }
     });
     on("#tfaOff", "click", async () => {
-      const password = prompt("Your password:");
-      if (!password) return;
-      const code = prompt("Current 6-digit code:");
-      if (!code) return;
-      try { await api("/2fa/disable", { method: "POST", body: { password, code } }); state.admin.twoFactor = false; toast("Two-factor sign-in turned off."); route(); } catch (ex) { toast(ex.message); }
+      openModal(`<h2>Turn off two-factor sign-in</h2>
+        <form class="form" id="tfaOffForm">
+          <div class="field"><label>Your password</label><input name="password" type="password" autocomplete="current-password" required></div>
+          <div class="field"><label>Current 6-digit code</label><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required></div>
+          <p class="small muted">Your account will be protected by the password alone.</p>
+          <button class="btn btn--danger">Turn off</button>
+        </form>`);
+      $("#tfaOffForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try {
+          await api("/2fa/disable", { method: "POST", body: { password: e.target.password.value, code: e.target.code.value } });
+          state.admin.twoFactor = false; closeModal(); toast("Two-factor sign-in turned off."); route();
+        } catch (ex) { toast(ex.message); }
+      });
     });
     on("#pwForm", "submit", async (e) => {
       e.preventDefault();
@@ -1269,7 +1327,8 @@
     root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
     try { localStorage.setItem("theme", root.dataset.theme); } catch { /* ignore */ }
   });
-  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  modal.addEventListener("click", (e) => { if (e.target === modal && mayClose()) closeModal(); });
+  modal.addEventListener("cancel", (e) => { if (!mayClose()) e.preventDefault(); else delete modal.dataset.dirty; });
 
   boot();
 })();

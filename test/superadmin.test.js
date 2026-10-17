@@ -110,6 +110,7 @@ test("feature switches are enforced on the public site", async () => {
   assert.deepEqual((await api(null, "GET", "/api/media")).body.media, []);
   assert.equal((await api(null, "GET", "/api/checkin/whatever")).status, 404);
   // Legal rights stay available whatever the switches say.
+  db.prepare("INSERT INTO appointment_events (appointment_id, actor, action) SELECT id, 'clinic', 'confirmed' FROM appointments WHERE appt_no = ?").run(ok.body.appointment.ref);
   assert.equal((await api(null, "POST", "/api/manage/privacy", { ref: ok.body.appointment.ref, phone: booking.phone, type: "access" })).status, 201);
 
   await api("super", "PUT", "/api/admin/superadmin/features", { online_booking: true, patient_self_service: true, stories: true, instagram: true, followup_checkins: true });
@@ -136,4 +137,14 @@ test("the admin can hide a blog article by its number, and the site stops showin
   assert.equal((await api("super", "PATCH", `/api/admin/blog/${post.id}`, { enabled: true })).status, 200);
   assert.deepEqual((await api(null, "GET", "/api/blog/hidden")).body.hidden, []);
   assert.equal((await fetch(`${base}/blog/${post.slug}.html`)).status, 200);
+});
+
+test("permission rules can't be dodged with capital letters or a trailing slash", async () => {
+  // "staff" only has the appointments and patients sections.
+  for (const [method, url] of [["GET", "/api/admin/SUPERADMIN"], ["GET", "/api/admin/Security/Log"], ["GET", "/api/admin/BACKUPS"],
+    ["GET", "/api/admin/Export/appointments.csv"], ["GET", "/api/admin/PRIVACY/requests"], ["POST", "/api/admin/appointments/1/refund/"],
+    ["PUT", "/api/admin/settings/policy/"], ["PATCH", "/api/admin/SUPERADMIN/users/1"]]) {
+    const res = await api("staff", method, url, method === "GET" ? undefined : { role: "superadmin", amount: 1 });
+    assert.ok([403, 404].includes(res.status), `${method} ${url} → ${res.status}`);
+  }
 });

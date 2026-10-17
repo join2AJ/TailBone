@@ -5,6 +5,7 @@ import { clinicNow, addDays, slotsForDate } from "./time.js";
 import { seedStories, makeToken } from "./services.js";
 import { NOTICE_VERSION } from "./privacy.js";
 import { patientCode, nextApptNo } from "./db.js";
+import { config } from "./config.js";
 
 // Sample data for DEMO_MODE. All people are fictional; phone numbers use the unassigned 9999900xxx range.
 export const DEMO_ADMIN = { email: "demo@tailbonetreatment.com", name: "Demo Doctor" };
@@ -40,6 +41,9 @@ export function seedDemo(db) {
         paid ? `pay_demo_${ref.slice(3)}` : null, paid, refunded, cancelledBy).lastInsertRowid);
       db.prepare("INSERT INTO appointment_events (appointment_id, actor, actor_name, action, detail) VALUES (?, 'patient', ?, 'booked', ?)")
         .run(id, "", `${clinic}, ${date}`);
+      if (["confirmed", "completed"].includes(status)) {
+        db.prepare("INSERT INTO appointment_events (appointment_id, actor, actor_name, action) VALUES (?, 'clinic', 'Dr Rajveer Singh', ?)").run(id, status);
+      }
       return id;
     };
     const consent = (pid, wa = true) => {
@@ -63,7 +67,7 @@ export function seedDemo(db) {
     checkin(asha, f1, 4, "better", 14, "Much easier to sit at work", 45);
     const f2 = followup(asha, ashaPast, addDays(today, -7), "done");
     checkin(asha, f2, 2, "better", 7, "", 90);
-    appt(asha, DEMO_PATIENT.ref, "del", addDays(today, 1), 3, "confirmed", { reason: "Review visit", paid: 50000, platform: 10000, visit: "followup" });
+    appt(asha, DEMO_PATIENT.ref, "del", addDays(today, 3), 3, "confirmed", { reason: "Review visit", paid: 50000, platform: 10000, visit: "followup" });
 
     // 2. Today's patients.
     const rohan = patient("Rohan Mehta", "9999900002");
@@ -98,7 +102,7 @@ export function seedDemo(db) {
     const note = db.prepare("INSERT INTO notifications (appointment_id, audience, event, channel, recipient, body, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', ?))");
     note.run(null, "doctor", "booked", "dashboard", "", encrypt("New booking TB-DEMO35: Kavya Iyer (+919999900003), today, Online. Fee ₹800, payable at the clinic."), "sent", "-2 hours");
     note.run(sunitaAppt, "doctor", "cancelled", "dashboard", "", encrypt("Cancelled by patient: TB-DEMO61 Sunita Rao (+919999900006). Refund ₹800 (100%) per policy. Reason: travelling"), "sent", "-1 day");
-    note.run(null, "patient", "confirmed", "manual", "919999900002", encrypt("Hi Rohan, your appointment TB-DEMO23 is confirmed for today at our New Delhi clinic. Manage: /manage.html?ref=TB-DEMO23"), "manual", "-3 hours");
+    note.run(null, "patient", "confirmed", "manual", "919999900002", encrypt(`Hi Rohan, your appointment TB-DEMO23 is confirmed for today at our New Delhi clinic. Manage: ${config.siteUrl || "https://tailbone.onrender.com"}/manage.html?ref=TB-DEMO23`), "manual", "-3 hours");
 
     seedStories(db);
     db.prepare("INSERT INTO stories (name, city, rating, title, body, duration, status, source) VALUES (?, ?, 5, ?, ?, ?, 'pending', 'web')")

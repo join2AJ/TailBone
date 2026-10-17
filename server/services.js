@@ -123,10 +123,15 @@ const APPT_SELECT = `SELECT a.*, p.name AS patient_name, p.phone AS patient_phon
 export const readAppt = (row) => decryptFields(row, APPT_SECRET_FIELDS);
 export { APPT_SELECT };
 
-export function upsertPatient(db, { name, phone, email }) {
+/**
+ * Find the patient by phone, or create them. Only the clinic (`update: true`) may change an existing patient's name or email:
+ * a website booking proves nothing about who owns the phone number, so it must never overwrite a real patient's details.
+ */
+export function upsertPatient(db, { name, phone, email }, { update = false } = {}) {
   const existing = db.prepare("SELECT * FROM patients WHERE phone = ?").get(phone);
   if (existing) {
-    db.prepare("UPDATE patients SET name = ?, email = COALESCE(NULLIF(?, ''), email) WHERE id = ?").run(name, email || "", existing.id);
+    if (update) db.prepare("UPDATE patients SET name = ?, email = COALESCE(NULLIF(?, ''), email) WHERE id = ?").run(name, email || "", existing.id);
+    else if (!existing.email && email) db.prepare("UPDATE patients SET email = ? WHERE id = ?").run(email, existing.id);
     return existing.id;
   }
   const id = Number(db.prepare("INSERT INTO patients (name, phone, email) VALUES (?, ?, ?)").run(name, phone, email || null).lastInsertRowid);
@@ -167,7 +172,7 @@ export function createAppointment(db, data, { source = "web", status = "pending"
   }
   try {
     const created = tx(db, () => {
-      const patientId = upsertPatient(db, data);
+      const patientId = upsertPatient(db, data, { update: source !== "web" });
       // Guard against the same patient stacking several future bookings from the website.
       if (source === "web") {
         const active = db.prepare("SELECT COUNT(*) AS n FROM appointments WHERE patient_id = ? AND status IN ('pending','confirmed') AND date >= ?")
@@ -210,6 +215,16 @@ export function findAppointmentForPatient(db, ref, phone) {
   // The appointment number (TBA-2610-0007) is the patient's reference; older TB-XXXXXX codes still work.
   const key = cleanText(ref, 20).toUpperCase();
   return readAppt(db.prepare(`${APPT_SELECT} WHERE (a.appt_no = ? OR a.ref = ?) AND p.phone = ?`).get(key, key, normalized));
+}
+
+/**
+ * Whether a booking proves the person looking it up owns the patient record: the clinic made or confirmed it (and so has been
+ * in touch with that phone number), or the visit took place. A brand-new website booking only proves someone knew the phone number,
+ * so it may show that one booking but not the patient's other appointments or their data.
+ */
+export function isVerifiedBooking(db, appt) {
+  if (appt.status === "completed" || appt.source !== "web") return true;
+  return !!db.prepare("SELECT 1 FROM appointment_events WHERE appointment_id = ? AND actor = 'clinic' AND action IN ('confirmed','completed')").get(appt.id);
 }
 
 export function rescheduleAppointment(db, appt, date, time, { allowAnyTime = false, actor = "patient", actorName = "" } = {}) {

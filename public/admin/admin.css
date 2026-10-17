@@ -125,7 +125,6 @@ td .muted { font-size: .8rem; }
 /* Narrow cards (patient profile column) stack the actions under the text */
 .profile > .stack:first-child .item { grid-template-columns: auto 1fr; }
 .profile > .stack:first-child .item__actions { grid-column: 1 / -1; justify-content: flex-start; }
-#themeToggle { font-size: 1.2rem; }
 
 /* Appointment history */
 .timeline { list-style: none; padding: 0 0 0 1.1rem; margin: 0; border-left: 2px solid var(--line); display: grid; gap: .8rem; }
@@ -154,3 +153,34 @@ td .muted { font-size: .8rem; }
 .appt-qr { float: right; margin: 0 0 .5rem 1rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 4px; }
 .clinic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .25rem 1rem; }
 .clinic-grid .field-row { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+
+/* Lists inside narrow panels (e.g. Overview side column): stack the actions under the text */
+.panel-card, .profile > .stack { container-type: inline-size; }
+@container (max-width: 520px) {
+  .item { grid-template-columns: auto 1fr; }
+  .item__actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .item__main strong { white-space: normal; }
+}
+
+/* Phones: each table row becomes a card, every cell labelled with its column */
+@media (max-width: 820px) {
+  .table-wrap { overflow: visible; border: 0; background: none; }
+  .table-wrap table, .table-wrap tbody, .table-wrap tr, .table-wrap td { display: block; width: 100%; }
+  .table-wrap thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .table-wrap tr { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: .4rem .2rem; margin-bottom: .7rem; }
+  .table-wrap td { border: 0; padding: .4rem .8rem; display: grid; grid-template-columns: 7.5rem 1fr; gap: .6rem; align-items: start; }
+  .table-wrap td[data-label]::before { content: attr(data-label); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding-top: .15rem; }
+  .table-wrap td:not([data-label]), .table-wrap td[data-label=""] { grid-template-columns: 1fr; }
+  .table-wrap td[data-label=""]::before { content: none; }
+  .table-wrap td .item__actions, .table-wrap td .row-gap { justify-content: flex-start; }
+  .table-wrap tbody tr:hover { background: var(--surface); }
+  .table-wrap td[style*="max-width"] { max-width: none !important; }
+}
+@media (max-width: 480px) { .hide-xs { display: none; } #newApptBtn { padding: .5rem .85rem; font-size: 1.1rem; } }
+
+/* Toast undo button */
+.toast__undo { margin-left: .6rem; background: none; border: 1px solid currentColor; color: inherit; border-radius: 999px; padding: .15rem .7rem; font: 700 .82rem var(--font); cursor: pointer; }
+
+/* Demo bar follows the theme */
+[data-theme="dark"] .demo-bar { background: #3b2f0b; color: #fde68a; border-color: #5b4712; }
+[data-theme="dark"] .demo-bar a { background: #1f1a08; color: #fde68a; border-color: #8a6d1a; }

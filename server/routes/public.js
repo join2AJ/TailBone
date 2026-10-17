@@ -18,14 +18,14 @@ import {
   NOTICE_VERSION, CONSENT_PURPOSES, SELF_SERVICE_TYPES, PROMISE_DAYS,
 } from "../privacy.js";
 import {
-  HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment,
+  HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment, isVerifiedBooking,
   rescheduleAppointment, cancelAppointment, markPaid, logEvent, readAppt, APPT_SELECT,
   cleanText, requireClinic, siteUrl, waLink, prettyDate, prettyTime, normalizePhone, displayName,
 } from "../services.js";
 
 /** Public, unauthenticated API used by the website, patient portal and check-in page. */
 export function publicRoutes(db) {
-  const r = Router();
+  const r = Router({ caseSensitive: true, strict: true });
   const bookingLimit = rateLimit({ windowMs: 60 * 60_000, max: 20, message: "Too many booking attempts. Please call us instead." });
   const lookupLimit = rateLimit({ windowMs: 15 * 60_000, max: 30 });
 
@@ -177,11 +177,28 @@ export function publicRoutes(db) {
   });
 
   // Patient self-service: lookup needs both the booking reference and phone number.
+  // Wrong guesses are also counted per phone number, so appointment numbers can't be worked through for one patient
+  // even from many addresses.
+  const misses = new Map(); // phone -> { n, since }
   const findOwn = (req) => {
+    const phone = normalizePhone(req.body.phone) || "";
+    const m = misses.get(phone);
+    if (m && Date.now() - m.since > 24 * 3600_000) misses.delete(phone);
+    if ((misses.get(phone)?.n || 0) >= 10) throw new HttpError(429, "Too many attempts for this phone number. Please call or WhatsApp the clinic on +91 98866 88323.");
     const appt = findAppointmentForPatient(db, req.body.ref, req.body.phone);
-    if (!appt) throw new HttpError(404, "We couldn't find a booking with that reference and phone number.");
+    if (!appt) {
+      if (phone) misses.set(phone, { n: (misses.get(phone)?.n || 0) + 1, since: misses.get(phone)?.since || Date.now() });
+      if (misses.size > 10_000) misses.clear();
+      throw new HttpError(404, "We couldn't find a booking with that reference and phone number.");
+    }
     return appt;
   };
+  const requireVerified = (appt) => {
+    if (!isVerifiedBooking(db, appt)) {
+      throw new HttpError(403, "For your security, data requests open once the clinic has confirmed this booking with you, or after your visit. Please call or WhatsApp us if you need help sooner.");
+    }
+  };
+  const privacyView = (appt) => ({ ...patientRequests(db, appt.patient_id), verified: isVerifiedBooking(db, appt) });
 
   r.post("/manage/lookup", lookupLimit, async (req, res) => {
     const found = findOwn(req);
@@ -191,9 +208,10 @@ export function publicRoutes(db) {
       if (!again) throw new HttpError(404, "Your details have been updated or erased as you asked, so this booking can no longer be found with that phone number.");
     }
     const appt = findAppointmentForPatient(db, req.body.ref, req.body.phone);
-    const upcoming = db.prepare(`${APPT_SELECT} WHERE a.patient_id = ? AND a.id != ? AND a.status IN ('pending','confirmed') AND a.date >= ? ORDER BY a.date, a.time`)
+    // The patient's other bookings are shown only when this booking proves who is asking (see isVerifiedBooking).
+    const upcoming = !isVerifiedBooking(db, appt) ? [] : db.prepare(`${APPT_SELECT} WHERE a.patient_id = ? AND a.id != ? AND a.status IN ('pending','confirmed') AND a.date >= ? ORDER BY a.date, a.time`)
       .all(appt.patient_id, appt.id, clinicNow().date).map((a) => view(readAppt(a), req));
-    res.json({ appointment: await withQr(view(appt, req)), others: upcoming, policy: policySummary(getPolicy(db)), privacy: patientRequests(db, appt.patient_id) });
+    res.json({ appointment: await withQr(view(appt, req)), others: upcoming, policy: policySummary(getPolicy(db)), privacy: privacyView(appt) });
   });
 
   r.post("/manage/cancel", lookupLimit, async (req, res) => {
@@ -236,6 +254,7 @@ export function publicRoutes(db) {
   // ---------- Privacy self-service (DPDP s.11–13, GDPR Art. 15–21) ----------
   r.post("/manage/export", lookupLimit, (req, res) => {
     const appt = findOwn(req);
+    requireVerified(appt);
     if (!patientRequests(db, appt.patient_id).downloadReady) throw new HttpError(403, `Please request a copy of your data first. It will be ready within ${PROMISE_DAYS} days.`);
     const data = exportPatientData(db, appt.patient_id);
     db.prepare("INSERT INTO security_log (actor, action, target, ip) VALUES ('patient', 'patient_self_export', ?, ?)")
@@ -248,6 +267,7 @@ export function publicRoutes(db) {
   // automatically after a few days (see privacy.js).
   r.post("/manage/privacy", lookupLimit, (req, res) => {
     const appt = findOwn(req);
+    requireVerified(appt);
     const type = req.body.type;
     if (!SELF_SERVICE_TYPES.includes(type)) throw new HttpError(400, "Please choose what you'd like us to do.");
     const pending = db.prepare("SELECT ref FROM data_requests WHERE patient_id = ? AND type = ? AND status IN ('open','verifying')").get(appt.patient_id, type);
@@ -269,7 +289,7 @@ export function publicRoutes(db) {
     const label = { access: "copy of data", correction: "correction", erasure: "deletion" }[type];
     db.prepare("INSERT INTO notifications (audience, event, channel, body, status) VALUES ('doctor', 'privacy_request', 'dashboard', ?, 'sent')")
       .run(encrypt(`Data request ${ref} (${label}) from ${appt.patient_name} ${appt.patient_code || ""}. Completes automatically in 3 days unless you act.`));
-    res.status(201).json({ ref, due, privacy: patientRequests(db, appt.patient_id) });
+    res.status(201).json({ ref, due, privacy: privacyView(appt) });
   });
 
   r.post("/manage/consent", lookupLimit, (req, res) => {
