@@ -59,10 +59,8 @@ export function createApp(db) {
   app.use("/api", publicRoutes(db));
   app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
 
-  // Short pages handled by public/assets/js/router.js all share index.html.
-  const PAGES = ["/coccydynia", "/treatment", "/doctor", "/locations", "/faq", "/book"];
+  // Each short page is its own pre-built file (/coccydynia → coccydynia.html, via `extensions` below).
   const noCache = (res) => res.set("Cache-Control", "no-cache");
-  app.get(PAGES, (req, res) => { noCache(res); res.sendFile(path.join(config.publicDir, "index.html")); });
   app.use(express.static(config.publicDir, {
     extensions: ["html"],
     maxAge: config.isProd ? "1h" : 0,

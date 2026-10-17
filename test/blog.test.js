@@ -30,7 +30,38 @@ test("shared footer and animations are up to date (run npm run build)", async ()
   for (const f of ["manage.html", "policies.html", "privacy.html", "stories.html", "blog/index.html"]) {
     assert.ok(fs.readFileSync(`public/${f}`, "utf8").includes(footer), `${f} footer is stale`);
   }
-  const index = fs.readFileSync("public/index.html", "utf8");
-  assert.equal(injectAnims(index), index, "homepage animations are stale");
+  const index = fs.readFileSync("content/site.html", "utf8");
+  assert.equal(injectAnims(index), index, "template animations are stale");
   assert.ok(index.includes('data-anim="sitting"') && index.includes('data-anim="visit-steps"'));
+});
+
+test("every short page is its own file with a unique title, canonical link, heading and structured data", async () => {
+  const { PAGES, renderPage, TEMPLATE } = await import("../scripts/build-pages.js");
+  const { injectAnims } = await import("../scripts/partials.js");
+  const template = injectAnims(fs.readFileSync(TEMPLATE, "utf8"));
+  const titles = new Set();
+  for (const p of PAGES) {
+    const html = fs.readFileSync(`public/${p.file}`, "utf8");
+    assert.equal(html.replace(/"dateModified":"[^"]*"/, ""), renderPage(template, p).replace(/"dateModified":"[^"]*"/, ""), `${p.file} is stale: run npm run build`);
+    const title = /<title>(.*?)<\/title>/.exec(html)[1];
+    assert.ok(!titles.has(title), `duplicate title ${title}`); titles.add(title);
+    assert.ok(html.includes(`<link rel="canonical" href="https://tailbone.netlify.app${p.slug}">`), p.file);
+    assert.equal((html.match(/<h1\b/g) || []).length, 1, `${p.file} has one h1`);
+    for (const m of html.matchAll(/<section[^>]*data-page="([^"]*)"/g)) assert.ok(m[1].split(" ").includes(p.page), `${p.file} only has its own sections`);
+    const ld = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/s.exec(html)[1]);
+    assert.ok(ld["@graph"].some((g) => [].concat(g["@type"]).includes("MedicalClinic")));
+  }
+  const faq = JSON.parse(/<script type="application\/ld\+json">(.*?)<\/script>/s.exec(fs.readFileSync("public/faq.html", "utf8"))[1]);
+  assert.ok(faq["@graph"].find((g) => g.mainEntity).mainEntity.length >= 5, "FAQ questions in structured data");
+});
+
+test("AI assistants: robots.txt welcomes their crawlers, llms.txt summarises the clinic", () => {
+  const robots = fs.readFileSync("public/robots.txt", "utf8");
+  for (const bot of ["GPTBot", "OAI-SearchBot", "ClaudeBot", "PerplexityBot", "Google-Extended"]) assert.ok(robots.includes(`User-agent: ${bot}`), bot);
+  assert.ok(robots.includes("Disallow: /admin") && robots.includes("Disallow: /api/") && robots.includes("Sitemap: "));
+  const llms = fs.readFileSync("public/llms.txt", "utf8");
+  assert.ok(llms.startsWith("# Tailbone Treatment Clinic\n\n> "));
+  assert.ok(llms.includes("150A/09, Shanti Apartment") && llms.includes("/coccydynia") && llms.includes("/blog/"));
+  const full = fs.readFileSync("public/llms-full.txt", "utf8");
+  assert.ok(full.includes("Source: https://tailbone.netlify.app/faq") && !full.includes("<div"));
 });

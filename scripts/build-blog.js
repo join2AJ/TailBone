@@ -4,12 +4,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { animFigure, siteFooter, injectAnims } from "./partials.js";
+import { animFigure, siteFooter, SITE } from "./partials.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(root, "content/blog");
 const OUT = path.join(root, "public/blog");
-const SITE = (process.env.SITE_URL || "https://tailbone.netlify.app").replace(/\/$/, "");
 const WA = "https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment.";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -250,7 +249,7 @@ ${cards}
 export function loadPosts(dir = SRC) {
   return fs.readdirSync(dir).filter((f) => f.endsWith(".md")).map((f) => {
     const { meta, body } = parseFrontMatter(fs.readFileSync(path.join(dir, f), "utf8"));
-    return { meta, html: markdown(body).replace(/^/gm, "          ") };
+    return { meta, body, html: markdown(body).replace(/^/gm, "          ") };
   }).sort((a, b) => b.meta.date.localeCompare(a.meta.date));
 }
 
@@ -261,25 +260,5 @@ export function build() {
   for (const p of posts) fs.writeFileSync(path.join(OUT, `${p.meta.slug}.html`), articlePage(p, posts.filter((o) => o !== p)));
   fs.writeFileSync(path.join(OUT, "index.html"), indexPage(posts));
 
-  // Shared parts: animations in the homepage, the full footer on the standalone pages.
-  const indexFile = path.join(root, "public/index.html");
-  fs.writeFileSync(indexFile, injectAnims(fs.readFileSync(indexFile, "utf8")));
-  const footer = siteFooter();
-  for (const f of ["manage.html", "policies.html", "privacy.html", "stories.html"]) {
-    const file = path.join(root, "public", f);
-    fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/<footer class="footer">[\s\S]*?<\/footer>/, footer));
-  }
-
-  // Keep the sitemap's blog entries in step with the articles.
-  const smFile = path.join(root, "public/sitemap.xml");
-  const sm = fs.readFileSync(smFile, "utf8").replace(/\s*<url><loc>[^<]*\/blog\/[^<]*<\/loc>.*?<\/url>/g, "");
-  const entries = [`  <url><loc>${SITE}/blog/</loc><lastmod>${posts[0]?.meta.date}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
-    ...posts.map(({ meta }) => `  <url><loc>${SITE}/blog/${meta.slug}.html</loc><lastmod>${meta.updated || meta.date}</lastmod><changefreq>yearly</changefreq><priority>0.6</priority></url>`)];
-  fs.writeFileSync(smFile, sm.replace("</urlset>", `${entries.join("\n")}\n</urlset>`));
   return posts;
-}
-
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const posts = build();
-  console.log(`Built ${posts.length} article(s) into public/blog/`);
 }

@@ -1,10 +1,13 @@
-// Shared page parts. index.html holds the master footer; the animated explainers live in content/animations.
+// Shared page parts. content/site.html (the page template) holds the master footer; the animated explainers live in content/animations.
 // `npm run build` copies both into the other pages so there is one source for each.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// Public address used in canonical links, sitemaps and structured data. Set SITE_URL=https://tailbonetreatment.com
+// when the domain points to this site, then run `npm run build` again.
+export const SITE = (process.env.SITE_URL || "https://tailbone.netlify.app").replace(/\/$/, "");
 
 // caption: describes the animation for everyone (also read by screen readers); still: second shown when motion is reduced.
 export const ANIMS = {
@@ -26,9 +29,9 @@ ${svg}
 }
 
 export function siteFooter() {
-  const html = fs.readFileSync(path.join(root, "public/index.html"), "utf8");
+  const html = fs.readFileSync(path.join(root, "content/site.html"), "utf8");
   const m = /<footer class="footer">[\s\S]*?<\/footer>/.exec(html);
-  if (!m) throw new Error("No footer in index.html");
+  if (!m) throw new Error("No footer in content/site.html");
   return m[0];
 }
 

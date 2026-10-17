@@ -1,5 +1,23 @@
-# Public pages may be indexed; private areas may not.
+# Public pages may be read by search engines and AI assistants; private areas may not.
 User-agent: *
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Google-Extended
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: DuckAssistBot
+User-agent: meta-externalagent
+User-agent: Amazonbot
+User-agent: CCBot
+User-agent: YandexBot
 Allow: /
 Disallow: /admin
 Disallow: /api/
@@ -7,3 +25,5 @@ Disallow: /manage.html
 Disallow: /checkin.html
 
 Sitemap: https://tailbone.netlify.app/sitemap.xml
+
+# Plain-text guide for AI assistants: https://tailbone.netlify.app/llms.txt

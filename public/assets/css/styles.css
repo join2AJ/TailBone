@@ -859,3 +859,9 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 @media (max-width: 920px) { .cookie-bar { bottom: 72px; } }
 .footer .linkish { color: #b7cfc3; margin: 0; font: inherit; text-decoration: none; padding: 0; }
 .footer .linkish:hover { color: #fff; text-decoration: underline; }
+
+/* ---- At a glance (home) ---- */
+.glance { display: grid; grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr); gap: .7rem 1.4rem; margin: 1rem 0 0; }
+.glance dt { font-weight: 700; color: var(--ink); }
+.glance dd { margin: 0; }
+@media (max-width: 560px) { .glance { grid-template-columns: 1fr; gap: .2rem; } .glance dd { margin-bottom: .6rem; } }

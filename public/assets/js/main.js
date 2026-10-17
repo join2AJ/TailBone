@@ -110,7 +110,10 @@
   setInterval(updateStatus, 60_000);
 
   // ---- Symptom checker ----
+  // Each page now ships only its own sections (see scripts/build-pages.js), so every feature below
+  // runs only where its markup exists.
   const symptomForm = $("#symptomForm");
+  if (symptomForm) {
   const boxes = $$("input", symptomForm);
   const maxScore = boxes.reduce((s, b) => s + Number(b.value), 0);
   symptomForm.addEventListener("change", () => {
@@ -136,8 +139,13 @@
     }
   });
 
+  }
+
+  const escapeHtml = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
   // ---- Testimonials carousel ----
   const track = $("#track");
+  if (track) {
   let slides = $$(".quote", track);
   const dotsWrap = $("#dots");
   const perView = () => {
@@ -195,7 +203,6 @@
   startAuto();
 
   // Replace the built-in quotes with approved stories from the database, if the API is available.
-  const escapeHtml = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   fetch("/api/stories?limit=9")
     .then((r) => (r.ok ? r.json() : Promise.reject()))
     .then(({ stories, total, average }) => {
@@ -211,9 +218,11 @@
     })
     .catch(() => { /* static fallback stays */ });
 
+  }
+
   // ---- Instagram highlights (managed from the dashboard) ----
   const igGrid = $("#igGrid");
-  fetch("/api/media")
+  if (igGrid) fetch("/api/media")
     .then((r) => (r.ok ? r.json() : Promise.reject()))
     .then(({ media }) => {
       if (!media.length) return;
@@ -282,10 +291,44 @@
       obs.disconnect();
     }
   }, { rootMargin: "200px" });
-  mapObserver.observe($("#locations"));
+  if ($("#locations")) mapObserver.observe($("#locations"));
+
+  // Parts of the site the super admin has switched off. Router-hidden sections stay hidden either way.
+  function applyFeatures(features) {
+    $$("[data-feature]").forEach((el) => {
+      const off = features[el.dataset.feature] === false;
+      el.classList.toggle("feature-off", off);
+    });
+  }
+
+  function showDemoBar() {
+    if ($("#demoBar")) return;
+    const bar = document.createElement("div");
+    bar.id = "demoBar";
+    bar.className = "demo-bar";
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", "Demo notice");
+    bar.innerHTML = '<span><strong>Demo site</strong> · sample data, resets daily · please don\'t enter real health details</span><span class="demo-bar__actions"><a href="/admin?demo=1">Try as doctor (admin)</a><a href="/manage.html?demo=1">Try as patient</a></span>';
+    document.body.prepend(bar);
+  }
+
+  // Feature switches and the demo bar apply on every page; the booking page also uses the rest of the config.
+  if (!$("#apptForm")) {
+    fetch("/api/config").then((r) => (r.ok ? r.json() : Promise.reject())).then((cfg) => {
+      if (cfg.demo) showDemoBar();
+      applyFeatures(cfg.features || {});
+      const glance = $("#glanceFees"); // keep the "at a glance" fees in step with the dashboard
+      if (glance && cfg.fees) {
+        const open = (cfg.clinics || []).filter((c) => c.status === "open").map((c) => c.id);
+        const fee = Math.min(...open.map((id) => cfg.fees[id]).filter(Boolean));
+        if (Number.isFinite(fee)) glance.textContent = `Consultation ₹${fee} (in clinic or online).${cfg.followup?.windowDays ? ` Follow-up within ${cfg.followup.windowDays} days of a visit ₹${cfg.followup.fee}.` : ""}`;
+      }
+    }).catch(() => { /* static hosting */ });
+  }
 
   // ---- Live booking ----
   const form = $("#apptForm");
+  if (form) {
   const dayStrip = $("#dayStrip");
   const slotGrid = $("#slotGrid");
   const bookBtn = $("#bookBtn");
@@ -585,25 +628,6 @@
     }
   });
 
-  // Parts of the site the super admin has switched off. Router-hidden sections stay hidden either way.
-  function applyFeatures(features) {
-    $$("[data-feature]").forEach((el) => {
-      const off = features[el.dataset.feature] === false;
-      el.classList.toggle("feature-off", off);
-    });
-  }
-
-  function showDemoBar() {
-    if ($("#demoBar")) return;
-    const bar = document.createElement("div");
-    bar.id = "demoBar";
-    bar.className = "demo-bar";
-    bar.setAttribute("role", "region");
-    bar.setAttribute("aria-label", "Demo notice");
-    bar.innerHTML = '<span><strong>Demo site</strong> · sample data, resets daily · please don\'t enter real health details</span><span class="demo-bar__actions"><a href="/admin?demo=1">Try as doctor (admin)</a><a href="/manage.html?demo=1">Try as patient</a></span>';
-    document.body.prepend(bar);
-  }
-
   // ---- Razorpay Checkout ----
   let pendingPayment = null;
   let lastWhatsapp = "";
@@ -752,6 +776,8 @@
     form.hidden = false;
     loadDays();
   });
+
+  }
 
   // ---- WhatsApp widget ----
   const waPanel = $("#waPanel");

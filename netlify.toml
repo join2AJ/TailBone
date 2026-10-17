@@ -14,35 +14,35 @@
   status = 200
   force = true
 
-# Short pages (see public/assets/js/router.js) share index.html.
+# Each short page is its own pre-built file (npm run build).
 [[redirects]]
   from = "/coccydynia"
-  to = "/index.html"
+  to = "/coccydynia.html"
   status = 200
 
 [[redirects]]
   from = "/treatment"
-  to = "/index.html"
+  to = "/treatment.html"
   status = 200
 
 [[redirects]]
   from = "/doctor"
-  to = "/index.html"
+  to = "/doctor.html"
   status = 200
 
 [[redirects]]
   from = "/locations"
-  to = "/index.html"
+  to = "/locations.html"
   status = 200
 
 [[redirects]]
   from = "/faq"
-  to = "/index.html"
+  to = "/faq.html"
   status = 200
 
 [[redirects]]
   from = "/book"
-  to = "/index.html"
+  to = "/book.html"
   status = 200
 
 [[redirects]]

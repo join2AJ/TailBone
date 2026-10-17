@@ -1,0 +1,36 @@
+# Tailbone Treatment Clinic
+
+> Specialist, non-surgical treatment for tailbone (coccyx) pain, also called coccydynia or coccygodynia, led by Dr Rajveer Singh (BPT, Fellowship in Orthopaedic Rehabilitation, Apollo Hospital Chennai). Clinic in Vasant Kunj, New Delhi, India, plus online video consultations worldwide. Lucknow clinic opening soon. The Bengaluru clinic has closed.
+
+Key facts:
+- Conditions treated: coccydynia (tailbone pain), subluxed or dislocated coccyx, tailbone pain after a fall or injury, after pregnancy or childbirth, pain when sitting, chronic tailbone discomfort.
+- Approach: assessment and diagnosis, hands-on Internal Manipulation of the coccyx and surrounding muscles, posture and seating advice, exercises and follow-up. Surgery is rarely needed.
+- Address: 150A/09, Shanti Apartment, Kishangarh, Vasant Kunj, New Delhi 110070, India.
+- Hours (by appointment): Monday–Friday 10:00–17:00, Saturday 10:00–15:00, Sunday 08:00–15:00 (IST).
+- Fees: consultation ₹800 (in clinic or online); follow-up within 7 days ₹500.
+- Book: https://tailbone.netlify.app/book · WhatsApp or phone +91 98866 88323 · contact@tailbonetreatment.com
+- Medical information on this site is general and not a substitute for an examination.
+
+## Main pages
+
+- [Tailbone Pain Treatment in Delhi | Tailbone Treatment Clinic](https://tailbone.netlify.app/): Non-surgical treatment for tailbone (coccyx) pain by Dr Rajveer Singh, coccydynia specialist. Clinic in Vasant Kunj, New Delhi, and online video consultations.
+- [Coccydynia (Tailbone Pain): Symptoms, Causes and Self-Check](https://tailbone.netlify.app/coccydynia): What causes tailbone (coccyx) pain, typical symptoms, warning signs and self-care, with a 1-minute symptom check. Checked against NHS and Cleveland Clinic information.
+- [Non-Surgical Tailbone Pain Treatment | Tailbone Treatment](https://tailbone.netlify.app/treatment): How coccydynia is treated without surgery: careful assessment, Internal Manipulation of the coccyx and a personalised recovery plan, in New Delhi or online.
+- [Dr Rajveer Singh, Tailbone Pain Specialist in New Delhi](https://tailbone.netlify.app/doctor): Dr Rajveer Singh (BPT, Fellowship in Orthopaedic Rehabilitation, Apollo Hospital Chennai) treats coccyx and tailbone pain without surgery. Read patient stories.
+- [Tailbone Pain Clinic in Vasant Kunj, New Delhi · Timings](https://tailbone.netlify.app/locations): Address, map and opening hours of the Tailbone Treatment clinic in Vasant Kunj, New Delhi, plus online video consultations. Lucknow clinic opening soon.
+- [Tailbone Pain FAQ: Treatment, Sessions and Fees](https://tailbone.netlify.app/faq): Answers about coccydynia, Internal Manipulation, how many sessions are needed, fees, online consultations and appointments at Tailbone Treatment Clinic.
+- [Book a Tailbone Pain Appointment · New Delhi or Online](https://tailbone.netlify.app/book): Choose a day and time for a tailbone pain consultation with Dr Rajveer Singh in New Delhi or by video. Instant appointment number and WhatsApp reminders.
+
+## Articles
+
+- [Sitting with tailbone pain: 8 practical ways to ease it](https://tailbone.netlify.app/blog/sitting-with-tailbone-pain.html): Desk job, long drives or a hard classroom bench? Small changes to how and how long you sit can take a lot of pressure off a sore coccyx.
+- [Tailbone pain after pregnancy: why it happens and what helps](https://tailbone.netlify.app/blog/tailbone-pain-after-pregnancy.html): Many new mothers find that sitting to feed their baby is surprisingly painful. Here is why childbirth can affect the coccyx, and how it is treated.
+- [Tailbone pain red flags: when it needs urgent attention](https://tailbone.netlify.app/blog/tailbone-pain-red-flags.html): Most tailbone pain is mechanical and treatable without surgery. A few warning signs, though, mean you should see a doctor quickly. Here is what they are.
+- [What happens at a coccydynia consultation (and how to prepare)](https://tailbone.netlify.app/blog/what-happens-at-your-consultation.html): Nervous about your first visit for tailbone pain? Here is what to expect, step by step, and how to prepare so you get the most from the appointment.
+
+## Optional
+
+- [Full text of this site in one file](https://tailbone.netlify.app/llms-full.txt)
+- [Patient stories](https://tailbone.netlify.app/stories.html)
+- [Terms, fees, cancellation and refund policy](https://tailbone.netlify.app/policies.html)
+- [Privacy notice](https://tailbone.netlify.app/privacy.html)
