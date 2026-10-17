@@ -1,6 +1,14 @@
 import { Router } from "express";
 import { CLINICS } from "../config.js";
-import { requireAdmin, verifyPassword, hashPassword, createSessionCookie, clearSessionCookie, rateLimit } from "../auth.js";
+import {
+  requireAdmin, verifyPassword, hashPassword, createSessionCookie, clearSessionCookie, rateLimit,
+  LOCKOUT, newTotpSecret, verifyTotp, totpUri, securityLog,
+} from "../auth.js";
+import { config } from "../config.js";
+import { exportPatientData, erasePatient, readDataRequest, recordConsent, NOTICE_VERSION } from "../privacy.js";
+import { createBackup, listBackups } from "../backup.js";
+import path from "node:path";
+import fs from "node:fs";
 import { clinicNow, addDays, isDate } from "../time.js";
 import { encrypt, decrypt } from "../crypto.js";
 import { getPolicy, savePolicy, refundQuote, policySummary } from "../policy.js";
@@ -24,12 +32,36 @@ export function adminRoutes(db) {
   const loginLimit = rateLimit({ windowMs: 15 * 60_000, max: 10, message: "Too many sign-in attempts. Try again in 15 minutes." });
 
   // ---------- Auth ----------
+  // Sign-in with per-account lockout and optional TOTP second factor.
   r.post("/login", loginLimit, (req, res) => {
-    const admin = db.prepare("SELECT * FROM admins WHERE email = ?").get(cleanText(req.body.email, 200));
-    if (!admin || !verifyPassword(String(req.body.password || ""), admin.password_hash)) {
+    const email = cleanText(req.body.email, 200);
+    const admin = db.prepare("SELECT * FROM admins WHERE email = ?").get(email);
+    if (admin?.locked_until && admin.locked_until > new Date().toISOString()) {
+      securityLog(db, req, "login_blocked_locked", email, null);
+      throw new HttpError(423, `Too many failed attempts. The account is locked for up to ${LOCKOUT.minutes} minutes.`);
+    }
+    const passwordOk = !!admin && verifyPassword(String(req.body.password || ""), admin.password_hash);
+    if (!passwordOk) {
+      if (admin) {
+        const fails = admin.failed_logins + 1;
+        const lock = fails >= LOCKOUT.attempts ? new Date(Date.now() + LOCKOUT.minutes * 60_000).toISOString() : null;
+        db.prepare("UPDATE admins SET failed_logins = ?, locked_until = ? WHERE id = ?").run(lock ? 0 : fails, lock, admin.id);
+        securityLog(db, req, lock ? "account_locked" : "login_failed", email, null);
+      } else {
+        securityLog(db, req, "login_failed_unknown_user", email, null);
+      }
       throw new HttpError(401, "Incorrect email or password.");
     }
-    createSessionCookie(res, admin.id);
+    if (admin.totp_enabled) {
+      if (!req.body.code) return res.status(401).json({ error: "Enter the 6-digit code from your authenticator app.", needCode: true });
+      if (!verifyTotp(decrypt(admin.totp_secret), req.body.code)) {
+        securityLog(db, req, "login_failed_2fa", email, admin);
+        throw new HttpError(401, "That code didn't work. Check your phone's clock and try the newest code.");
+      }
+    }
+    db.prepare("UPDATE admins SET failed_logins = 0, locked_until = NULL, last_login_at = datetime('now') WHERE id = ?").run(admin.id);
+    createSessionCookie(res, admin);
+    securityLog(db, req, "login", "", admin);
     res.json({ admin: { id: admin.id, email: admin.email, name: admin.name } });
   });
 
@@ -40,15 +72,121 @@ export function adminRoutes(db) {
 
   r.use(requireAdmin(db));
 
-  r.get("/me", (req, res) => res.json({ admin: req.admin, clinics: Object.values(CLINICS), today: clinicNow().date }));
+  r.get("/me", (req, res) => res.json({
+    admin: { id: req.admin.id, email: req.admin.email, name: req.admin.name, twoFactor: !!req.admin.totp_enabled },
+    clinics: Object.values(CLINICS),
+    today: clinicNow().date,
+  }));
 
   r.post("/password", (req, res) => {
     const row = db.prepare("SELECT password_hash FROM admins WHERE id = ?").get(req.admin.id);
     if (!verifyPassword(String(req.body.current || ""), row.password_hash)) throw new HttpError(400, "Current password is incorrect.");
     const next = String(req.body.next || "");
     if (next.length < 10) throw new HttpError(400, "New password must be at least 10 characters.");
-    db.prepare("UPDATE admins SET password_hash = ? WHERE id = ?").run(hashPassword(next), req.admin.id);
+    // Changing the password signs out every other session.
+    db.prepare("UPDATE admins SET password_hash = ?, session_version = session_version + 1 WHERE id = ?").run(hashPassword(next), req.admin.id);
+    createSessionCookie(res, db.prepare("SELECT * FROM admins WHERE id = ?").get(req.admin.id));
+    securityLog(db, req, "password_changed");
     res.json({ ok: true });
+  });
+
+  r.post("/sessions/revoke", (req, res) => {
+    db.prepare("UPDATE admins SET session_version = session_version + 1 WHERE id = ?").run(req.admin.id);
+    createSessionCookie(res, db.prepare("SELECT * FROM admins WHERE id = ?").get(req.admin.id));
+    securityLog(db, req, "sessions_revoked");
+    res.json({ ok: true });
+  });
+
+  // ---------- Two-factor authentication ----------
+  r.post("/2fa/setup", (req, res) => {
+    if (req.admin.totp_enabled) throw new HttpError(409, "Two-factor sign-in is already on.");
+    const secret = newTotpSecret();
+    db.prepare("UPDATE admins SET totp_secret = ? WHERE id = ?").run(encrypt(secret), req.admin.id);
+    res.json({ secret: secret.match(/.{1,4}/g).join(" "), uri: totpUri(secret, req.admin.email) });
+  });
+
+  r.post("/2fa/enable", (req, res) => {
+    const row = db.prepare("SELECT totp_secret FROM admins WHERE id = ?").get(req.admin.id);
+    if (!row.totp_secret || !verifyTotp(decrypt(row.totp_secret), req.body.code)) throw new HttpError(400, "That code didn't match. Try the newest code from the app.");
+    db.prepare("UPDATE admins SET totp_enabled = 1, session_version = session_version + 1 WHERE id = ?").run(req.admin.id);
+    createSessionCookie(res, db.prepare("SELECT * FROM admins WHERE id = ?").get(req.admin.id));
+    securityLog(db, req, "2fa_enabled");
+    res.json({ ok: true });
+  });
+
+  r.post("/2fa/disable", (req, res) => {
+    const row = db.prepare("SELECT * FROM admins WHERE id = ?").get(req.admin.id);
+    if (!verifyPassword(String(req.body.password || ""), row.password_hash) || !verifyTotp(decrypt(row.totp_secret), req.body.code)) {
+      throw new HttpError(400, "Password or code is incorrect.");
+    }
+    db.prepare("UPDATE admins SET totp_enabled = 0, totp_secret = NULL WHERE id = ?").run(req.admin.id);
+    securityLog(db, req, "2fa_disabled");
+    res.json({ ok: true });
+  });
+
+  // ---------- Security log ----------
+  r.get("/security/log", (req, res) => {
+    res.json({ log: db.prepare("SELECT * FROM security_log ORDER BY id DESC LIMIT 300").all() });
+  });
+
+  // ---------- Privacy (DPDP / GDPR) ----------
+  r.get("/privacy/requests", (req, res) => {
+    const rows = db.prepare("SELECT * FROM data_requests ORDER BY (status IN ('open','verifying')) DESC, due_at ASC, id DESC LIMIT 300").all();
+    res.json({ requests: rows.map(readDataRequest), noticeVersion: NOTICE_VERSION });
+  });
+
+  r.patch("/privacy/requests/:id", (req, res) => {
+    const rid = id(req.params.id);
+    const row = db.prepare("SELECT * FROM data_requests WHERE id = ?").get(rid);
+    if (!row) throw new HttpError(404, "Request not found.");
+    const status = ["open", "verifying", "completed", "rejected"].includes(req.body.status) ? req.body.status : row.status;
+    const patientId = req.body.patientId ? id(req.body.patientId) : row.patient_id;
+    db.prepare(
+      `UPDATE data_requests SET status = ?, resolution = ?, patient_id = ?,
+         closed_at = CASE WHEN ? IN ('completed','rejected') THEN datetime('now') ELSE NULL END WHERE id = ?`,
+    ).run(status, cleanText(req.body.resolution ?? row.resolution, 1000), patientId, status, rid);
+    securityLog(db, req, `privacy_request_${status}`, row.ref);
+    res.json({ ok: true });
+  });
+
+  r.get("/patients/:id/export", (req, res) => {
+    const pid = id(req.params.id);
+    const data = exportPatientData(db, pid);
+    if (!data) throw new HttpError(404, "Patient not found.");
+    securityLog(db, req, "patient_data_exported", `patient #${pid}`);
+    res.set("Content-Disposition", `attachment; filename="patient-${pid}-data.json"`);
+    res.json(data);
+  });
+
+  r.post("/patients/:id/erase", (req, res) => {
+    const pid = id(req.params.id);
+    const patient = db.prepare("SELECT name FROM patients WHERE id = ?").get(pid);
+    if (!patient) throw new HttpError(404, "Patient not found.");
+    if (cleanText(req.body.confirm, 120).toLowerCase() !== patient.name.toLowerCase()) throw new HttpError(400, "Type the patient's full name to confirm.");
+    const result = erasePatient(db, pid);
+    securityLog(db, req, "patient_erased", `patient #${pid}`);
+    res.json(result);
+  });
+
+  // ---------- Backups ----------
+  const dataDir = path.dirname(config.dbFile);
+  r.get("/backups", (req, res) => {
+    res.json({ backups: listBackups(dataDir).map(({ file, size, at }) => ({ file, size, at })) });
+  });
+
+  r.post("/backups", (req, res) => {
+    const file = createBackup(db, dataDir);
+    securityLog(db, req, "backup_created", path.basename(file));
+    res.status(201).json({ file: path.basename(file) });
+  });
+
+  r.get("/backups/:file", (req, res) => {
+    const match = listBackups(dataDir).find((b) => b.file === req.params.file);
+    if (!match) throw new HttpError(404, "Backup not found.");
+    securityLog(db, req, "backup_downloaded", match.file);
+    res.set("Content-Type", "application/octet-stream");
+    res.set("Content-Disposition", `attachment; filename="${match.file}"`);
+    fs.createReadStream(match.path).pipe(res);
   });
 
   // ---------- Helpers ----------
@@ -139,6 +277,7 @@ export function adminRoutes(db) {
   r.post("/appointments", (req, res) => {
     const data = parseBooking(req.body, { allowAnyTime: true });
     const appt = createAppointment(db, data, { source: "admin", status: req.body.status === "pending" ? "pending" : "confirmed", actorName: req.admin.name });
+    recordConsent(db, appt.patient_id, ["care", ...(req.body.whatsappConsent ? ["whatsapp_updates"] : [])], "clinic_verbal");
     if (appt.status === "confirmed") notify(db, "confirmed", appt, { base: siteUrl(req) });
     res.status(201).json({ appointment: withLinks(appt, req) });
   });
@@ -258,6 +397,7 @@ export function adminRoutes(db) {
 
   r.put("/settings/policy", (req, res) => {
     const policy = savePolicy(db, req.body);
+    securityLog(db, req, "settings_changed", "fees & policies");
     res.json({ policy, summary: policySummary(policy) });
   });
 
@@ -364,11 +504,13 @@ export function adminRoutes(db) {
       .all(patient.name, patient.phone, pid).map((a) => withLinks(readAppt(a), req));
     const followups = db.prepare("SELECT f.*, ? patient_name, ? patient_phone FROM followups f WHERE patient_id = ? ORDER BY due_date DESC")
       .all(patient.name, patient.phone, pid).map((f) => followupView(f, req));
+    securityLog(db, req, "patient_viewed", `patient #${pid}`);
     const checkins = db.prepare("SELECT * FROM checkins WHERE patient_id = ? ORDER BY created_at ASC").all(pid).map((c) => ({ ...c, notes: decrypt(c.notes) }));
+    const consents = db.prepare("SELECT purpose, notice_version, source, given_at, withdrawn_at FROM consents WHERE patient_id = ? ORDER BY id").all(pid);
     patient.notes = decrypt(patient.notes);
     const first = patient.name.split(" ")[0];
     const storyInvite = waLink(patient.phone, `Hi ${first}, we're so glad you're feeling better! Would you share a few words about your experience to help others with tailbone pain? It takes 2 minutes: ${siteUrl(req)}/stories.html#share`);
-    res.json({ patient, appointments, followups, checkins, storyInvite });
+    res.json({ patient, appointments, followups, checkins, consents, storyInvite });
   });
 
   r.patch("/patients/:id", (req, res) => {
@@ -507,6 +649,7 @@ export function adminRoutes(db) {
     };
     const header = ["ref", "date", "time", "clinic", "status", "name", "phone", "email", "reason", "notes", "source", "fee", "payment_status", "paid", "refunded", "created_at"];
     const csv = [header.join(","), ...rows.map((r0) => header.map((h) => cell(r0[h])).join(","))].join("\r\n");
+    securityLog(db, req, "appointments_csv_exported", `${rows.length} rows`);
     res.set("Content-Type", "text/csv; charset=utf-8");
     res.set("Content-Disposition", `attachment; filename="appointments-${clinicNow().date}.csv"`);
     res.send(`﻿${csv}`);

@@ -145,6 +145,47 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_notif ON notifications(audience, read_at, id);
+
+-- DPDP / GDPR: what each patient agreed to, against which version of the notice.
+CREATE TABLE IF NOT EXISTS consents (
+  id INTEGER PRIMARY KEY,
+  patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  purpose TEXT NOT NULL,                 -- care | whatsapp_updates | story_publication
+  notice_version TEXT NOT NULL,
+  source TEXT NOT NULL DEFAULT 'web',
+  given_at TEXT NOT NULL DEFAULT (datetime('now')),
+  withdrawn_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_consent_patient ON consents(patient_id, purpose);
+
+-- Data-principal / data-subject requests (access, correction, erasure, withdrawal, grievance).
+CREATE TABLE IF NOT EXISTS data_requests (
+  id INTEGER PRIMARY KEY,
+  ref TEXT NOT NULL UNIQUE,
+  type TEXT NOT NULL CHECK (type IN ('access','correction','erasure','withdraw_consent','grievance')),
+  name TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
+  details TEXT NOT NULL DEFAULT '',      -- encrypted
+  patient_id INTEGER REFERENCES patients(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','verifying','completed','rejected')),
+  resolution TEXT NOT NULL DEFAULT '',
+  due_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  closed_at TEXT
+);
+
+-- Security log (ISO 27001 A.8.15 / NIST CSF DE.CM): sign-ins, exports, erasures, setting changes.
+CREATE TABLE IF NOT EXISTS security_log (
+  id INTEGER PRIMARY KEY,
+  admin_id INTEGER,
+  actor TEXT NOT NULL DEFAULT '',
+  action TEXT NOT NULL,
+  target TEXT NOT NULL DEFAULT '',
+  ip TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_seclog ON security_log(created_at);
 `;
 
 // Columns added after the first release. SQLite can't "ADD COLUMN IF NOT EXISTS", so check first.
@@ -161,6 +202,17 @@ const MIGRATIONS = {
     hold_until: "TEXT",                                    // unpaid online bookings release the slot after this
     reschedule_count: "INTEGER NOT NULL DEFAULT 0",
     cancelled_by: "TEXT",
+  },
+  admins: {
+    totp_secret: "TEXT",                                   // encrypted base32 secret
+    totp_enabled: "INTEGER NOT NULL DEFAULT 0",
+    session_version: "INTEGER NOT NULL DEFAULT 1",         // bump to sign out everywhere
+    failed_logins: "INTEGER NOT NULL DEFAULT 0",
+    locked_until: "TEXT",
+    last_login_at: "TEXT",
+  },
+  patients: {
+    anonymised_at: "TEXT",
   },
 };
 

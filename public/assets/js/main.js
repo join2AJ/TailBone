@@ -103,7 +103,7 @@
     status.classList.toggle("is-closed", !isOpen);
     let text;
     if (isOpen) {
-      text = `Open now · until ${fmtHour(close)} IST (by appointment)`;
+      text = `Open now · until ${fmtHour(close)} IST · by appointment`;
     } else if (minutes < open * 60) {
       text = `Closed · opens today at ${fmtHour(open)} IST`;
     } else {

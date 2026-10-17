@@ -53,3 +53,20 @@ export function decryptFields(row, fields) {
   for (const f of fields) if (f in out) out[f] = decrypt(out[f]);
   return out;
 }
+
+/** Encrypt a whole file's bytes (used for backups): magic | iv | tag | ciphertext. */
+export function encryptBuffer(buf) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", loadKey(), iv);
+  const ct = Buffer.concat([cipher.update(buf), cipher.final()]);
+  return Buffer.concat([Buffer.from("TBBK1"), iv, cipher.getAuthTag(), ct]);
+}
+
+export function decryptBuffer(buf) {
+  if (buf.subarray(0, 5).toString() !== "TBBK1") throw new Error("Not a Tailbone backup file.");
+  const iv = buf.subarray(5, 17);
+  const tag = buf.subarray(17, 33);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", loadKey(), iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(buf.subarray(33)), decipher.final()]);
+}
