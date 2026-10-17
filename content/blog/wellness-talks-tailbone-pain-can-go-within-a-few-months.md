@@ -1,9 +1,10 @@
 ---
+id: 5
 title: Wellness Talks: Tailbone Pain Can Go Within a Few months!
 slug: wellness-talks-tailbone-pain-can-go-within-a-few-months
 date: 2019-01-10
 summary: Anand : My Brother is 43 years old and hesitates to even meet the doctor once, being in a painful state of non-stop tailbone pain!He feels there is no…
-tags: Coccydynia treatment, Coccyx pain treatment, Tailbone pain
+tags: Treatment, Chronic pain, Self-care
 readMinutes: 4
 author: Dr Rajveer Singh
 image: /assets/img/blog/wellness-talks-tailbone-pain-can-go-within-a-few-months-cover.jpg

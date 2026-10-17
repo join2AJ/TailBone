@@ -1,9 +1,10 @@
 ---
+id: 4
 title: Emotional Stress from Tailbone Pain
 slug: emotional-stress-from-tailbone-pain-tailbone-pain-treatment
 date: 2018-12-28
 summary: Tailbone is the lowest part of the human spine and the Tailbone pain or also referred as Coccydynia is the inflammation localized to the Tailbone but tell…
-tags: Tailbone treatment in india
+tags: Mental health, Chronic pain, Treatment
 readMinutes: 4
 author: Dr Rajveer Singh
 image: /assets/img/blog/emotional-stress-from-tailbone-pain-tailbone-pain-treatment-cover.jpg

@@ -1,4 +1,4 @@
-// Shared page parts. content/site.html (the page template) holds the master footer; the animated explainers live in content/animations.
+// Shared page parts. content/site.html (the page template) holds the master header and footer; the animated explainers live in content/animations.
 // `npm run build` copies both into the other pages so there is one source for each.
 import fs from "node:fs";
 import path from "node:path";
@@ -41,6 +41,19 @@ export function siteFooter() {
   const m = /<footer class="footer">[\s\S]*?<\/footer>/.exec(html);
   if (!m) throw new Error("No footer in content/site.html");
   return m[0];
+}
+
+/** The main header and menu from content/site.html, with `active` (a nav href such as "/blog/") marked as the current page. */
+export function siteHeader(active) {
+  const html = fs.readFileSync(path.join(root, "content/site.html"), "utf8");
+  const m = /<header class="header" id="header">[\s\S]*?<\/header>/.exec(html);
+  if (!m) throw new Error("No header in content/site.html");
+  let header = m[0].replace(/\n\s*<div class="progress" id="progress"><\/div>/, "");
+  if (active) {
+    header = header.replace(new RegExp(`<a href="${active.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"( class="([^"]*)")?>`), (all, _c, cls = "") =>
+      `<a href="${active}" class="${[cls, "is-active"].filter(Boolean).join(" ")}" aria-current="page">`);
+  }
+  return header;
 }
 
 // Fill <!-- anim:name --> … <!-- /anim --> blocks.

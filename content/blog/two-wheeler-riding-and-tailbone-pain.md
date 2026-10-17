@@ -1,9 +1,10 @@
 ---
+id: 24
 title: Two-wheelers, potholes and tailbone pain: what the research shows
 slug: two-wheeler-riding-and-tailbone-pain
 date: 2026-10-17
 summary: A 2025 study found tailbone pain in a third of regular motorbike riders, and vibration was the strongest risk factor. What that means for daily commuters in Delhi, and how to protect your coccyx.
-tags: Research, Two-wheelers, Work and commuting
+tags: Research, Causes, Work and lifestyle, Sitting
 readMinutes: 5
 ---
 For millions of people in Indian cities, the daily commute means a scooter or motorbike: speed breakers, potholes and long rides in traffic. Each bump travels up through a narrow seat to the base of your spine. Research from our region suggests that this matters for the tailbone.

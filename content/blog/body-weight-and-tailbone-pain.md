@@ -1,9 +1,10 @@
 ---
+id: 17
 title: Body weight and tailbone pain: why both high and low BMI matter
 slug: body-weight-and-tailbone-pain
 date: 2026-10-17
 summary: Being overweight raises the risk of coccydynia, but so does being very thin. The reason is the way your pelvis tilts when you sit. Here is the research, explained simply.
-tags: Research, Risk factors, Weight
+tags: Research, Causes, Sitting
 readMinutes: 5
 ---
 Body weight is one of the clearest risk factors for tailbone pain, but not in the way most people expect. Research shows that **both** a higher body mass index (BMI) **and** being very thin can lead to coccydynia, through two different mechanisms.

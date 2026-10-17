@@ -1,9 +1,10 @@
 ---
+id: 3
 title: Tailbone Pain is the Most Common Aches that Pregnant Women Experience Through out Pregnancy
 slug: tailbone-pain-is-the-most-common-aches-that-pregnant-women-experience-through-out-pregnancy
 date: 2018-11-28
 summary: Lets understand the basic of Coccydynia and causes of Coccydynia during pregnancy. Tailbone pain is the most common aches that pregnant women experience…
-tags: Causes of tailbone pain during pregnancy, Relieve from coccydynia, Specialist for coccydynia in india
+tags: Pregnancy, Women's health, Causes, Self-care
 readMinutes: 2
 author: Dr Mubashira (PT)
 image: /assets/img/blog/tailbone-pain-is-the-most-common-aches-that-pregnant-women-e-cover.jpg

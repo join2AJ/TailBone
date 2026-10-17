@@ -1,9 +1,10 @@
 ---
+id: 15
 title: Tailbone pain after pregnancy: why it happens and what helps
 slug: tailbone-pain-after-pregnancy
 date: 2026-10-16
 summary: Many new mothers find that sitting to feed their baby is surprisingly painful. Here is why childbirth can affect the coccyx, and how it is treated.
-tags: Pregnancy, Postnatal, Women's health
+tags: Pregnancy, Women's health, Self-care, Treatment
 readMinutes: 5
 ---
 

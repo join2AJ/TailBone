@@ -83,6 +83,17 @@ CREATE TABLE IF NOT EXISTS stories (
 );
 CREATE INDEX IF NOT EXISTS idx_story_status ON stories(status, featured, published_at);
 
+-- Blog articles: id is the permanent number in each article's front matter (content/blog/*.md).
+-- The text lives in the static files; the database only records whether the admin has switched an article off.
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id INTEGER PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  changed_at TEXT,
+  changed_by TEXT
+);
+
 CREATE TABLE IF NOT EXISTS media (
   id INTEGER PRIMARY KEY,
   url TEXT NOT NULL UNIQUE,

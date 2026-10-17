@@ -166,6 +166,7 @@
     privacy: ["Privacy & data requests", renderPrivacy],
     payments: ["Payments", renderPayments],
     instagram: ["Instagram highlights", renderInstagram],
+    blog: ["Blog articles", renderBlog],
     settings: ["Settings", renderSettings],
     control: ["Control panel", renderControl],
   };
@@ -173,7 +174,7 @@
   // Which dashboard section needs which permission (the server enforces the same rules).
   const VIEW_PERM = {
     appointments: "appointments", inbox: "inbox", followups: "followups", patients: "patients", patient: "patients",
-    stories: "stories", instagram: "instagram", payments: "payments", privacy: "privacy", control: "superadmin",
+    stories: "stories", instagram: "instagram", blog: "blog", payments: "payments", privacy: "privacy", control: "superadmin",
   };
   const allowed = (view) => !VIEW_PERM[view] || state.admin.permissions.includes(VIEW_PERM[view]);
   function applyAccess() {
@@ -776,6 +777,41 @@
     $$("[data-move]").forEach((b) => b.addEventListener("click", async () => { await api(`/media/${b.dataset.id}`, { method: "PATCH", body: { move: b.dataset.move } }); route(); }));
     $$("[data-vis]").forEach((c) => c.addEventListener("change", async () => { await api(`/media/${c.dataset.vis}`, { method: "PATCH", body: { visible: c.checked } }); toast(c.checked ? "Shown on site." : "Hidden."); }));
     $$("[data-mdel]").forEach((b) => b.addEventListener("click", async () => { await api(`/media/${b.dataset.mdel}`, { method: "DELETE" }); route(); }));
+  }
+
+  // ---------- Blog articles ----------
+  async function renderBlog() {
+    const { posts } = await api("/blog");
+    const hiddenCount = posts.filter((p) => !p.enabled).length;
+    const when = (t) => new Date(t.replace(" ", "T") + "Z").toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" });
+    content.innerHTML = `
+      <section class="panel-card">
+        <p class="muted small" style="margin:0">Untick <strong>Shown</strong> to take an article off the website straight away: it disappears from the blog, search, "Keep reading" links and the Tailbone pain page, and its address shows "no longer available". Tick it again to bring it back. Each article keeps its number for good. To edit or add articles, change the files in <code>content/blog/</code> and publish.</p>
+      </section>
+      <div class="toolbar"><div class="field" style="flex:1"><label for="blogFilter">Find an article</label><input id="blogFilter" type="search" placeholder="Number, title or tag"></div>
+        <p class="muted small" style="margin:0;align-self:end">${posts.length} articles · ${hiddenCount} hidden</p></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>No.</th><th>Article</th><th>Tags</th><th>Published</th><th>Shown</th><th>Last changed</th></tr></thead>
+        <tbody>${posts.map((p) => `<tr data-find="${esc(`#${p.id} ${p.id} ${p.title} ${p.tags.join(" ")}`.toLowerCase())}">
+          <td class="nowrap"><strong>#${p.id}</strong></td>
+          <td><a href="/blog/${esc(p.slug)}.html" target="_blank" rel="noopener">${esc(p.title)}</a></td>
+          <td class="small">${esc(p.tags.join(", "))}</td>
+          <td class="nowrap small">${esc(p.date)}</td>
+          <td><label class="check"><input type="checkbox" data-post="${p.id}" ${p.enabled ? "checked" : ""}> Shown</label></td>
+          <td class="small muted">${p.changedAt ? `${esc(when(p.changedAt))}<br>${esc(p.changedBy || "")}` : "–"}</td>
+        </tr>`).join("") || '<tr><td colspan="6"><div class="empty">No articles found. Run the build to publish them.</div></td></tr>'}</tbody>
+      </table></div>`;
+    $("#blogFilter").addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      $$("tr[data-find]").forEach((tr) => { tr.hidden = !!q && !tr.dataset.find.includes(q); });
+    });
+    $$("[data-post]").forEach((c) => c.addEventListener("change", async () => {
+      try {
+        await api(`/blog/${c.dataset.post}`, { method: "PATCH", body: { enabled: c.checked } });
+        toast(c.checked ? `Article #${c.dataset.post} is shown on the website.` : `Article #${c.dataset.post} is hidden from the website.`);
+        route();
+      } catch (ex) { c.checked = !c.checked; toast(ex.message); }
+    }));
   }
 
   // ---------- Inbox ----------

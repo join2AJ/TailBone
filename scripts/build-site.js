@@ -3,15 +3,25 @@
 // and the plain-text summaries for AI assistants (llms.txt).
 import fs from "node:fs";
 import path from "node:path";
-import { root, SITE, siteFooter } from "./partials.js";
+import { root, SITE, siteFooter, siteHeader } from "./partials.js";
 import { buildPages } from "./build-pages.js";
 import { build as buildBlog } from "./build-blog.js";
 import { writeRobots, writeLlms } from "./build-ai.js";
 import { buildPress } from "./build-press.js";
 
 const STANDALONE = ["manage.html", "policies.html", "privacy.html", "stories.html", "press.html"];
+// Pages outside the template that get the shared header (menu) and the nav link to mark as current.
+const HEADERS = { "manage.html": "/manage.html", "policies.html": null, "privacy.html": null, "stories.html": null, "checkin.html": null };
 
 export function syncFooters() {
+  for (const [f, active] of Object.entries(HEADERS)) {
+    const file = path.join(root, "public", f);
+    if (!fs.existsSync(file)) continue;
+    let html = fs.readFileSync(file, "utf8").replace(/<header class="(?:header|mini-header)[^"]*"[^>]*>[\s\S]*?<\/header>/, siteHeader(active));
+    // The menu button and theme toggle need the shared header script.
+    if (!html.includes("site-nav.js")) html = html.replace("</body>", '  <script src="/assets/js/site-nav.js" defer></script>\n</body>');
+    fs.writeFileSync(file, html);
+  }
   const footer = siteFooter();
   for (const f of STANDALONE) {
     const file = path.join(root, "public", f);

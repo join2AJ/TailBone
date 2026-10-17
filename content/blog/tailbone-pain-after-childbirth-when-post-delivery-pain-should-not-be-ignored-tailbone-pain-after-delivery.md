@@ -1,9 +1,10 @@
 ---
+id: 10
 title: Tailbone Pain After Childbirth: When Post-Delivery Pain Should Not Be Ignored
 slug: tailbone-pain-after-childbirth-when-post-delivery-pain-should-not-be-ignored-tailbone-pain-after-delivery
 date: 2026-06-17
 summary: Childbirth places significant stress on the pelvis and coccyx. While mild discomfort may improve naturally, persistent tailbone pain after delivery should…
-tags: Tailbone pain specialist in india, Tailbone pain while sitting
+tags: Pregnancy, Women's health, Causes
 readMinutes: 2
 author: Dr Rajveer Singh
 image: /assets/img/blog/tailbone-pain-after-childbirth-when-post-delivery-pain-shoul-cover.jpg

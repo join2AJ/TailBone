@@ -19,6 +19,7 @@ import { encrypt, decrypt } from "../crypto.js";
 import { getPolicy, savePolicy, refundQuote, policySummary, policyHistory } from "../policy.js";
 import { paymentsEnabled, rupees } from "../payments.js";
 import { notify, readNotification, whatsappApiEnabled } from "../notify.js";
+import { listPosts, setEnabled } from "../blog.js";
 import {
   HttpError, parseBooking, createAppointment, getAppointment, rescheduleAppointment, createFollowup,
   defaultFollowupDate, cleanText, normalizePhone, validEmail, siteUrl, waLink, messages, checkinMessage, FOLLOWUP_TYPES,
@@ -108,7 +109,7 @@ export function adminRoutes(db) {
     [/^\/appointments\/\d+\/refund$/, "payments"],
     [/^\/patients\/\d+\/(export|erase)$/, "privacy"],
     [/^\/appointments/, "appointments"], [/^\/followups/, "followups"], [/^\/patients/, "patients"],
-    [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"],
+    [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"], [/^\/blog/, "blog"],
     [/^\/payments/, "payments"], [/^\/privacy/, "privacy"],
     [/^\/settings\/policy$/, "settings", "PUT"], [/^\/blocked/, "settings"], [/^\/calendar/, "settings"],
     [/^\/export/, "export"],
@@ -746,6 +747,18 @@ export function adminRoutes(db) {
 
   r.delete("/stories/:id", (req, res) => {
     db.prepare("DELETE FROM stories WHERE id = ?").run(id(req.params.id));
+    res.json({ ok: true });
+  });
+
+  // ---------- Blog articles (show or hide) ----------
+  r.get("/blog", (req, res) => res.json({ posts: listPosts(db) }));
+
+  r.patch("/blog/:id", (req, res) => {
+    if (typeof req.body.enabled !== "boolean") return res.status(400).json({ error: "Say whether the article is shown (enabled: true or false)." });
+    const pid = id(req.params.id);
+    const post = listPosts(db).find((p) => p.id === pid);
+    if (!post || !setEnabled(db, pid, req.body.enabled, req.admin.email)) return res.status(404).json({ error: "No article with that number." });
+    securityLog(db, req, req.body.enabled ? "blog_post_shown" : "blog_post_hidden", `#${pid} ${post.slug}`);
     res.json({ ok: true });
   });
 

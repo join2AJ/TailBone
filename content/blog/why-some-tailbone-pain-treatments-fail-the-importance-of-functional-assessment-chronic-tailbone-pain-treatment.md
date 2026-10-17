@@ -1,9 +1,10 @@
 ---
+id: 11
 title: Why Some Tailbone Pain Treatments Fail: The Importance of Functional Assessment
 slug: why-some-tailbone-pain-treatments-fail-the-importance-of-functional-assessment-chronic-tailbone-pain-treatment
 date: 2026-06-26
 summary: Chronic tailbone pain can be frustrating because many patients visit multiple healthcare providers and undergo various treatments without lasting…
-tags: Chronic tailbone pain treatment, Tailbone pain specialist in india, Tailbone pain while sitting
+tags: Treatment, Diagnosis, Chronic pain
 readMinutes: 3
 author: Dr Rajveer Singh
 image: /assets/img/blog/why-some-tailbone-pain-treatments-fail-the-importance-of-fun-cover.jpg

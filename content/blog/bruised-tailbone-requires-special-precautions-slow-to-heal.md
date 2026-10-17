@@ -1,9 +1,10 @@
 ---
+id: 6
 title: Bruised Tailbone: Requires Special Precautions. Slow to Heal
 slug: bruised-tailbone-requires-special-precautions-slow-to-heal
 date: 2019-01-24
 summary: A freak accident or injury may lead to Bruised Tailbone | Fractured Tailbone. The coccyx, another name for the tailbone is situated in a medically…
-tags: Coccydynia treatment, Coccygodynia, Coccyx pain treatment
+tags: Injury, Self-care, Treatment
 readMinutes: 5
 author: Dr Rajveer Singh
 image: /assets/img/blog/bruised-tailbone-requires-special-precautions-slow-to-heal-cover.jpg

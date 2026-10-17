@@ -1,9 +1,10 @@
 ---
+id: 7
 title: How Can Tailbone Pain Add Limitations To Your Work Life?
 slug: how-can-tailbone-pain-add-limitations-to-your-work-life
 date: 2019-02-14
 summary: Tailbone/Coccyx is a small bony triangular structure located at the end of vertebral column or the spine. It provides Support and Stabilize a person while…
-tags: Coccydynia treatment, Coccyx pain treatment, Tailbone pain treatment
+tags: Work and lifestyle, Sitting, Chronic pain
 readMinutes: 3
 author: Dr Rajveer Singh
 image: /assets/img/blog/how-can-tailbone-pain-add-limitations-to-your-work-life-cover.jpg

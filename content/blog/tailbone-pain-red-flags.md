@@ -1,9 +1,10 @@
 ---
+id: 14
 title: Tailbone pain red flags: when it needs urgent attention
 slug: tailbone-pain-red-flags
 date: 2026-10-15
 summary: Most tailbone pain is mechanical and treatable without surgery. A few warning signs, though, mean you should see a doctor quickly. Here is what they are.
-tags: Safety, Diagnosis
+tags: Red flags, Symptoms, Diagnosis
 readMinutes: 4
 ---
 

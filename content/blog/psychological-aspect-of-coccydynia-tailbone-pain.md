@@ -1,9 +1,10 @@
 ---
+id: 1
 title: Psychological aspect of Coccydynia / Tailbone Pain
 slug: psychological-aspect-of-coccydynia-tailbone-pain
 date: 2017-03-31
 summary: Dear Reader, in this article I would be explaining the psychological aspects of tailbone pain. I would be specific with the content and use simple words for…
-tags: Coccydynia, Psychological aspect of coccydynia, Tailbone
+tags: Mental health, Chronic pain, Symptoms
 readMinutes: 2
 author: Dr Rajveer Singh
 image: /assets/img/blog/psychological-aspect-of-coccydynia-tailbone-pain-cover.jpg

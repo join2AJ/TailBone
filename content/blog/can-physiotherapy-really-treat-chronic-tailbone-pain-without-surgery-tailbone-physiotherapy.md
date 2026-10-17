@@ -1,9 +1,10 @@
 ---
+id: 12
 title: Can Physiotherapy Really Treat Chronic Tailbone Pain Without Surgery?
 slug: can-physiotherapy-really-treat-chronic-tailbone-pain-without-surgery-tailbone-physiotherapy
 date: 2026-07-02
 summary: Many people believe chronic tailbone pain automatically requires injections or surgery. However, a large number of patients experience significant…
-tags: Chronic tailbone pain treatment, Tailbone pain specialist in india, Tailbone pain while sitting
+tags: Treatment, Chronic pain, Self-care
 readMinutes: 2
 author: Dr Rajveer Singh
 image: /assets/img/blog/can-physiotherapy-really-treat-chronic-tailbone-pain-without-cover.jpg

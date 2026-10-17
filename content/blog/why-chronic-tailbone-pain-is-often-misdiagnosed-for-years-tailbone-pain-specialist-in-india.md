@@ -1,9 +1,10 @@
 ---
+id: 8
 title: Why Chronic Tailbone Pain is Often Misdiagnosed for Years
 slug: why-chronic-tailbone-pain-is-often-misdiagnosed-for-years-tailbone-pain-specialist-in-india
 date: 2026-06-04
 summary: Chronic tailbone pain, also known as coccydynia, can significantly affect daily life. Many patients spend years seeking treatment for lower back pain,…
-tags: Tailbone pain specialist in india, Tailbone pain while sitting
+tags: Diagnosis, Chronic pain, Sitting
 readMinutes: 2
 author: Dr Rajveer Singh
 image: /assets/img/blog/why-chronic-tailbone-pain-is-often-misdiagnosed-for-years-ta-cover.jpg

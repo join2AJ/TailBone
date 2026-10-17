@@ -1,9 +1,10 @@
 ---
+id: 22
 title: A short history of tailbone pain: from 1859 to today
 slug: history-of-coccydynia
 date: 2026-10-17
 summary: Tailbone pain was named "coccygodynia" in 1859. How doctors' understanding grew, from pelvic floor spasm to coccyx shapes and sitting X-rays, and what it means for treatment today.
-tags: Research, History, Coccydynia
+tags: Research, History
 readMinutes: 4
 ---
 Tailbone pain is not a new problem. It has been described for centuries, and named for more than 160 years. Knowing how ideas about it developed explains why treatment today looks at the bone, the joints *and* the muscles.

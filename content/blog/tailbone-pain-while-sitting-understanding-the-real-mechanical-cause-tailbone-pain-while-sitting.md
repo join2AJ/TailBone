@@ -1,9 +1,10 @@
 ---
+id: 9
 title: Tailbone Pain While Sitting: Understanding the Real Mechanical Cause
 slug: tailbone-pain-while-sitting-understanding-the-real-mechanical-cause-tailbone-pain-while-sitting
 date: 2026-06-10
 summary: One of the most common symptoms of coccyx disorders is Tailbone Pain While Sitting. Many patients notice discomfort during office work, driving, or long…
-tags: Tailbone pain specialist in india, Tailbone pain while sitting
+tags: Sitting, Causes, Anatomy
 readMinutes: 2
 author: Dr Rajveer Singh
 image: /assets/img/blog/tailbone-pain-while-sitting-understanding-the-real-mechanica-cover.jpg

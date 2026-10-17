@@ -20,12 +20,13 @@ export const PERMISSIONS = {
   inbox: "Inbox (patient changes, messages to send)",
   stories: "Patient stories",
   instagram: "Instagram highlights",
+  blog: "Blog articles (show or hide)",
   payments: "Payments report and refunds",
   privacy: "Privacy requests, patient data export and erasure",
   settings: "Fees, refund rules and holidays",
   export: "Download appointments (CSV)",
 };
-export const DEFAULT_PERMISSIONS = ["appointments", "followups", "patients", "inbox", "stories", "instagram"];
+export const DEFAULT_PERMISSIONS = ["appointments", "followups", "patients", "inbox", "stories", "instagram", "blog"];
 
 export function getFeatures(db) {
   const row = db.prepare("SELECT value FROM settings WHERE key = 'features'").get();

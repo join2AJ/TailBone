@@ -1,9 +1,10 @@
 ---
+id: 16
 title: Sitting with tailbone pain: 8 practical ways to ease it
 slug: sitting-with-tailbone-pain
 date: 2026-10-17
 summary: Desk job, long drives or a hard classroom bench? Small changes to how and how long you sit can take a lot of pressure off a sore coccyx.
-tags: Self-care, Sitting, Work
+tags: Self-care, Sitting, Work and lifestyle
 readMinutes: 5
 ---
 

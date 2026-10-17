@@ -103,3 +103,21 @@ test("article tables, figures and citations", () => {
     }
   }
 });
+
+test("every article has a unique number and tags from the agreed list; the search index matches", async () => {
+  const { TAGS, checkIds } = await import("../scripts/build-blog.js");
+  const posts = loadPosts();
+  checkIds(posts);
+  assert.throws(() => checkIds([{ meta: { id: 1, slug: "a" } }, { meta: { id: 1, slug: "b" } }]), /used by both/);
+  assert.throws(() => parseFrontMatter("---\ntitle: a\nslug: x\ndate: 2026-01-01\nsummary: s\n---\n"), /"id"/);
+  assert.throws(() => parseFrontMatter("---\nid: 3\ntitle: a\nslug: x\ndate: 2026-01-01\nsummary: s\ntags: Nonsense\n---\n"), /Unknown tag/);
+  for (const p of posts) {
+    assert.ok(p.meta.tags.length >= 2, `${p.meta.slug} needs at least two tags`);
+    for (const t of p.meta.tags) assert.ok(TAGS.includes(t));
+  }
+  const index = JSON.parse(fs.readFileSync("public/blog/search.json", "utf8"));
+  assert.deepEqual(index.map((p) => p.id).sort((a, b) => a - b), posts.map((p) => p.meta.id).sort((a, b) => a - b), "run npm run build");
+  assert.ok(index.every((p) => p.text.length > 200 && !p.text.includes("::anim")));
+  const blogIndex = fs.readFileSync("public/blog/index.html", "utf8");
+  assert.ok(blogIndex.includes('id="blogQ"') && blogIndex.includes('data-tag="Pregnancy"'));
+});

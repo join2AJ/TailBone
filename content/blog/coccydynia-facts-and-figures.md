@@ -1,9 +1,10 @@
 ---
+id: 18
 title: Coccydynia in numbers: what the research really says
 slug: coccydynia-facts-and-figures
 date: 2026-10-17
 summary: How common is tailbone pain, who gets it, what causes it and how often treatment works: the key figures from medical research, each with its source.
-tags: Research, Facts and figures, Coccydynia
+tags: Research, Causes, Treatment
 readMinutes: 7
 ---
 Coccydynia (tailbone or coccyx pain) is one of the most under-studied causes of back pain. This page brings together the numbers that are actually backed by published research, explains what they mean, and is honest about what is still unknown.

@@ -1,9 +1,10 @@
 ---
+id: 25
 title: Why women get tailbone pain five times more often than men
 slug: why-women-get-tailbone-pain
 date: 2026-10-17
 summary: Women are about five times more likely than men to develop coccydynia. Pelvis shape, childbirth and pregnancy hormones all play a part. Here is what the research shows.
-tags: Research, Women's health, Pregnancy
+tags: Research, Women's health, Pregnancy, Causes
 readMinutes: 6
 ---
 One of the most consistent findings about coccydynia is that it affects women far more often than men: about **five women for every man**. The reasons are a mix of anatomy, pregnancy and childbirth.

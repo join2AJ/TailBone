@@ -1,9 +1,10 @@
 ---
+id: 23
 title: When it isn't the coccyx: conditions that can mimic tailbone pain
 slug: tailbone-pain-mimics
 date: 2026-10-17
 summary: Pilonidal cysts, nerve pain, cysts on the sacral nerves, stress fractures and, rarely, tumours can all feel like tailbone pain. How they differ, and why a careful examination comes first.
-tags: Research, Diagnosis, Red flags
+tags: Research, Red flags, Related conditions, Diagnosis
 readMinutes: 6
 ---
 Most pain at the base of the spine really does come from the coccyx and the muscles around it. But a few other conditions can feel very similar, and some need quite different treatment. This is why every patient is examined carefully before treatment starts.

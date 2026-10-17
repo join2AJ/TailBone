@@ -1,9 +1,10 @@
 ---
+id: 13
 title: What happens at a coccydynia consultation (and how to prepare)
 slug: what-happens-at-your-consultation
 date: 2026-10-14
 summary: Nervous about your first visit for tailbone pain? Here is what to expect, step by step, and how to prepare so you get the most from the appointment.
-tags: Your visit, Treatment
+tags: Your visit, Diagnosis, Treatment
 readMinutes: 4
 ---
 

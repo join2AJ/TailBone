@@ -115,3 +115,25 @@ test("feature switches are enforced on the public site", async () => {
   await api("super", "PUT", "/api/admin/superadmin/features", { online_booking: true, patient_self_service: true, stories: true, instagram: true, followup_checkins: true });
   assert.equal((await api(null, "POST", "/api/manage/cancel", { ref: ok.body.appointment.ref, phone: booking.phone })).status, 200);
 });
+
+test("the admin can hide a blog article by its number, and the site stops showing it", async () => {
+  const { body } = await api("super", "GET", "/api/admin/blog");
+  assert.ok(body.posts.length >= 20);
+  const post = body.posts.find((p) => p.slug === "history-of-coccydynia");
+  assert.ok(Number.isInteger(post.id) && post.enabled);
+  assert.equal((await fetch(`${base}/blog/${post.slug}.html`)).status, 200);
+
+  assert.equal((await api("staff", "PATCH", `/api/admin/blog/${post.id}`, { enabled: false })).status, 403, "needs the blog permission");
+  assert.equal((await api("super", "PATCH", "/api/admin/blog/99999", { enabled: false })).status, 404);
+  assert.equal((await api("super", "PATCH", `/api/admin/blog/${post.id}`, { enabled: false })).status, 200);
+  assert.deepEqual((await api(null, "GET", "/api/blog/hidden")).body.hidden, [{ id: post.id, slug: post.slug }]);
+  for (const url of [`/blog/${post.slug}.html`, `/blog/${post.slug}`]) assert.equal((await fetch(base + url)).status, 404, url);
+  const after = (await api("super", "GET", "/api/admin/blog")).body.posts.find((p) => p.id === post.id);
+  assert.equal(after.enabled, false);
+  assert.equal(after.changedBy, "owner@test.local");
+  assert.ok(db.prepare("SELECT 1 FROM security_log WHERE action = 'blog_post_hidden'").get());
+
+  assert.equal((await api("super", "PATCH", `/api/admin/blog/${post.id}`, { enabled: true })).status, 200);
+  assert.deepEqual((await api(null, "GET", "/api/blog/hidden")).body.hidden, []);
+  assert.equal((await fetch(`${base}/blog/${post.slug}.html`)).status, 200);
+});

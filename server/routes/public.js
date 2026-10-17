@@ -8,6 +8,7 @@ import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, ver
 import { notify } from "../notify.js";
 import { DEMO_PATIENT } from "../demo.js";
 import { getFeatures, isOn } from "../features.js";
+import { hiddenPosts } from "../blog.js";
 import QRCode from "qrcode";
 import crypto from "node:crypto";
 import { ensureBusy, isBusy, googleCalendarLink, calendarFeed } from "../gcal.js";
@@ -326,6 +327,9 @@ export function publicRoutes(db) {
 
   // ---------- Patient stories ----------
   const storyLimit = rateLimit({ windowMs: 60 * 60_000, max: 5, message: "Thanks! You've already shared a story recently." });
+
+  // Blog articles the clinic has switched off; the static pages hide them (see assets/js/blog.js).
+  r.get("/blog/hidden", (req, res) => res.json({ hidden: hiddenPosts(db) }));
 
   r.get("/stories", (req, res) => {
     if (!isOn(db, "stories")) return res.json({ stories: [], total: 0, average: null, disabled: true });

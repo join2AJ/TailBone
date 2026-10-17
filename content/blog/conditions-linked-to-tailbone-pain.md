@@ -1,4 +1,5 @@
 ---
+id: 21
 title: Conditions linked to tailbone pain: spondylitis, pelvic floor problems and more
 slug: conditions-linked-to-tailbone-pain
 date: 2026-10-17

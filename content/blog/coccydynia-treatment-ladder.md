@@ -1,9 +1,10 @@
 ---
+id: 19
 title: Coccydynia treatment, step by step: what works and how often
 slug: coccydynia-treatment-ladder
 date: 2026-10-17
 summary: Tailbone pain is treated in steps, from better sitting and hands-on care to injections and, rarely, surgery. What each step involves and the success rates reported in research.
-tags: Research, Treatment, Coccydynia
+tags: Research, Treatment, Self-care
 readMinutes: 7
 ---
 Most people with tailbone pain get better without surgery. Treatment works like a ladder: start with the simplest, safest steps, and climb only if they don't help enough. Reviews put the success rate of the non-surgical steps at about **9 in 10**.

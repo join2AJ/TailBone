@@ -5,6 +5,7 @@ import { config } from "./config.js";
 import { hashPassword } from "./auth.js";
 import { publicRoutes } from "./routes/public.js";
 import { adminRoutes } from "./routes/admin.js";
+import { hiddenPosts, syncPosts } from "./blog.js";
 
 /** Create the first account (the super admin) from ADMIN_EMAIL / ADMIN_PASSWORD if there are none yet. */
 export function seedAdmin(db, { email = config.adminEmail, password = config.adminPassword, name = "Super Admin" } = {}) {
@@ -71,6 +72,13 @@ export function createApp(db) {
     const to = exact.get(bare(req.path)) || prefixes.find(([p]) => req.path.startsWith(p))?.[1];
     if (to && bare(to.split("#")[0]) !== bare(req.path)) return res.redirect(301, to);
     next();
+  });
+
+  // Articles the admin has switched off are not served.
+  syncPosts(db);
+  app.get(/^\/blog\/([a-z0-9-]+)(\.html)?$/, (req, res, next) => {
+    if (!hiddenPosts(db).some((p) => p.slug === req.params[0])) return next();
+    res.status(404).set("X-Robots-Tag", "noindex").sendFile(path.join(config.publicDir, "404.html"));
   });
 
   // Each short page is its own pre-built file (/coccydynia → coccydynia.html, via `extensions` below).

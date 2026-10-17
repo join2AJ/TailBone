@@ -1,15 +1,23 @@
 // Builds the static blog from content/blog/*.md into public/blog/.
 // Run with `npm run build:blog` after adding or editing an article, then commit the output.
-// Articles are Markdown with a small front-matter block (title, slug, date, summary, tags, readMinutes).
+// Articles are Markdown with a small front-matter block (id, title, slug, date, summary, tags, readMinutes).
+// `id` is the article's permanent number (its primary key in the database, used when the admin hides an article):
+// give a new article the next unused number and never reuse or change one.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { animFigure, siteFooter, SITE } from "./partials.js";
+import { animFigure, siteFooter, siteHeader, SITE } from "./partials.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(root, "content/blog");
 const OUT = path.join(root, "public/blog");
 const WA = "https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment.";
+
+// Tags an article may use, so the same topic is always spelled the same way (and filters on /blog/ stay tidy).
+export const TAGS = [
+  "Causes", "Symptoms", "Diagnosis", "Treatment", "Self-care", "Sitting", "Pregnancy", "Women's health", "Injury",
+  "Work and lifestyle", "Chronic pain", "Mental health", "Red flags", "Related conditions", "Anatomy", "Research", "History", "Your visit",
+];
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -22,6 +30,9 @@ export function parseFrontMatter(src) {
     if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim();
   }
   meta.tags = (meta.tags || "").split(",").map((t) => t.trim()).filter(Boolean);
+  for (const t of meta.tags) if (!TAGS.includes(t)) throw new Error(`Unknown tag "${t}" (allowed: ${TAGS.join(", ")})`);
+  if (!/^[1-9]\d*$/.test(meta.id || "")) throw new Error(`Front matter needs "id" (a whole number, unique to this article)`);
+  meta.id = Number(meta.id);
   meta.readMinutes = Number(meta.readMinutes) || 3;
   for (const k of ["title", "slug", "date", "summary"]) if (!meta[k]) throw new Error(`Front matter needs "${k}"`);
   if (!/^[a-z0-9-]+$/.test(meta.slug)) throw new Error(`Bad slug "${meta.slug}"`);
@@ -132,32 +143,7 @@ export function page({ title, description, canonical, type = "website", jsonLd, 
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  <header class="header" id="header">
-    <div class="container header__inner">
-      <a href="/" class="brand" aria-label="Tailbone Treatment home">
-        <img src="/assets/img/logo.svg" alt="" width="40" height="40">
-        <span class="brand__text"><strong>TAILBONE</strong><small>TREATMENT.com</small></span>
-      </a>
-      <nav class="nav" id="nav" aria-label="Main">
-        <a href="/coccydynia">Tailbone pain</a>
-        <a href="/treatment">Treatment</a>
-        <a href="/doctor">Doctor</a>
-        ${blogActive ? '<a href="/blog/" class="is-active" aria-current="page">Blog</a>' : '<a href="/blog/">Blog</a>'}
-        <a href="/locations">Clinics</a>
-        <a href="/manage.html" class="nav__mobile-only">My appointments</a>
-        <a href="/book" class="btn btn--primary nav__cta">Book appointment</a>
-      </nav>
-      <div class="header__actions">
-        <button type="button" class="icon-btn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
-          <svg class="i-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-          <svg class="i-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-        </button>
-        <button type="button" class="icon-btn burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="nav">
-          <span></span><span></span><span></span>
-        </button>
-      </div>
-    </div>
-  </header>
+  ${siteHeader(blogActive ? "/blog/" : null)}
 
   <main id="main" class="section blog">
     <div class="container">
@@ -176,12 +162,27 @@ ${body}
   <script src="/assets/js/site-nav.js" defer></script>
   <script src="/assets/js/anim.js" defer></script>
   <script src="/assets/js/consent.js" defer></script>
+  <script src="/assets/js/blog.js" defer></script>
 </body>
 </html>
 `;
 }
 
-const tagsHtml = (tags) => (tags.length ? `<ul class="post-tags">${tags.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : "");
+const tagUrl = (t) => `/blog/?tag=${encodeURIComponent(t)}`;
+const tagsHtml = (tags, link = false) => (tags.length
+  ? `<ul class="post-tags">${tags.map((t) => `<li>${link ? `<a href="${esc(tagUrl(t))}">${esc(t)}</a>` : esc(t)}</li>`).join("")}</ul>` : "");
+
+/** The two other articles sharing the most tags with this one (newest first on ties). */
+function related(post, others) {
+  const shared = (o) => o.meta.tags.filter((t) => post.meta.tags.includes(t)).length;
+  return [...others].sort((a, b) => shared(b) - shared(a) || b.meta.date.localeCompare(a.meta.date)).slice(0, 2);
+}
+
+/** Plain text of an article for the search box (no Markdown, figures or reference list). */
+const plainText = (body) => body
+  .replace(/^## Sources[\s\S]*$/m, "").replace(/^::anim .*$/gm, "").replace(/^Table:\s*/gm, "")
+  .replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+  .replace(/[*#>|`_]+/g, " ").replace(/-{3,}/g, " ").replace(/\s+/g, " ").trim();
 const metaLine = (m) => `<time datetime="${m.date}">${prettyDate(m.date)}</time> · ${m.readMinutes} min read`;
 
 const publisher = { "@type": "MedicalClinic", name: "Tailbone Treatment Clinic", url: `${SITE}/`, logo: `${SITE}/assets/img/logo.svg` };
@@ -189,10 +190,10 @@ const publisher = { "@type": "MedicalClinic", name: "Tailbone Treatment Clinic",
 function articlePage(post, others) {
   const { meta } = post;
   const url = `${SITE}/blog/${meta.slug}.html`;
-  const more = others.slice(0, 2).map((o) => `<li><a href="/blog/${o.meta.slug}.html">${esc(o.meta.title)}</a></li>`).join("");
-  const body = `      <article class="post narrow">
+  const more = related(post, others).map((o) => `<li><a href="/blog/${o.meta.slug}.html">${esc(o.meta.title)}</a></li>`).join("");
+  const body = `      <article class="post narrow" data-post-id="${meta.id}">
         <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a></nav>
-        ${tagsHtml(meta.tags)}
+        ${tagsHtml(meta.tags, true)}
         <h1>${esc(meta.title)}</h1>
         <p class="post-lede">${esc(meta.summary)}</p>
         <p class="post-meta muted small">By ${esc(meta.author || "Tailbone Treatment Clinic")} · ${metaLine(meta)}${meta.originalUrl ? " · first published on tailbonetreatment.com" : ""}</p>
@@ -242,7 +243,7 @@ ${post.html}
 }
 
 function indexPage(posts) {
-  const cards = posts.map(({ meta }) => `        <li class="post-card">
+  const cards = posts.map(({ meta }) => `        <li class="post-card" data-post-id="${meta.id}" data-tags="${esc(meta.tags.join("|"))}">
           ${tagsHtml(meta.tags)}
           <h2><a href="/blog/${meta.slug}.html">${esc(meta.title)}</a></h2>
           <p>${esc(meta.summary)}</p>
@@ -253,9 +254,23 @@ function indexPage(posts) {
         <h1>Tailbone pain, explained</h1>
         <p class="muted">Practical advice on coccydynia from our clinic: sitting, pregnancy, warning signs and what treatment involves. Checked against trusted sources such as the NHS and Cleveland Clinic.</p>
       </div>
-      <ul class="post-grid">
+      <form class="blog-search" id="blogSearch" role="search" action="/blog/" method="get">
+        <label for="blogQ" class="visually-hidden">Search articles</label>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="blogQ" name="q" placeholder="Search articles, e.g. pregnancy, sitting, cushion" autocomplete="off" enterkeyhint="search">
+      </form>
+      <div class="blog-tags" role="group" aria-label="Filter by topic">
+        <button type="button" class="chip is-active" data-tag="" aria-pressed="true">All</button>
+${tagsInUse(posts).map((t) => `        <button type="button" class="chip" data-tag="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join("\n")}
+      </div>
+      <p class="muted small blog-count" id="blogCount" role="status" aria-live="polite">${posts.length} articles</p>
+      <ul class="post-grid" id="postGrid">
 ${cards}
-      </ul>`;
+      </ul>
+      <div class="empty blog-empty" id="blogEmpty" hidden>
+        <p><strong>No articles match your search.</strong></p>
+        <p class="muted">Try a different word, or <button type="button" class="linkish" id="blogReset">show all articles</button>. You can also ask Dr Rajveer directly on <a href="${WA}" target="_blank" rel="noopener">WhatsApp</a>.</p>
+      </div>`;
   return page({
     title: "Blog | Tailbone Treatment Clinic",
     description: "Practical, trustworthy articles on tailbone (coccyx) pain: sitting, pregnancy, red flags and treatment.",
@@ -272,6 +287,9 @@ ${cards}
   });
 }
 
+/** Tags used by at least one article, in the order of TAGS. */
+const tagsInUse = (posts) => TAGS.filter((t) => posts.some((p) => p.meta.tags.includes(t)));
+
 export function loadPosts(dir = SRC) {
   return fs.readdirSync(dir).filter((f) => f.endsWith(".md")).map((f) => {
     const { meta, body } = parseFrontMatter(fs.readFileSync(path.join(dir, f), "utf8"));
@@ -279,15 +297,29 @@ export function loadPosts(dir = SRC) {
     const srcBlock = (/^## Sources\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m.exec(body) || [, ""])[1];
     const sources = [...srcBlock.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map((x) => x[1]);
     return { meta, body, sources, html: markdown(body).replace(/^/gm, "          ") };
-  }).sort((a, b) => b.meta.date.localeCompare(a.meta.date));
+  }).sort((a, b) => b.meta.date.localeCompare(a.meta.date) || b.meta.id - a.meta.id);
+}
+
+/** Article numbers must be unique: they are the primary key the admin's show/hide switch is stored against. */
+export function checkIds(posts) {
+  const seen = new Map();
+  for (const p of posts) {
+    if (seen.has(p.meta.id)) throw new Error(`Article id ${p.meta.id} is used by both "${seen.get(p.meta.id)}" and "${p.meta.slug}"`);
+    seen.set(p.meta.id, p.meta.slug);
+  }
+  return posts;
 }
 
 export function build() {
-  const posts = loadPosts();
+  const posts = checkIds(loadPosts());
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.mkdirSync(OUT, { recursive: true });
   for (const p of posts) fs.writeFileSync(path.join(OUT, `${p.meta.slug}.html`), articlePage(p, posts.filter((o) => o !== p)));
   fs.writeFileSync(path.join(OUT, "index.html"), indexPage(posts));
+  // Search index for the blog's search box; the server also reads it to list articles in the dashboard.
+  fs.writeFileSync(path.join(OUT, "search.json"), JSON.stringify(posts.map(({ meta, body }) => ({
+    id: meta.id, slug: meta.slug, title: meta.title, summary: meta.summary, tags: meta.tags, date: meta.date, text: plainText(body),
+  }))));
 
   return posts;
 }

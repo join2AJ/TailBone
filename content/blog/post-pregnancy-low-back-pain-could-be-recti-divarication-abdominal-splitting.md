@@ -1,9 +1,10 @@
 ---
+id: 2
 title: Post Pregnancy Low Back Pain Could be Recti Divarication (Abdominal Splitting)
 slug: post-pregnancy-low-back-pain-could-be-recti-divarication-abdominal-splitting
 date: 2017-09-10
 summary: Diastasis Recti/Recti Divarication/Abdominal splitting is a midline separation of muscles of the abdominal wall. A palpable midline gap of more than 2 cm or…
-tags: Diagnose, Diastasis recti abdominis, Recti divarication
+tags: Pregnancy, Women's health, Related conditions, Diagnosis
 readMinutes: 3
 author: Dr Mubashira (PT)
 image: /assets/img/blog/post-pregnancy-low-back-pain-could-be-recti-divarication-abd-cover.jpg
