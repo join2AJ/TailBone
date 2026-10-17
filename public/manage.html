@@ -6,6 +6,18 @@
   <title>My Appointments | Tailbone Treatment</title>
   <meta name="robots" content="noindex">
   <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/sora-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <meta property="og:image" content="https://tailbone.netlify.app/assets/img/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Tailbone Treatment Clinic: sit down again without the pain. Bengaluru, New Delhi, online.">
+  <meta property="og:site_name" content="Tailbone Treatment Clinic">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:title" content="My Appointments | Tailbone Treatment">
+  <meta property="og:type" content="website">
   <link rel="stylesheet" href="assets/css/fonts.css">
   <link rel="stylesheet" href="assets/css/styles.css">
   <script src="assets/js/theme.js"></script>
@@ -29,7 +41,7 @@
         <form class="form" id="lookupForm" novalidate>
           <div class="field">
             <label for="ref">Booking reference</label>
-            <input id="ref" name="ref" required placeholder="TB-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <input type="text" id="ref" name="ref" required placeholder="TB-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
           </div>
           <div class="field">
             <label for="phone">Phone number</label>
@@ -41,14 +53,14 @@
           <span class="demo-login__or">or</span>
           <button class="btn btn--ghost btn--block btn--lg" type="button" id="demoPatientBtn">▶ Try as a demo patient (one click)</button>
         </div>
-        <p class="small muted center" style="margin-top:1rem">Lost your reference? <a href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener">WhatsApp us</a> or call <a href="tel:+919886688323">+91 98866 88323</a>.</p>
+        <p class="small muted center" style="margin-top:1rem">Lost your reference? <a href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener">WhatsApp us</a> or call <a href="tel:+919886688323">+91&nbsp;98866&nbsp;88323</a>.</p>
       </section>
 
       <!-- Result -->
       <section class="card" id="resultCard" hidden>
         <div class="alert" id="resultMsg" hidden></div>
         <span class="eyebrow">Your appointment</span>
-        <h1 id="hello"></h1>
+        <h1 id="hello">Your appointment</h1>
         <div id="apptBox"></div>
 
         <p class="small muted" id="reschedNote" hidden></p>
@@ -59,9 +71,9 @@
 
         <!-- Reschedule panel -->
         <div id="reschedPanel" hidden style="margin-top:1.4rem">
-          <h3>Pick a new time</h3>
-          <div class="days" id="dayStrip" role="listbox" aria-label="Days"></div>
-          <div class="slots" id="slotGrid" role="listbox" aria-label="Times"></div>
+          <h2 class="h3">Pick a new time</h2>
+          <div class="days" id="dayStrip" role="group" aria-label="Days"></div>
+          <div class="slots" id="slotGrid" role="group" aria-label="Times"></div>
           <div class="row-gap" style="margin-top:1rem">
             <button class="btn btn--primary" id="confirmResched" type="button" disabled>Confirm new time</button>
             <button class="btn btn--ghost" id="closeResched" type="button">Keep current time</button>
@@ -70,11 +82,11 @@
 
         <!-- Cancel panel -->
         <div id="cancelPanel" hidden style="margin-top:1.4rem">
-          <h3>Cancel this appointment?</h3>
+          <h2 class="h3">Cancel this appointment?</h2>
           <div class="quote-box" id="refundQuote" hidden></div>
           <div class="field">
             <label for="cancelReason">Reason <span class="muted">(optional)</span></label>
-            <input id="cancelReason" maxlength="300" placeholder="e.g. feeling better, schedule clash">
+            <input type="text" id="cancelReason" maxlength="300" placeholder="e.g. feeling better, schedule clash">
           </div>
           <div class="row-gap" style="margin-top:1rem">
             <button class="btn btn--primary" id="confirmCancel" type="button" style="background:var(--danger)">Yes, cancel it</button>
@@ -83,12 +95,12 @@
         </div>
 
         <div id="othersBox" hidden style="margin-top:2rem">
-          <h3>Your other upcoming appointments</h3>
+          <h2 class="h3">Your other upcoming appointments</h2>
           <div id="othersList"></div>
         </div>
 
         <div class="privacy-box" style="margin-top:2rem">
-          <h3>Your data & privacy</h3>
+          <h2 class="h3">Your data &amp; privacy</h2>
           <label class="check"><input type="checkbox" id="waToggle"> Send me appointment updates and reminders on WhatsApp</label>
           <div class="row-gap" style="margin-top:.8rem">
             <button class="btn btn--ghost btn--sm" id="exportBtn" type="button">Download my data</button>
@@ -105,7 +117,7 @@
 
   <footer class="footer"><div class="container footer__bottom" style="margin-top:0">
     <span>© Tailbone Treatment. All rights reserved.</span>
-    <span><a href="policies.html">Terms & refund policy</a> · <a href="privacy.html">Privacy</a></span>
+    <span><a href="policies.html">Terms &amp; refund policy</a> · <a href="privacy.html">Privacy</a></span>
   </div></footer>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

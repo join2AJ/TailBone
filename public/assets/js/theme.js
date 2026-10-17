@@ -1,5 +1,8 @@
 // Loaded synchronously in <head> on every page (inline scripts are blocked by our Content-Security-Policy).
 (function () {
+  // 0) Scripts are running: allow scroll-reveal animations (CSS keeps content visible otherwise).
+  document.documentElement.classList.add("js");
+
   // 1) Apply the saved or system theme before first paint to avoid a flash.
   var t = null;
   try { t = localStorage.getItem("theme"); } catch (e) { /* storage unavailable */ }

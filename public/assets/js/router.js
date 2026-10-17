@@ -5,19 +5,19 @@
   "use strict";
 
   const ROUTES = {
-    "/": { page: "home", title: "Tailbone Treatment Clinic | Coccydynia Specialist · Bengaluru & New Delhi",
+    "/": { page: "home", heading: "Tailbone Treatment Clinic", title: "Tailbone Treatment Clinic | Coccydynia Specialist · Bengaluru & New Delhi",
       description: "Specialist, non-surgical care for tailbone (coccyx) pain by Dr Rajveer Singh. Clinics in Bengaluru and New Delhi, plus online consultations." },
-    "/coccydynia": { page: "coccydynia", title: "What is Coccydynia? Symptoms, Causes & Self-check | Tailbone Treatment",
+    "/coccydynia": { page: "coccydynia", heading: "Coccydynia: symptoms, causes and self-check", title: "What is Coccydynia? Symptoms, Causes & Self-check | Tailbone Treatment",
       description: "Understand tailbone pain: what the coccyx is, common causes, typical symptoms, a quick self-check and everyday tips." },
-    "/treatment": { page: "treatment", title: "Non-surgical Tailbone Pain Treatment | Tailbone Treatment",
+    "/treatment": { page: "treatment", heading: "Non-surgical tailbone pain treatment", title: "Non-surgical Tailbone Pain Treatment | Tailbone Treatment",
       description: "How Internal Manipulation and a personalised plan treat coccydynia without surgery, step by step." },
-    "/doctor": { page: "doctor", title: "Dr Rajveer Singh, Coccydynia Specialist | Tailbone Treatment",
+    "/doctor": { page: "doctor", heading: "Dr Rajveer Singh, coccydynia specialist", title: "Dr Rajveer Singh, Coccydynia Specialist | Tailbone Treatment",
       description: "Meet Dr Rajveer Singh, consulting in Bengaluru, New Delhi and online, and read what patients say." },
-    "/locations": { page: "locations", title: "Clinics in Bengaluru & New Delhi · Timings | Tailbone Treatment",
+    "/locations": { page: "locations", heading: "Our clinics and opening hours", title: "Clinics in Bengaluru & New Delhi · Timings | Tailbone Treatment",
       description: "Addresses, maps and opening hours of our Bengaluru and New Delhi clinics, plus online consultations." },
-    "/faq": { page: "faq", title: "Frequently Asked Questions | Tailbone Treatment",
+    "/faq": { page: "faq", heading: "Frequently asked questions", title: "Frequently Asked Questions | Tailbone Treatment",
       description: "Answers about coccydynia, Internal Manipulation, sessions, referrals and appointments." },
-    "/book": { page: "book", title: "Book an Appointment | Tailbone Treatment",
+    "/book": { page: "book", heading: "Book an appointment", title: "Book an Appointment | Tailbone Treatment",
       description: "Pick a clinic, day and time and book your tailbone pain consultation in seconds." },
   };
   // Old one-page anchors → new pages (keeps links in old messages and bookmarks working).
@@ -38,12 +38,33 @@
     return ROUTES[p] ? p : null;
   };
 
+  // Every page gets exactly one <h1>. The home hero has its own; inner pages get a visually hidden one
+  // (their visible section headings stay h2/h3, so the heading outline never skips a level).
+  const pageTitle = document.createElement("h1");
+  pageTitle.className = "visually-hidden";
+  pageTitle.id = "pageTitle";
+  main.prepend(pageTitle);
+  function setPageHeading(page, route) {
+    pageTitle.hidden = page === "home";
+    pageTitle.textContent = route.heading;
+  }
+
+  // Canonical address per page, so search engines index each short page separately.
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.appendChild(canonical);
+  }
+
   function render(path, { anchor = "", initial = false } = {}) {
     const route = ROUTES[path];
     sections.forEach((el) => {
       const show = el.dataset.page ? el.dataset.page.split(" ").includes(route.page) : el.dataset.pageExcept !== route.page;
       el.hidden = !show;
     });
+    setPageHeading(route.page, route);
+    canonical.href = location.origin + path;
     document.title = route.title;
     if (metaDesc) metaDesc.setAttribute("content", route.description);
     document.documentElement.dataset.route = route.page;

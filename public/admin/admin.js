@@ -45,16 +45,39 @@
       body: body ? JSON.stringify(body) : undefined,
     });
     const data = await res.json().catch(() => ({}));
-    if (res.status === 401 && path !== "/login") { showLogin(); throw new Error(data.error || "Please sign in."); }
+    if (res.status === 401 && path !== "/login") {
+      const wasSignedIn = !!state.admin;
+      showLogin();
+      if (wasSignedIn) {
+        $("#loginErr").textContent = "You were signed out after 30 minutes without activity (or from another device). Please sign in again.";
+        $("#loginErr").hidden = false;
+      }
+      throw new Error(data.error || "Please sign in.");
+    }
     if (!res.ok) throw new Error(data.error || "Request failed.");
     return data;
   }
+
+  // Tie each visible <label> to its field so screen readers announce it (labels are written without "for").
+  let fieldSeq = 0;
+  function linkLabels(root) {
+    root.querySelectorAll(".field").forEach((field) => {
+      const label = field.querySelector(":scope > label:not([for])");
+      const control = field.querySelector("input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea");
+      if (!label || !control || label.contains(control)) return;
+      if (!control.id) control.id = `f${++fieldSeq}`;
+      label.htmlFor = control.id;
+    });
+    root.querySelectorAll("th:empty").forEach((th) => { th.innerHTML = '<span class="visually-hidden">Actions</span>'; });
+  }
+  new MutationObserver(() => { linkLabels(content); linkLabels(modalBody); }).observe(document.body, { childList: true, subtree: true });
 
   const openModal = (html) => { modalBody.innerHTML = html; modal.showModal(); };
   const closeModal = () => modal.close();
 
   // ---------- Auth ----------
   function showLogin() {
+    state.admin = null;
     $("#appView").hidden = true;
     $("#loginView").hidden = false;
     $("#loginEmail").focus();
@@ -120,6 +143,8 @@
         const bar = document.createElement("div");
         bar.id = "demoBar";
         bar.className = "demo-bar";
+        bar.setAttribute("role", "region");
+        bar.setAttribute("aria-label", "Demo notice");
         bar.innerHTML = '<span><strong>Demo dashboard</strong> · sample patients · changes reset daily · no real messages or payments are sent</span><span class="demo-bar__actions"><a href="/manage.html?demo=1" target="_blank" rel="noopener">Open the patient view</a></span>';
         $(".main").prepend(bar);
       }
@@ -495,7 +520,7 @@
       const b = e.target.closest("[data-t]");
       if (!b) return;
       form.time.value = b.dataset.t;
-      $$(".slot", form).forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+      $$(".slot", form).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
     });
     loadPick();
     form.addEventListener("submit", async (e) => {
@@ -879,7 +904,7 @@
           </div>
           <div class="field-row">
             <div class="field"><label>Online</label><input type="number" min="0" name="fees.online" value="${P.fees.online}"></div>
-            <div class="field"><label>Follow-up fee (₹) within N days</label><div class="field-row"><input type="number" min="0" name="followup.fee" value="${P.followup.fee}"><input type="number" min="0" max="365" name="followup.windowDays" value="${P.followup.windowDays}" title="days"></div></div>
+            <div class="field"><label>Follow-up fee (₹) within N days</label><div class="field-row"><input type="number" min="0" name="followup.fee" value="${P.followup.fee}"><input type="number" min="0" max="365" name="followup.windowDays" value="${P.followup.windowDays}" aria-label="Follow-up window in days" title="days"></div></div>
           </div>
           <div class="field"><label>Payment</label><select name="payments.mode">
             <option value="online" ${P.payments.mode === "online" ? "selected" : ""}>Pay online to confirm (needs Razorpay)</option>

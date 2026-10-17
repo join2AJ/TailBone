@@ -60,8 +60,14 @@ export function createApp(db) {
 
   // Short pages handled by public/assets/js/router.js all share index.html.
   const PAGES = ["/coccydynia", "/treatment", "/doctor", "/locations", "/faq", "/book"];
-  app.get(PAGES, (req, res) => res.sendFile(path.join(config.publicDir, "index.html")));
-  app.use(express.static(config.publicDir, { extensions: ["html"], maxAge: config.isProd ? "1h" : 0 }));
+  const noCache = (res) => res.set("Cache-Control", "no-cache");
+  app.get(PAGES, (req, res) => { noCache(res); res.sendFile(path.join(config.publicDir, "index.html")); });
+  app.use(express.static(config.publicDir, {
+    extensions: ["html"],
+    maxAge: config.isProd ? "1h" : 0,
+    // Pages are re-checked each visit so updates show at once; assets keep the 1-hour cache.
+    setHeaders: (res, file) => { if (file.endsWith(".html")) noCache(res); },
+  }));
   app.get("/admin", (req, res) => res.sendFile(path.join(config.publicDir, "admin", "index.html")));
 
   // eslint-disable-next-line no-unused-vars

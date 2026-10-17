@@ -157,7 +157,6 @@
     dotsWrap.innerHTML = "";
     for (let i = 0; i < pageCount(); i++) {
       const b = document.createElement("button");
-      b.setAttribute("role", "tab");
       b.setAttribute("aria-label", `Show stories page ${i + 1}`);
       b.addEventListener("click", () => goTo(i));
       dotsWrap.appendChild(b);
@@ -166,7 +165,7 @@
   };
   const syncDots = () => {
     const p = currentPage();
-    $$("button", dotsWrap).forEach((d, i) => d.setAttribute("aria-selected", String(i === p)));
+    $$("button", dotsWrap).forEach((d, i) => { if (i === p) d.setAttribute("aria-current", "true"); else d.removeAttribute("aria-current"); });
   };
   $("#prev").addEventListener("click", () => goTo(currentPage() - 1));
   $("#next").addEventListener("click", () => goTo(currentPage() + 1));
@@ -177,8 +176,17 @@
   buildDots();
 
   let autoplay;
-  const startAuto = () => { if (!reduceMotion) autoplay = setInterval(() => goTo(currentPage() + 1), 6000); };
+  let paused = reduceMotion;
+  const startAuto = () => { clearInterval(autoplay); if (!paused) autoplay = setInterval(() => goTo(currentPage() + 1), 6000); };
   const stopAuto = () => clearInterval(autoplay);
+  const pauseBtn = $("#carouselPause");
+  const syncPause = () => {
+    pauseBtn.setAttribute("aria-pressed", String(paused));
+    pauseBtn.setAttribute("aria-label", paused ? "Resume automatic scrolling" : "Pause automatic scrolling");
+    pauseBtn.textContent = paused ? "▶" : "❚❚";
+  };
+  pauseBtn.addEventListener("click", () => { paused = !paused; syncPause(); if (paused) stopAuto(); else startAuto(); });
+  syncPause();
   const carousel = $("#carousel");
   carousel.addEventListener("mouseenter", stopAuto);
   carousel.addEventListener("mouseleave", startAuto);
@@ -300,11 +308,12 @@
   let offline = false;
   const WA_GREETING = "Hi Dr Rajveer, got your details from your website. I would like to book an appointment.";
   const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const istToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date()); // YYYY-MM-DD
   const localDays = () => {
     const out = [];
-    const start = new Date();
+    const [y, mo, da] = istToday().split("-").map(Number);
     for (let i = 0; i < 21; i++) {
-      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const d = new Date(y, mo - 1, da + i);
       const free = localSlots(isoDay(d)).filter((x) => x.available).length;
       out.push({ date: isoDay(d), free });
     }
@@ -314,7 +323,7 @@
     const day = new Date(`${date}T00:00:00`).getDay();
     const [open, close] = HOURS[day];
     const { day: todayIdx, minutes } = istNow();
-    const isToday = date === isoDay(new Date()) && todayIdx === day;
+    const isToday = date === istToday() && todayIdx === day;
     const out = [];
     for (let m = open * 60; m + 30 <= close * 60; m += 30) {
       const t = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
@@ -385,7 +394,7 @@
   }).catch(() => { /* static hosting: booking falls back to WhatsApp */ });
 
   const selectIn = (container, btn) => {
-    $$("[aria-selected]", container).forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
+    $$("[aria-pressed]", container).forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
   };
 
   async function loadSlots() {
@@ -408,8 +417,7 @@
         b.className = "slot";
         b.textContent = prettyTime(s.time);
         b.disabled = !s.available;
-        b.setAttribute("role", "option");
-        b.setAttribute("aria-selected", "false");
+        b.setAttribute("aria-pressed", "false");
         b.addEventListener("click", () => {
           booking.time = s.time;
           selectIn(slotGrid, b);
@@ -439,8 +447,7 @@
         b.type = "button";
         b.className = "day";
         b.disabled = d.free === 0;
-        b.setAttribute("role", "option");
-        b.setAttribute("aria-selected", "false");
+        b.setAttribute("aria-pressed", "false");
         b.setAttribute("aria-label", `${prettyDay(d.date, { weekday: "long", day: "numeric", month: "long" })}, ${d.free ? `${d.free} times free` : "fully booked"}`);
         b.innerHTML = `<small>${prettyDay(d.date, { weekday: "short" })}</small><strong>${prettyDay(d.date, { day: "numeric" })}</strong><em>${d.free ? (offline ? "Open" : `${d.free} free`) : (offline ? "Closed" : "Full")}</em>`;
         b.addEventListener("click", () => {
@@ -569,6 +576,8 @@
     const bar = document.createElement("div");
     bar.id = "demoBar";
     bar.className = "demo-bar";
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", "Demo notice");
     bar.innerHTML = '<span><strong>Demo site</strong> · sample data, resets daily · please don\'t enter real health details</span><span class="demo-bar__actions"><a href="/admin?demo=1">Try as doctor (admin)</a><a href="/manage.html?demo=1">Try as patient</a></span>';
     document.body.prepend(bar);
   }
@@ -675,7 +684,8 @@
   $("#doneIcs").addEventListener("click", () => {
     if (!lastBooking) return;
     const a = lastBooking;
-    const stamp = (date, time) => `${date.replace(/-/g, "")}T${time.replace(":", "")}00`;
+    // Clinic times are IST (UTC+05:30); calendars get the exact instant in UTC.
+    const utcStamp = (date, time) => new Date(`${date}T${time}:00+05:30`).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
     const [h, m] = a.time.split(":").map(Number);
     const end = `${String(h + Math.floor((m + 30) / 60)).padStart(2, "0")}:${String((m + 30) % 60).padStart(2, "0")}`;
     const esc = (s) => String(s).replace(/[\\,;]/g, (c) => `\\${c}`).replace(/\n/g, "\\n");
@@ -683,8 +693,8 @@
       "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Tailbone Treatment//Booking//EN", "BEGIN:VEVENT",
       `UID:${a.ref}@tailbonetreatment.com`,
       `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`,
-      `DTSTART;TZID=Asia/Kolkata:${stamp(a.date, a.time)}`,
-      `DTEND;TZID=Asia/Kolkata:${stamp(a.date, end)}`,
+      `DTSTART:${utcStamp(a.date, a.time)}`,
+      `DTEND:${utcStamp(a.date, end)}`,
       `SUMMARY:${esc(`Tailbone Treatment – ${a.clinicName}`)}`,
       `LOCATION:${esc(a.address)}`,
       `DESCRIPTION:${esc(`Booking ref ${a.ref}. Manage: ${a.manageUrl}`)}`,

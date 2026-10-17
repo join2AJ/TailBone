@@ -114,10 +114,10 @@
       const b = el("button", "slot", prettyTime(s.time));
       b.type = "button";
       b.disabled = !s.available;
-      b.setAttribute("aria-selected", "false");
+      b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", () => {
         picked.time = s.time;
-        $$(".slot", grid).forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+        $$(".slot", grid).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
         $("#confirmResched").disabled = false;
       });
       return b;
@@ -136,10 +136,10 @@
         const b = el("button", "day");
         b.type = "button";
         b.disabled = d.free === 0;
-        b.setAttribute("aria-selected", "false");
+        b.setAttribute("aria-pressed", "false");
         b.append(el("small", "", prettyDay(d.date, { weekday: "short" })), el("strong", "", prettyDay(d.date, { day: "numeric" })), el("em", "", d.free ? `${d.free} free` : "Full"));
         b.addEventListener("click", () => {
-          $$(".day", strip).forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+          $$(".day", strip).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
           loadSlots(d.date).catch((e) => toast(e.message));
         });
         return b;
@@ -222,6 +222,8 @@
     if (!demo) return;
     const bar = document.createElement("div");
     bar.className = "demo-bar";
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", "Demo notice");
     bar.innerHTML = '<span><strong>Demo site</strong> · sample booking · resets daily</span><span class="demo-bar__actions"><a href="/admin?demo=1">See the doctor\'s dashboard</a></span>';
     document.body.prepend(bar);
     $("#demoLogin").hidden = false;

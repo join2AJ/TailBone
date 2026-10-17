@@ -28,7 +28,7 @@
     const stars = el("div", "stars", "★".repeat(s.rating) + "☆".repeat(5 - s.rating));
     stars.setAttribute("aria-label", `${s.rating} out of 5 stars`);
     c.append(stars);
-    if (s.title) c.append(el("h3", "", s.title));
+    if (s.title) c.append(el("h2", "", s.title));
     c.append(el("p", "", s.body));
     const who = el("footer", "story__who");
     who.append(el("span", "q-avatar", s.name[0]));

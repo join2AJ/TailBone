@@ -67,10 +67,10 @@ export function releaseExpiredHolds(db) {
   return expired.length;
 }
 
-export function availableSlots(db, clinic, date, now = new Date()) {
+export function availableSlots(db, clinic, date, now = new Date(), { skipRelease = false } = {}) {
   requireClinic(clinic);
   if (!isDate(date)) throw new HttpError(400, "Invalid date.");
-  releaseExpiredHolds(db);
+  if (!skipRelease) releaseExpiredHolds(db);
   if (isBlocked(db, clinic, date)) return { date, clinic, closed: true, slots: [] };
   const taken = new Set(
     db.prepare("SELECT time FROM appointments WHERE clinic = ? AND date = ? AND status IN ('pending','confirmed')")
@@ -87,11 +87,12 @@ export function availableSlots(db, clinic, date, now = new Date()) {
 
 /** Next N dates with at least one free slot, used for the date strip. */
 export function availableDays(db, clinic, days = 14, now = new Date()) {
+  releaseExpiredHolds(db);
   const start = clinicNow(now).date;
   const out = [];
   for (let i = 0; i <= BOOKING.windowDays && out.length < days; i++) {
     const date = addDays(start, i);
-    const { slots } = availableSlots(db, clinic, date, now);
+    const { slots } = availableSlots(db, clinic, date, now, { skipRelease: true });
     out.push({ date, free: slots.filter((s) => s.available).length });
   }
   return out;
@@ -368,6 +369,9 @@ const SEED_STORIES = [
 
 /** Seed the existing website testimonials once, so the stories section is never empty. */
 export function seedStories(db) {
+  // Seed once. A flag (not "table is empty") so stories the clinic deletes don't come back on restart.
+  if (db.prepare("SELECT 1 FROM settings WHERE key = 'stories_seeded'").get()) return;
+  db.prepare("INSERT INTO settings (key, value) VALUES ('stories_seeded', 'true')").run();
   if (db.prepare("SELECT COUNT(*) n FROM stories").get().n > 0) return;
   const insert = db.prepare("INSERT INTO stories (name, city, title, body, status, featured, source, published_at) VALUES (?, ?, ?, ?, 'approved', ?, 'seed', datetime('now'))");
   SEED_STORIES.forEach(([name, city, title, body], i) => insert.run(name, city, title, body, i < 6 ? 1 : 0));

@@ -24,6 +24,7 @@ import {
 } from "../services.js";
 
 const STATUSES = ["pending", "confirmed", "completed", "cancelled", "no_show"];
+const DUMMY_HASH = hashPassword("timing-equaliser-not-a-real-password");
 const id = (v) => {
   const n = Number(v);
   if (!Number.isInteger(n) || n <= 0) throw new HttpError(400, "Invalid id.");
@@ -47,7 +48,8 @@ export function adminRoutes(db) {
       securityLog(db, req, "login_blocked_disabled", email, null);
       throw new HttpError(403, "This account has been disabled. Contact the super admin.");
     }
-    const passwordOk = !!admin && verifyPassword(String(req.body.password || ""), admin.password_hash);
+    // Always run the (slow) password check, even for unknown emails, so response time doesn't reveal accounts.
+    const passwordOk = verifyPassword(String(req.body.password || ""), admin?.password_hash || DUMMY_HASH) && !!admin;
     if (!passwordOk) {
       if (admin) {
         const fails = admin.failed_logins + 1;
@@ -354,7 +356,7 @@ export function adminRoutes(db) {
       avgPain7: db.prepare("SELECT ROUND(AVG(pain_score),1) n FROM checkins WHERE created_at >= datetime('now','-7 days')").get().n,
       unread: one("SELECT COUNT(*) n FROM notifications WHERE audience = 'doctor' AND channel = 'dashboard' AND read_at IS NULL"),
       toSend: one("SELECT COUNT(*) n FROM notifications WHERE audience = 'patient' AND status IN ('manual','failed')"),
-      collected30: one("SELECT COALESCE(SUM(amount_paid - amount_refunded), 0) n FROM appointments WHERE updated_at >= datetime('now','-30 days')"),
+      collected30: one("SELECT COALESCE(SUM(amount_paid - amount_refunded), 0) n FROM appointments WHERE date BETWEEN ? AND ?", addDays(today, -30), today),
     };
     stats.collected30Text = rupees(stats.collected30);
     const schedule = db.prepare(

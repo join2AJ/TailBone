@@ -1,6 +1,7 @@
 import { config, CLINICS } from "./config.js";
 import { encrypt, decrypt } from "./crypto.js";
 import { rupees } from "./payments.js";
+import { hasConsent } from "./privacy.js";
 
 // Notifications go to two audiences:
 //  - patient: WhatsApp Cloud API when configured, otherwise queued as "manual" with a one-tap wa.me link
@@ -122,11 +123,14 @@ export function notify(db, event, appt, { base = config.siteUrl, ...extra } = {}
   const jobs = [];
 
   if (texts.patient) {
-    if (whatsappApiEnabled()) {
+    // Automatic WhatsApp only with the patient's consent (DPDP / GDPR). Otherwise the clinic decides how to reach them.
+    const consented = appt.patient_id ? hasConsent(db, appt.patient_id, "whatsapp_updates") : false;
+    if (whatsappApiEnabled() && consented) {
       const id = insert(db, { appointmentId: appt.id, audience: "patient", event, channel: "whatsapp_api", recipient: appt.patient_phone, body: texts.patient, status: "pending" });
       jobs.push(senders.whatsapp(appt.patient_phone, texts.patient).then(() => mark(db, id, "sent"), (e) => mark(db, id, "failed", e.message)));
     } else {
-      insert(db, { appointmentId: appt.id, audience: "patient", event, channel: "manual", recipient: appt.patient_phone, body: texts.patient, status: "manual" });
+      const id = insert(db, { appointmentId: appt.id, audience: "patient", event, channel: "manual", recipient: appt.patient_phone, body: texts.patient, status: "manual" });
+      if (!consented) mark(db, id, "manual", "Patient hasn't agreed to WhatsApp messages: consider calling instead.");
     }
   }
 
@@ -156,8 +160,9 @@ export function readNotification(row) {
 export async function runReminderJob(db, getAppointment, tomorrow) {
   if (!whatsappApiEnabled()) return 0;
   const due = db.prepare(
-    `SELECT id FROM appointments WHERE date = ? AND status IN ('pending','confirmed')
-     AND payment_status != 'awaiting' AND id NOT IN (SELECT appointment_id FROM notifications WHERE event = 'reminder' AND appointment_id IS NOT NULL)`,
+    `SELECT id FROM appointments a WHERE date = ? AND status IN ('pending','confirmed')
+     AND payment_status != 'awaiting' AND id NOT IN (SELECT appointment_id FROM notifications WHERE event = 'reminder' AND appointment_id IS NOT NULL)
+     AND EXISTS (SELECT 1 FROM consents c WHERE c.patient_id = a.patient_id AND c.purpose = 'whatsapp_updates' AND c.withdrawn_at IS NULL)`,
   ).all(tomorrow);
   for (const { id } of due) await notify(db, "reminder", getAppointment(db, id));
   return due.length;
