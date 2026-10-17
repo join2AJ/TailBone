@@ -190,6 +190,17 @@ const publisher = { "@type": "MedicalClinic", name: "Tailbone Treatment Clinic",
 function articlePage(post, others) {
   const { meta } = post;
   const url = `${SITE}/blog/${meta.slug}.html`;
+  // "On this page" list for longer articles (the article's own section headings).
+  const heads = [...post.html.matchAll(/<h2 id="([^"]+)">([\s\S]*?)<\/h2>/g)].filter((h) => !/^(Key points|Sources)$/.test(h[2]));
+  const toc = heads.length >= 4 ? `<nav class="post-toc" aria-labelledby="toc-${meta.id}">
+          <h2 class="post-toc__title" id="toc-${meta.id}">On this page</h2>
+          <ol>${heads.map((h) => `<li><a href="#${h[1]}">${h[2]}</a></li>`).join("")}</ol>
+        </nav>` : "";
+  const shareText = encodeURIComponent(`${meta.title} ${url}`);
+  const share = `<div class="post-share" aria-label="Share this article">
+          <a class="post-share__btn post-share__wa" href="https://wa.me/?text=${shareText}" target="_blank" rel="noopener">Share on WhatsApp</a>
+          <button type="button" class="post-share__btn" data-share="${esc(url)}" data-title="${esc(meta.title)}">Copy link</button>
+        </div>`;
   const more = related(post, others).map((o) => `<li><a href="/blog/${o.meta.slug}.html">${esc(o.meta.title)}</a></li>`).join("");
   const body = `      <article class="post narrow" data-post-id="${meta.id}">
         <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a></nav>
@@ -197,7 +208,9 @@ function articlePage(post, others) {
         <h1>${esc(meta.title)}</h1>
         <p class="post-lede">${esc(meta.summary)}</p>
         <p class="post-meta muted small">By ${esc(meta.author || "Tailbone Treatment Clinic")} · ${metaLine(meta)}${meta.originalUrl ? " · first published on tailbonetreatment.com" : ""}</p>
+        ${share}
         ${meta.image ? `<figure class="post-cover"><img src="${esc(meta.image)}" alt="" loading="eager" decoding="async"></figure>` : ""}
+        ${toc}
         <div class="post-body">
 ${post.html}
         </div>

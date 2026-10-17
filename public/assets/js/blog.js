@@ -31,6 +31,16 @@
     ? fetch("/api/blog/hidden").then((r) => (r.ok ? r.json() : { hidden: [] })).then((d) => { applyHidden(d.hidden || []); }).catch(() => {})
     : Promise.resolve();
 
+  // ---------- Share buttons on articles ----------
+  $$("[data-share]").forEach((b) => b.addEventListener("click", async () => {
+    const url = b.dataset.share;
+    if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+      try { await navigator.share({ title: b.dataset.title, url }); return; } catch { /* cancelled: fall back to copying */ }
+    }
+    try { await navigator.clipboard.writeText(url); b.textContent = "Link copied ✓"; } catch { prompt("Copy this link:", url); }
+    setTimeout(() => { b.textContent = "Copy link"; }, 2500);
+  }));
+
   // ---------- Search and topic filter ----------
   const grid = $("#postGrid");
   if (!grid) return;
