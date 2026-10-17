@@ -1,0 +1,125 @@
+{
+  "site": "https://tailbone.netlify.app",
+  "shared": {
+    "headlines": [
+      "Tailbone Pain Specialist",
+      "Non-Surgical Coccyx Care",
+      "Clinic in Vasant Kunj, Delhi",
+      "Book Online in 1 Minute",
+      "Online Video Consults Too",
+      "Exclusive Tailbone Clinic",
+      "Open 7 Days a Week"
+    ],
+    "descriptions": [
+      "Specialist, non-surgical care for coccyx pain. Book online.",
+      "Dr Rajveer Singh, BPT, Fellowship (Apollo). Clinic in Vasant Kunj or online by video.",
+      "Careful assessment, hands-on treatment and a plan you can follow at home. Book a slot.",
+      "Pick a day and time online. Instant appointment number and WhatsApp reminders."
+    ]
+  },
+  "adGroups": [
+    {
+      "name": "1 Tailbone pain treatment",
+      "path": "/",
+      "paths": ["tailbone-pain", "delhi"],
+      "keywords": [
+        "\"tailbone pain treatment\"", "[tailbone pain treatment]", "\"coccyx pain treatment\"", "[coccyx pain treatment]",
+        "\"coccydynia treatment\"", "[coccydynia treatment]", "\"tailbone treatment\"", "\"coccyx treatment\"",
+        "\"tailbone pain treatment in delhi\"", "\"coccyx pain treatment delhi\"", "\"treatment for tailbone pain\"",
+        "\"how to cure tailbone pain\"", "\"tailbone pain relief\"", "\"coccyx pain relief\""
+      ],
+      "headlines": [
+        "Tailbone Pain Treatment", "Coccyx Pain Treatment Delhi", "Coccydynia Treatment",
+        "Hands-On, No Surgery First", "Sit Without Tailbone Pain", "Dr Rajveer Singh, BPT",
+        "Coccyx Pain? Book a Visit", "Fellowship, Apollo Chennai"
+      ]
+    },
+    {
+      "name": "2 Tailbone specialist / doctor",
+      "path": "/doctor",
+      "paths": ["specialist", "delhi"],
+      "keywords": [
+        "\"tailbone pain doctor\"", "\"coccyx pain doctor\"", "\"coccyx specialist\"", "\"tailbone specialist\"",
+        "\"coccydynia specialist\"", "[coccydynia specialist]", "\"tailbone pain specialist near me\"",
+        "\"coccyx doctor near me\"", "\"tailbone doctor delhi\"", "\"best doctor for tailbone pain\"",
+        "\"coccyx pain physiotherapist\"", "\"tailbone pain physiotherapy\"", "\"coccyx physiotherapy delhi\""
+      ],
+      "headlines": [
+        "Tailbone Doctor in New Delhi", "Coccyx Specialist in Delhi", "Coccydynia Specialist",
+        "Dr Rajveer Singh, BPT", "Fellowship, Apollo Chennai", "Exclusive Coccyx Specialist",
+        "See a Specialist This Week", "Book Your Consultation"
+      ]
+    },
+    {
+      "name": "3 Pain when sitting",
+      "path": "/blog/sitting-with-tailbone-pain.html",
+      "paths": ["sitting-pain"],
+      "keywords": [
+        "\"tailbone pain when sitting\"", "\"tailbone pain while sitting\"", "\"coccyx pain when sitting\"",
+        "\"pain in tailbone when sitting\"", "\"pain at bottom of spine when sitting\"",
+        "\"tailbone pain sitting for long\"", "\"pain when sitting and standing up tailbone\"",
+        "\"tailbone pain desk job\""
+      ],
+      "headlines": [
+        "Tailbone Hurts When Sitting?", "Pain When You Sit or Stand?", "Desk Job Tailbone Pain?",
+        "Sit Comfortably Again", "Find the Cause, Then Treat It", "Coccyx Pain Treatment Delhi",
+        "Hands-On, No Surgery First", "Book Your Consultation"
+      ]
+    },
+    {
+      "name": "4 After delivery / pregnancy",
+      "path": "/blog/tailbone-pain-after-pregnancy.html",
+      "paths": ["after-delivery"],
+      "keywords": [
+        "\"tailbone pain after delivery\"", "\"coccyx pain after delivery\"", "\"tailbone pain after pregnancy\"",
+        "\"coccyx pain after pregnancy\"", "\"tailbone pain after normal delivery\"", "\"postpartum tailbone pain\"",
+        "\"tailbone pain after c section\"", "\"coccyx pain after childbirth\""
+      ],
+      "headlines": [
+        "Tailbone Pain After Delivery?", "Post-Pregnancy Coccyx Pain", "Pain While Feeding Baby?",
+        "Postnatal Tailbone Treatment", "Gentle, Hands-On Care", "Coccyx Pain Treatment Delhi",
+        "Book Online or Video Consult", "Female Clinician Available"
+      ]
+    },
+    {
+      "name": "5 Injury / dislocated coccyx",
+      "path": "/treatment",
+      "paths": ["coccyx-injury"],
+      "keywords": [
+        "\"tailbone pain after fall\"", "\"coccyx pain after fall\"", "\"tailbone injury treatment\"",
+        "\"dislocated coccyx treatment\"", "\"coccyx dislocation treatment\"", "\"subluxed coccyx\"",
+        "\"bruised tailbone treatment\"", "\"coccyx injury treatment\"", "\"fractured tailbone treatment\""
+      ],
+      "headlines": [
+        "Tailbone Pain After a Fall?", "Dislocated Coccyx Treatment", "Subluxed Coccyx Treatment",
+        "Coccyx Injury Specialist", "Hands-On, No Surgery First", "Coccyx Pain Treatment Delhi",
+        "Dr Rajveer Singh, BPT", "Book Your Consultation"
+      ]
+    },
+    {
+      "name": "6 Brand",
+      "path": "/book",
+      "paths": ["book"],
+      "keywords": [
+        "\"rajveer singh\"", "\"dr rajveer singh\"", "\"tailbone treatment clinic\"", "\"tailbonetreatment\"",
+        "[tailbone treatment]", "\"rajveer singh physiotherapist\""
+      ],
+      "headlines": [
+        "Dr Rajveer Singh, BPT", "Tailbone Treatment Clinic", "Official Website: Book Here",
+        "Book Your Appointment", "Vasant Kunj, New Delhi", "Instant Appointment Number",
+        "Fellowship, Apollo Chennai", "Coccydynia Specialist"
+      ]
+    }
+  ],
+  "negatives": [
+    "jobs", "job", "vacancy", "salary", "career", "course", "training", "certification", "mbbs", "notes", "pdf", "ppt",
+    "wikipedia", "meaning", "definition", "icd", "anatomy", "diagram", "images", "image", "photo", "drawing",
+    "tattoo", "piercing", "dog", "cat", "pet", "horse", "animal", "veterinary",
+    "cushion", "pillow", "seat", "chair", "donut", "amazon", "flipkart", "buy",
+    "home remedy", "home remedies", "gharelu", "yoga", "youtube", "reddit", "quora",
+    "mri", "x ray", "xray", "ct scan", "scan",
+    "pilonidal", "cyst", "sinus", "cancer", "tumour", "tumor", "piles", "fissure",
+    "free", "government", "aiims",
+    "bangalore", "bengaluru", "mumbai", "chennai", "hyderabad", "kolkata", "pune", "lucknow", "jaipur", "chandigarh"
+  ]
+}

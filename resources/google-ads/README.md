@@ -1,5 +1,8 @@
 # Google Ads kit: Tailbone Treatment (Performance Max)
 
+> **Start here:** [SEARCH-CAMPAIGN-PLAN.md](SEARCH-CAMPAIGN-PLAN.md) is the recommended first campaign: Search, Delhi NCR, ₹10,000/month, with every setting, keyword and ad written out. The Performance Max material below is for later, once tracking shows what works.
+
+
 Everything the Performance Max "Edit assets" screen asks for, ready to copy or upload. The text is in [`ad-text.json`](ad-text.json) and is checked against Google's character limits.
 
 ## 1. Fix first (the campaign can't run until these are done)
