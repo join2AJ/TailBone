@@ -4,6 +4,7 @@ services:
     name: tailbone-api
     runtime: node
     plan: starter            # a paid plan is needed for a persistent disk
+    region: singapore        # closest Render region to India
     buildCommand: npm ci --omit=dev
     startCommand: npm start
     healthCheckPath: /api/health
@@ -16,6 +17,10 @@ services:
         value: production
       - key: DATA_DIR
         value: /var/data
+      - key: TRUST_PROXY_HOPS
+        value: "2"           # Netlify proxy + Render load balancer
+      - key: RETENTION_YEARS
+        value: "3"
       - key: SITE_URL
         sync: false          # e.g. https://tailbonetreatment.com (your Netlify domain)
       - key: SESSION_SECRET

@@ -6,9 +6,7 @@
   <title>My Appointments | Tailbone Treatment</title>
   <meta name="robots" content="noindex">
   <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/fonts.css">
   <link rel="stylesheet" href="assets/css/styles.css">
   <script src="assets/js/theme.js"></script>
 </head>
@@ -83,6 +81,17 @@
         <div id="othersBox" hidden style="margin-top:2rem">
           <h3>Your other upcoming appointments</h3>
           <div id="othersList"></div>
+        </div>
+
+        <div class="privacy-box" style="margin-top:2rem">
+          <h3>Your data & privacy</h3>
+          <label class="check"><input type="checkbox" id="waToggle"> Send me appointment updates and reminders on WhatsApp</label>
+          <div class="row-gap" style="margin-top:.8rem">
+            <button class="btn btn--ghost btn--sm" id="exportBtn" type="button">Download my data</button>
+            <a class="btn btn--ghost btn--sm" href="privacy.html?request=correction#request">Correct my data</a>
+            <a class="btn btn--ghost btn--sm" href="privacy.html?request=erasure#request">Delete my data</a>
+          </div>
+          <p class="small muted" style="margin-top:.6rem">See our <a href="privacy.html">privacy notice</a> for how we use and protect your information.</p>
         </div>
 
         <button class="linkish" id="lookupAgain" type="button">Look up a different booking</button>

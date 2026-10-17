@@ -29,7 +29,7 @@ const id = (v) => {
 
 export function adminRoutes(db) {
   const r = Router();
-  const loginLimit = rateLimit({ windowMs: 15 * 60_000, max: 10, message: "Too many sign-in attempts. Try again in 15 minutes." });
+  const loginLimit = rateLimit({ windowMs: 15 * 60_000, max: Number(process.env.LOGIN_RATE_MAX) || 10, message: "Too many sign-in attempts. Try again in 15 minutes." });
 
   // ---------- Auth ----------
   // Sign-in with per-account lockout and optional TOTP second factor.

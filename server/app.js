@@ -17,8 +17,8 @@ export function seedAdmin(db, { email = config.adminEmail, password = config.adm
 export const CSP = [
   "default-src 'self'",
   "script-src 'self' https://checkout.razorpay.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
   "img-src 'self' data: https:",
   "frame-src https://api.razorpay.com https://checkout.razorpay.com https://www.instagram.com https://maps.google.com https://www.google.com",
   "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com",
@@ -31,7 +31,9 @@ export const CSP = [
 export function createApp(db) {
   const app = express();
   app.disable("x-powered-by");
-  if (config.isProd) app.set("trust proxy", 1);
+  // Proxies in front of the app: 1 = the host's load balancer; 2 = Netlify proxy + host (see render.yaml).
+  // Needed so rate limits and the security log see the visitor's real IP.
+  if (config.isProd) app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS) || 1);
 
   app.use((req, res, next) => {
     res.set({

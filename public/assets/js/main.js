@@ -437,7 +437,7 @@
     field.classList.toggle("has-error", !ok);
     return ok;
   };
-  $$("input[required], input[type=email]", form).forEach((i) => i.addEventListener("blur", () => validate(i)));
+  $$("input[required]:not([type=checkbox]), input[type=email]", form).forEach((i) => i.addEventListener("blur", () => validate(i)));
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -447,7 +447,7 @@
       toast("Please choose a day and time.");
       return;
     }
-    const inputs = $$("input[required], input[type=email]", form);
+    const inputs = $$("input[required]:not([type=checkbox]), input[type=email]", form);
     const results = inputs.map(validate);
     if (results.includes(false)) {
       inputs[results.indexOf(false)].focus();
@@ -455,10 +455,18 @@
       return;
     }
     const fd = new FormData(form);
+    if (fd.get("consent") !== "on") {
+      $("#consentErr").style.display = "block";
+      form.consent.focus();
+      toast("Please agree to the privacy notice to book.");
+      return;
+    }
+    $("#consentErr").style.display = "none";
     const payload = {
       clinic: booking.clinic, date: booking.date, time: booking.time,
       name: fd.get("name"), phone: fd.get("phone"), email: fd.get("email"),
       reason: fd.get("reason"), prefersFemale: fd.get("prefersFemale") === "on", website: fd.get("website"),
+      consent: true, whatsappConsent: fd.get("whatsappConsent") === "on",
     };
     bookBtn.disabled = true;
     bookBtn.classList.add("is-loading");

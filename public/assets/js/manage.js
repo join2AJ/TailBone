@@ -78,6 +78,7 @@
       const data = await api("/api/manage/lookup", { ref, phone });
       creds = { ref, phone };
       render(data);
+      syncConsent();
     } catch (e) {
       err.textContent = e.message;
       err.hidden = false;
@@ -182,6 +183,34 @@
       toast(e.message);
     }
   });
+
+  // ---- Privacy self-service ----
+  $("#exportBtn").addEventListener("click", async () => {
+    try {
+      const res = await fetch("/api/manage/export", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(creds) });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Couldn't prepare your data.");
+      const blob = new Blob([JSON.stringify(await res.json(), null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `my-tailbone-data-${creds.ref}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } catch (e) {
+      toast(e.message);
+    }
+  });
+
+  const waToggle = $("#waToggle");
+  waToggle.addEventListener("change", async () => {
+    try {
+      const { consents } = await api("/api/manage/consent", { ...creds, whatsappUpdates: waToggle.checked });
+      waToggle.checked = consents.includes("whatsapp_updates");
+      toast(waToggle.checked ? "WhatsApp updates switched on." : "WhatsApp updates switched off.");
+    } catch (e) {
+      toast(e.message);
+    }
+  });
+  const syncConsent = () => api("/api/manage/consent", creds).then(({ consents }) => { waToggle.checked = consents.includes("whatsapp_updates"); }).catch(() => {});
 
   // Prefill the reference from the confirmation link.
   const ref = new URLSearchParams(location.search).get("ref");

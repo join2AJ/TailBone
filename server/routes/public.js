@@ -6,6 +6,7 @@ import { encrypt } from "../crypto.js";
 import { getPolicy, policySummary, refundQuote, rescheduleCheck } from "../policy.js";
 import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, verifyWebhookSignature, rupees } from "../payments.js";
 import { notify } from "../notify.js";
+import { recordConsent, withdrawConsent, exportPatientData, createDataRequest, NOTICE_VERSION, CONSENT_PURPOSES } from "../privacy.js";
 import {
   HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment,
   rescheduleAppointment, cancelAppointment, markPaid, logEvent, readAppt, APPT_SELECT,
@@ -55,6 +56,7 @@ export function publicRoutes(db) {
       followup: policy.followup,
       payOnline: paymentsEnabled() && policy.payments.mode === "online",
       policy: policySummary(policy),
+      privacy: { noticeVersion: NOTICE_VERSION, purposes: CONSENT_PURPOSES },
     });
   });
 
@@ -68,8 +70,11 @@ export function publicRoutes(db) {
 
   r.post("/appointments", bookingLimit, async (req, res) => {
     if (req.body.website) throw new HttpError(400, "Invalid submission."); // honeypot field
+    // DPDP s.6 / GDPR Art. 7 & 9: explicit, informed consent before processing health information.
+    if (req.body.consent !== true) throw new HttpError(400, "Please agree to the privacy notice so we can book and treat you.");
     const data = parseBooking(req.body);
     const appt = createAppointment(db, data, { source: "web" });
+    recordConsent(db, appt.patient_id, ["care", ...(req.body.whatsappConsent ? ["whatsapp_updates"] : [])], "web");
     const base = siteUrl(req);
 
     if (appt.payment_status === "awaiting") {
@@ -174,6 +179,41 @@ export function publicRoutes(db) {
     const updated = rescheduleAppointment(db, appt, req.body.date, req.body.time, { actor: "patient", actorName: appt.patient_name });
     notify(db, "rescheduled", updated, { base: siteUrl(req), actor: "patient", from });
     res.json({ appointment: view(updated, req) });
+  });
+
+  // ---------- Privacy self-service (DPDP s.11–13, GDPR Art. 15–21) ----------
+  r.post("/manage/export", lookupLimit, (req, res) => {
+    const appt = findOwn(req);
+    const data = exportPatientData(db, appt.patient_id);
+    db.prepare("INSERT INTO security_log (actor, action, target, ip) VALUES ('patient', 'patient_self_export', ?, ?)")
+      .run(`patient #${appt.patient_id}`, String(req.ip || "").replace(/^::ffff:/, ""));
+    res.set("Content-Disposition", `attachment; filename="my-data-${appt.ref}.json"`);
+    res.json(data);
+  });
+
+  r.post("/manage/consent", lookupLimit, (req, res) => {
+    const appt = findOwn(req);
+    if (req.body.whatsappUpdates === false) withdrawConsent(db, appt.patient_id, "whatsapp_updates");
+    if (req.body.whatsappUpdates === true) recordConsent(db, appt.patient_id, ["whatsapp_updates"], "manage_page");
+    const active = db.prepare("SELECT purpose FROM consents WHERE patient_id = ? AND withdrawn_at IS NULL").all(appt.patient_id).map((c) => c.purpose);
+    res.json({ consents: [...new Set(active)] });
+  });
+
+  const requestLimit = rateLimit({ windowMs: 60 * 60_000, max: 5, message: "Too many requests. Please email contact@tailbonetreatment.com." });
+  r.post("/privacy/request", requestLimit, (req, res) => {
+    if (req.body.website) throw new HttpError(400, "Invalid submission.");
+    const types = ["access", "correction", "erasure", "withdraw_consent", "grievance"];
+    if (!types.includes(req.body.type)) throw new HttpError(400, "Please choose what you'd like us to do.");
+    const name = cleanText(req.body.name, 120);
+    const phone = normalizePhone(req.body.phone);
+    const email = cleanText(req.body.email, 200);
+    if (name.length < 2) throw new HttpError(400, "Please enter your name.");
+    if (!phone && !email) throw new HttpError(400, "Please give a phone number or email so we can verify and reply.");
+    const patient = phone && db.prepare("SELECT id FROM patients WHERE phone = ?").get(phone);
+    const { ref, due } = createDataRequest(db, { type: req.body.type, name, phone, email, details: cleanText(req.body.details, 2000), patientId: patient?.id });
+    db.prepare("INSERT INTO notifications (audience, event, channel, body, status) VALUES ('doctor', 'privacy_request', 'dashboard', ?, 'sent')")
+      .run(encrypt(`Privacy request ${ref} (${req.body.type.replace("_", " ")}) from ${name}. Respond by ${due}.`));
+    res.status(201).json({ ref, due });
   });
 
   // Follow-up check-ins: the token in the link is the credential.

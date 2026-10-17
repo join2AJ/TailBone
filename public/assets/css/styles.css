@@ -617,3 +617,17 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b
 
 /* Long words wrap inside small grid cells at large text sizes */
 .cause, .seg span, .tab, .hours__list li, .day, .slot { overflow-wrap: anywhere; min-width: 0; }
+
+/* Consent */
+.consent { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--bg-soft); border: 1px solid var(--line); }
+.check--top { align-items: flex-start; font-size: .86rem; line-height: 1.45; }
+.check--top input { margin-top: .15rem; flex-shrink: 0; }
+.privacy-box { padding: var(--space-4) var(--space-5); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-soft); }
+.privacy-box h3 { margin-bottom: var(--space-2); }
+.toc { display: flex; flex-wrap: wrap; gap: .4rem; margin: var(--space-4) 0; }
+.toc a { font-size: .82rem; font-weight: 600; padding: .35rem .75rem; border: 1px solid var(--line); border-radius: 999px; color: var(--text); }
+.toc a:hover { border-color: var(--brand); color: var(--brand); }
+.legal .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.legal table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.legal th, .legal td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.legal th { background: var(--bg-soft); font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }

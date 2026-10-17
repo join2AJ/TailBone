@@ -10,9 +10,7 @@
   <meta property="og:title" content="Tailbone Treatment Clinic">
   <meta property="og:description" content="Specialist, non-surgical care for coccydynia. Bengaluru · New Delhi · Online.">
   <meta property="og:type" content="website">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/fonts.css">
   <link rel="stylesheet" href="assets/css/styles.css">
   <script src="assets/js/theme.js"></script>
   <script type="application/ld+json">
@@ -500,6 +498,11 @@
                   <textarea id="msg" name="reason" rows="3" placeholder="How long, how it started, what makes it worse…"></textarea>
                 </div>
                 <label class="check"><input type="checkbox" name="prefersFemale"> I'd prefer to see a female clinician</label>
+                <div class="consent">
+                  <label class="check check--top"><input type="checkbox" name="consent" required> <span>I agree that Tailbone Treatment Clinic may use my details, including health information I share, to book, provide and follow up my treatment, as described in the <a href="privacy.html" target="_blank" rel="noopener">privacy notice</a>.</span></label>
+                  <label class="check check--top"><input type="checkbox" name="whatsappConsent" checked> <span>Send me appointment updates, reminders and follow-up check-ins on WhatsApp. <span class="muted">(Optional. You can stop them any time.)</span></span></label>
+                  <span class="err" id="consentErr">Please agree to the privacy notice to book.</span>
+                </div>
                 <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
               </div>
             </div>

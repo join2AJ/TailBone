@@ -7,9 +7,20 @@ The website and clinic system for [tailbonetreatment.com](https://tailbonetreatm
 
 - **Payments** go through Razorpay, with an optional automatic commission split (Route), policy-based refunds and automatic notifications both ways.
 
+- **Security & privacy controls** for ISO 27001 / 22301 / 31000, NIST CSF, DPDP and GDPR:
+  - consent capture
+  - rights requests
+  - data export and erasure
+  - automatic retention
+  - 2FA, lockout and the security log
+  - encrypted daily backups
+
+**Deploying to Netlify? Start with [DEPLOY.md](DEPLOY.md).**
+
 Docs:
 - **[docs/PAYMENTS-SECURITY-HOSTING.md](docs/PAYMENTS-SECURITY-HOSTING.md)**: commission split, fees and refund rules, security, Netlify + Render setup
 - **[docs/CLINIC-AUTOMATION-CHECKLIST.md](docs/CLINIC-AUTOMATION-CHECKLIST.md)**: workload, automation and marketing plan
+- **[docs/compliance/](docs/compliance/00-README.md)**: information security policy, ISO 27001 Statement of Applicability, ISO 31000 risk register, ISO 22301 continuity plan, incident and breach procedure, NIST CSF profile, DPDP/GDPR records
 
 ## Quick start
 

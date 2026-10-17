@@ -12,6 +12,7 @@
     "start": "node --disable-warning=ExperimentalWarning server/index.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch server/index.js",
     "admin:create": "node --disable-warning=ExperimentalWarning scripts/create-admin.js",
+    "backup:restore": "node --disable-warning=ExperimentalWarning scripts/restore-backup.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
   },
   "dependencies": {

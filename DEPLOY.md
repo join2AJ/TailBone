@@ -1,0 +1,97 @@
+# Deploying tailbone.netlify.app with booking, payments and the dashboard
+
+**What runs where:**
+
+```
+Browser ──► Netlify  (tailbone.netlify.app: website files from /public)
+               └── /api/*  ──proxy──►  Render (Node backend + encrypted database on a disk, Singapore)
+```
+
+Netlify can't run the backend or keep a database, so the backend runs on **Render**. Netlify forwards `/api/*` to it, so visitors only ever see your Netlify address. Time needed: about 30 minutes. Cost: Render Starter (about US$7/month) plus a 1 GB disk (about US$0.25/month). Netlify stays free.
+
+---
+
+## Step 1: Prepare two secrets (2 min)
+On any computer with Node, run this twice and save both values in a password manager (Bitwarden, 1Password, Google Password Manager):
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+- First value → `ENCRYPTION_KEY`. **If you lose it, the encrypted notes and backups can't be read.**
+- Second value → keep for later, if you ever need to rotate keys.
+
+Also choose the admin email and a strong password (12+ characters).
+
+## Step 2: Create the backend on Render (10 min)
+1. Go to **render.com** and sign up with GitHub. Turn on **2FA** in your Render account settings.
+2. **New → Blueprint** → select the **join2AJ/TailBone** repo and branch `ccr-5e1d60c0-7itqhu` (or `main` after you merge).
+3. Render reads `render.yaml` and shows the service **tailbone-api** (Starter, Singapore, 1 GB disk). Fill in the values it asks for:
+
+   | Key | Value |
+   |---|---|
+   | `SITE_URL` | `https://tailbone.netlify.app` (later your own domain) |
+   | `ENCRYPTION_KEY` | the value from step 1 |
+   | `ADMIN_EMAIL` | the doctor's email |
+   | `ADMIN_PASSWORD` | a strong password (change it after the first login) |
+   | Razorpay, WhatsApp, Resend keys | **leave empty for now**: the site then uses pay-at-clinic and one-tap WhatsApp |
+
+4. Click **Apply**. When the deploy finishes, copy the service URL, e.g. `https://tailbone-api.onrender.com`.
+5. Check it: open `https://tailbone-api.onrender.com/api/health`. It should show `{"ok":true}`.
+
+## Step 3: Connect Netlify to the backend (3 min)
+1. In the repo, edit **`netlify.toml`** and replace `BACKEND_URL` with your Render host (without `https://`):
+   ```toml
+   to = "https://tailbone-api.onrender.com/api/:splat"
+   ```
+   Commit and push. (Or ask me to do it once you have the URL.)
+2. In Netlify: **Site configuration → Build & deploy**. Check that it builds from the same branch. The *publish directory* comes from `netlify.toml` (`public`).
+3. Netlify redeploys automatically. Open `https://tailbone.netlify.app/#appointment`: you should see real days and times instead of "WhatsApp us".
+
+## Step 4: First sign-in and security setup (5 min)
+1. Open **https://tailbone.netlify.app/admin** and sign in.
+2. Go to **Settings**:
+   - **Change password.**
+   - **Account security → Set up two-factor sign-in** (Google or Microsoft Authenticator).
+   - **Fees, payments & policies:** check the fees and refund rules.
+   - **Backups → Back up now**, then **Download**. Store it on an encrypted drive.
+3. For each additional staff member, run this in the Render **Shell**:
+   ```bash
+   npm run admin:create -- staff@example.com "Staff Name"
+   ```
+   Each person must set up their own 2FA.
+
+## Step 5: Monitoring (3 min)
+- At **uptimerobot.com** (free), add an HTTP monitor for `https://tailbone.netlify.app/api/health` every 5 minutes, with alerts to the doctor's phone or email.
+- In Render: Settings → Notifications → turn on deploy-failure emails.
+
+## Step 6 (when ready): Online payments
+1. Create and activate a Razorpay account. Activation needs the live site pages `/policies.html`, `/privacy.html` and contact details, which already exist.
+2. Razorpay → **Settings → API Keys** → generate **Test** keys first. In Render, set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`.
+3. Razorpay → **Webhooks → Add**:
+   - URL: `https://tailbone.netlify.app/api/payments/webhook`
+   - Events: `payment.captured`, `order.paid`, `refund.processed`, `refund.failed`
+   - Put the secret you choose into `RAZORPAY_WEBHOOK_SECRET` in Render.
+4. Book a test appointment with Razorpay's test UPI or card details, cancel it, and check the refund appears in Dashboard → Payments.
+5. Swap to **Live** keys.
+6. **Commission split:** ask Razorpay to enable **Route**, add the doctor as a Linked Account, then turn on *Split payments* in Settings and paste the `acc_…` id. See `docs/PAYMENTS-SECURITY-HOSTING.md`.
+
+## Step 7 (optional): Automatic WhatsApp and email
+- **WhatsApp Cloud API:**
+  1. In Meta Business Suite → WhatsApp Manager, add a number (ideally a second clinic number).
+  2. Create the template `clinic_update` (Utility category) with the body `{{1}}`, and get it approved.
+  3. In Render, set `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` and optionally `DOCTOR_WHATSAPP`.
+- **Email alerts to the doctor:** create a Resend account, verify the domain, and set `RESEND_API_KEY`, `EMAIL_FROM` and `DOCTOR_EMAIL`.
+
+## Step 8 (recommended): Your own domain
+1. Netlify → Domain management → add `tailbonetreatment.com`, and follow the DNS steps. HTTPS is automatic.
+2. Update `SITE_URL` in Render, and the Razorpay webhook URL.
+
+---
+
+### Troubleshooting
+| Symptom | Fix |
+|---|---|
+| Booking shows "Online booking is unavailable" | `netlify.toml` still says `BACKEND_URL`, or the Render service is down. Check `/api/health` |
+| Dashboard says "Your session has ended" right after sign-in | `NODE_ENV=production` needs HTTPS. Use the `https://` Netlify URL |
+| Everyone gets "Too many sign-in attempts" | `TRUST_PROXY_HOPS` must be `2` behind Netlify (already set in `render.yaml`) |
+| The first request after a while is slow | Normal on Render Starter after a deploy; it stays awake afterwards |
+| Restoring data | See `docs/compliance/04-business-continuity.md` §3 |

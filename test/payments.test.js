@@ -36,6 +36,8 @@ let cookie = "";
 
 async function api(method, url, body, { auth = false, headers = {} } = {}) {
   const h = { "content-type": "application/json", ...headers };
+  // Public bookings need privacy consent; tests opt out explicitly with consent: false.
+  if (method === "POST" && url === "/api/appointments" && body && typeof body === "object" && body.consent === undefined) body = { ...body, consent: true };
   if (auth) Object.assign(h, { cookie, "x-requested-with": "fetch" });
   const res = await fetch(base + url, { method, headers: h, body: body == null ? undefined : typeof body === "string" ? body : JSON.stringify(body) });
   const sc = res.headers.get("set-cookie");

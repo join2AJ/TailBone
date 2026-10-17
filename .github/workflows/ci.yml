@@ -1,0 +1,21 @@
+# Continuous checks (ISO 27001 A.8.25/A.8.29, NIST CSF PR.PS): tests and known-vulnerability audit on every push.
+name: CI
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1"   # weekly re-audit of dependencies
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm audit --omit=dev --audit-level=high

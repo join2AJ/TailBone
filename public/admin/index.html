@@ -6,9 +6,7 @@
   <title>Clinic Dashboard | Tailbone Treatment</title>
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/fonts.css">
   <link rel="stylesheet" href="/assets/css/styles.css">
   <link rel="stylesheet" href="/admin/admin.css">
   <script src="/assets/js/theme.js"></script>
@@ -22,6 +20,7 @@
       <div class="alert alert--error" id="loginErr" hidden></div>
       <div class="field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" autocomplete="username" required></div>
       <div class="field"><label for="loginPass">Password</label><input id="loginPass" type="password" autocomplete="current-password" required></div>
+      <div class="field" id="codeField" hidden><label for="loginCode">6-digit code from your authenticator app</label><input id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" pattern="[0-9 ]*"></div>
       <button class="btn btn--primary btn--block btn--lg" type="submit">Sign in</button>
       <a class="small muted center" href="/">← Back to website</a>
     </form>
@@ -40,6 +39,7 @@
         <a href="#/stories" data-view="stories"><span>❝</span>Stories <b class="count" id="storyCount" hidden></b></a>
         <a href="#/instagram" data-view="instagram"><span>▶</span>Instagram</a>
         <a href="#/payments" data-view="payments"><span>₹</span>Payments</a>
+        <a href="#/privacy" data-view="privacy"><span>⛨</span>Privacy <b class="count" id="privCount" hidden></b></a>
         <a href="#/settings" data-view="settings"><span>⚙</span>Settings</a>
       </nav>
       <div class="side__foot">

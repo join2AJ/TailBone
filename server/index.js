@@ -4,6 +4,9 @@ import { createApp, seedAdmin } from "./app.js";
 import { seedStories, getAppointment, releaseExpiredHolds } from "./services.js";
 import { runReminderJob } from "./notify.js";
 import { clinicNow, addDays } from "./time.js";
+import { createBackup, listBackups } from "./backup.js";
+import { runRetention } from "./privacy.js";
+import path from "node:path";
 
 const db = openDb();
 seedStories(db);
@@ -23,11 +26,20 @@ const jobs = setInterval(async () => {
     releaseExpiredHolds(db);
     const { minutes, date } = clinicNow();
     if (minutes >= 9 * 60 && minutes < 21 * 60) await runReminderJob(db, getAppointment, addDays(date, 1));
+    // Once a day (after 2 AM IST): encrypted backup, then retention clean-up.
+    const dataDir = path.dirname(config.dbFile);
+    const last = listBackups(dataDir)[0];
+    if (minutes >= 120 && (!last || Date.now() - Date.parse(last.at) > 20 * 3600_000)) {
+      createBackup(db, dataDir);
+      const { erased } = runRetention(db);
+      if (erased) console.log(`Retention: erased ${erased} inactive patient record(s).`);
+    }
   } catch (err) {
     console.error("Background job failed:", err.message);
   }
 }, 10 * 60_000);
 jobs.unref();
+if (!process.env.ENCRYPTION_KEY && config.isProd) console.warn("WARNING: ENCRYPTION_KEY is not set. A key file in the data folder is being used; set ENCRYPTION_KEY and keep a copy safe.");
 
 for (const sig of ["SIGINT", "SIGTERM"]) {
   process.on(sig, () => server.close(() => { db.close(); process.exit(0); }));

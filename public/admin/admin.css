@@ -133,3 +133,5 @@ td .muted { font-size: .8rem; }
 .timeline li::before { content: ""; position: absolute; left: calc(-1.1rem - 6px); top: .45em; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); border: 2px solid var(--surface); }
 .kpi a { color: inherit; }
 #policyForm h3 { margin: 1.2rem 0 .2rem; font-size: 1rem; }
+.key { font-family: ui-monospace, monospace; background: var(--bg-soft); padding: .1rem .35rem; border-radius: 6px; word-break: break-all; }
+.privacy-box { padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-soft); }

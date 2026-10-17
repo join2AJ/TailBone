@@ -64,14 +64,26 @@
     e.preventDefault();
     const err = $("#loginErr");
     err.hidden = true;
-    try {
-      await api("/login", { method: "POST", body: { email: $("#loginEmail").value, password: $("#loginPass").value } });
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: $("#loginEmail").value, password: $("#loginPass").value, code: $("#loginCode").value || undefined }),
+    }).catch(() => null);
+    const data = res ? await res.json().catch(() => ({})) : { error: "Can't reach the server." };
+    if (res && res.ok) {
       $("#loginPass").value = "";
+      $("#loginCode").value = "";
+      $("#codeField").hidden = true;
       boot();
-    } catch (ex) {
-      err.textContent = ex.message;
-      err.hidden = false;
+      return;
     }
+    if (data.needCode) {
+      $("#codeField").hidden = false;
+      $("#loginCode").focus();
+    }
+    err.textContent = data.error || "Sign-in failed.";
+    err.hidden = false;
   });
 
   $("#logoutBtn").addEventListener("click", async () => {
@@ -104,6 +116,7 @@
     patient: ["Patient", renderPatient],
     stories: ["Patient stories", renderStories],
     inbox: ["Inbox", renderInbox],
+    privacy: ["Privacy & data requests", renderPrivacy],
     payments: ["Payments", renderPayments],
     instagram: ["Instagram highlights", renderInstagram],
     settings: ["Settings", renderSettings],
@@ -136,6 +149,11 @@
       const st = $("#storyCount");
       st.hidden = !stats.storiesPending;
       st.textContent = stats.storiesPending;
+      api("/privacy/requests").then(({ requests }) => {
+        const open = requests.filter((q) => ["open", "verifying"].includes(q.status)).length;
+        $("#privCount").hidden = !open;
+        $("#privCount").textContent = open;
+      }).catch(() => {});
       const ib = $("#inboxCount");
       const inbox = stats.unread + stats.toSend;
       ib.hidden = !inbox;
@@ -517,7 +535,7 @@
   }
 
   async function renderPatient(pid) {
-    const { patient: p, appointments, followups, checkins, storyInvite } = await api(`/patients/${Number(pid)}`);
+    const { patient: p, appointments, followups, checkins, consents, storyInvite } = await api(`/patients/${Number(pid)}`);
     $("#viewTitle").textContent = p.name;
     const first = checkins[0]?.pain_score;
     const last = checkins.at(-1)?.pain_score;
@@ -538,6 +556,18 @@
               <a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="https://wa.me/${esc(p.phone)}">WhatsApp</a>
               <a class="btn btn--ghost btn--sm" href="tel:+${esc(p.phone)}">Call</a>
               <a class="btn btn--ghost btn--sm" target="_blank" rel="noopener" href="${esc(storyInvite)}">Ask for a story</a>
+            </div>
+          </section>
+          <section class="panel-card">
+            <h2>Consent & data</h2>
+            ${p.anonymised_at ? `<div class="alert alert--ok">Personal data erased on ${esc(day(p.anonymised_at))}. Financial records kept de-identified.</div>` : ""}
+            <div class="list">${consents.map((c) => `<div class="item" style="grid-template-columns:1fr auto">
+              <div class="item__main"><strong>${esc({ care: "Care & bookings", whatsapp_updates: "WhatsApp updates", story_publication: "Story publication" }[c.purpose] || c.purpose)}</strong>
+              <small>Given ${esc(day(c.given_at))} via ${esc(c.source)} · notice v${esc(c.notice_version)}</small></div>
+              <div>${c.withdrawn_at ? `<span class="badge badge--cancelled">Withdrawn</span>` : '<span class="badge badge--confirmed">Active</span>'}</div></div>`).join("") || '<div class="empty">No consent recorded (booked before consent capture).</div>'}</div>
+            <div class="row-gap" style="margin-top:.8rem">
+              <a class="btn btn--ghost btn--sm" href="/api/admin/patients/${p.id}/export" download>Export data (JSON)</a>
+              ${p.anonymised_at ? "" : '<button class="btn btn--danger btn--sm" id="eraseBtn" type="button">Erase personal data</button>'}
             </div>
           </section>
           <section class="panel-card">
@@ -563,6 +593,12 @@
         </div>
       </div>`;
     $("#backBtn").addEventListener("click", () => history.back());
+    const eraseBtn = $("#eraseBtn");
+    if (eraseBtn) eraseBtn.addEventListener("click", async () => {
+      const typed = prompt(`This permanently removes ${p.name}'s name, contact details, notes and check-in comments. Payment records are kept de-identified for tax law.\n\nType the patient's full name to confirm:`);
+      if (!typed) return;
+      try { await api(`/patients/${p.id}/erase`, { method: "POST", body: { confirm: typed } }); toast("Personal data erased."); route(); } catch (ex) { toast(ex.message); }
+    });
     $("#pEdit").addEventListener("submit", async (e) => {
       e.preventDefault();
       try { await api(`/patients/${p.id}`, { method: "PATCH", body: Object.fromEntries(new FormData(e.target)) }); toast("Patient saved."); } catch (ex) { toast(ex.message); }
@@ -711,6 +747,38 @@
     if (audience === "doctor" && notifications.some((n) => !n.read_at)) setTimeout(() => api("/notifications/read-all", { method: "POST" }).then(refreshBadges).catch(() => {}), 4000);
   }
 
+  // ---------- Privacy requests (DPDP / GDPR) ----------
+  async function renderPrivacy() {
+    const { requests, noticeVersion } = await api("/privacy/requests");
+    const TYPE = { access: "Copy of data", correction: "Correction", erasure: "Erasure", withdraw_consent: "Withdraw consent", grievance: "Grievance" };
+    content.innerHTML = `
+      <section class="panel-card">
+        <p class="muted small" style="margin:0">Requests from the <a href="/privacy.html#request" target="_blank">privacy page</a>. Verify the person's identity (for example, call the phone number on file), act on the request, then mark it completed with a short note. Answer within 30 days; overdue requests are highlighted. Privacy notice in force: v${esc(noticeVersion)}.</p>
+      </section>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Due</th><th>Request</th><th>From</th><th>Details</th><th>Status</th><th></th></tr></thead>
+        <tbody>${requests.map((q) => {
+          const overdue = ["open", "verifying"].includes(q.status) && q.due_at < state.today;
+          return `<tr>
+          <td class="nowrap"><strong>${esc(day(q.due_at))}</strong>${overdue ? '<br><span class="badge badge--cancelled">Overdue</span>' : ""}<br><span class="muted">${esc(q.ref)}</span></td>
+          <td>${esc(TYPE[q.type])}</td>
+          <td>${esc(q.name)}<br><span class="muted">${esc(q.phone ? phonePretty(q.phone) : "")} ${esc(q.email || "")}</span>${q.patient_id ? `<br><a href="#/patient/${q.patient_id}">Matched patient →</a>` : '<br><span class="muted small">No matching patient</span>'}</td>
+          <td style="max-width:280px">${esc(q.details)}${q.resolution ? `<br><span class="muted small">Resolution: ${esc(q.resolution)}</span>` : ""}</td>
+          <td>${badge({ open: "pending", verifying: "pending", completed: "completed", rejected: "cancelled" }[q.status]).replace(/>[^<]+</, `>${esc(q.status)}<`)}</td>
+          <td><div class="item__actions">${["open", "verifying"].includes(q.status) ? `
+            <button class="btn btn--ghost btn--sm" data-req="${q.id}" data-st="verifying">Verifying</button>
+            <button class="btn btn--primary btn--sm" data-req="${q.id}" data-st="completed">Completed</button>
+            <button class="btn btn--ghost btn--sm" data-req="${q.id}" data-st="rejected">Reject</button>` : ""}</div></td>
+        </tr>`;
+        }).join("") || '<tr><td colspan="6"><div class="empty">No requests yet.</div></td></tr>'}</tbody>
+      </table></div>`;
+    $$("[data-req]").forEach((b) => b.addEventListener("click", async () => {
+      const resolution = b.dataset.st === "verifying" ? "" : prompt(b.dataset.st === "completed" ? "What was done? (e.g. Data exported and sent by email; erased on request)" : "Reason for rejecting (shared with the person):");
+      if (b.dataset.st !== "verifying" && !resolution) return;
+      try { await api(`/privacy/requests/${b.dataset.req}`, { method: "PATCH", body: { status: b.dataset.st, resolution: resolution || undefined } }); toast("Updated."); route(); } catch (ex) { toast(ex.message); }
+    }));
+  }
+
   // ---------- Payments ----------
   async function renderPayments() {
     const from = state.payFrom || addDays(state.today, -30);
@@ -816,6 +884,20 @@
             <p class="muted small">Download every appointment as a spreadsheet (CSV opens in Excel and Google Sheets).</p>
             <a class="btn btn--ghost" href="/api/admin/export/appointments.csv">Download appointments.csv</a>
           </section>
+          <section class="panel-card" id="securityPanel">
+            <h2>Account security</h2>
+            <p class="small">${state.admin.twoFactor ? '<span class="badge badge--confirmed">Two-factor sign-in on</span>' : '<span class="badge badge--cancelled">Two-factor sign-in off</span> Turn it on to protect patient data.'}</p>
+            <div id="twofa"></div>
+            <div class="row-gap" style="margin-top:.6rem">
+              ${state.admin.twoFactor ? '<button class="btn btn--ghost btn--sm" id="tfaOff" type="button">Turn off two-factor</button>' : '<button class="btn btn--primary btn--sm" id="tfaSetup" type="button">Set up two-factor sign-in</button>'}
+              <button class="btn btn--ghost btn--sm" id="revokeBtn" type="button">Sign out all other devices</button>
+            </div>
+          </section>
+          <section class="panel-card">
+            <div class="panel-card__head"><h2>Backups</h2><button class="btn btn--ghost btn--sm" id="backupNow" type="button">Back up now</button></div>
+            <p class="muted small">Encrypted backups run daily; the last 14 are kept. Download one each week and store it somewhere else, such as an encrypted drive.</p>
+            <div class="list" id="backupList"><div class="empty">Loading…</div></div>
+          </section>
           <section class="panel-card">
             <h2>Change password</h2>
             <form class="form" id="pwForm">
@@ -825,7 +907,17 @@
             </form>
           </section>
         </div>
-      </div>`;
+      </div>
+      <section class="panel-card">
+        <div class="panel-card__head"><h2>Security log</h2><button class="btn btn--ghost btn--sm" id="logBtn" type="button">Show</button></div>
+        <p class="muted small" style="margin:0">Sign-ins, failed attempts, lockouts, patient record views, exports, erasures and setting changes. Kept for 2 years.</p>
+        <div id="secLog"></div>
+      </section>`;
+    $("#logBtn").addEventListener("click", async () => {
+      const { log } = await api("/security/log");
+      $("#secLog").innerHTML = `<div class="table-wrap" style="margin-top:.8rem;max-height:420px;overflow:auto"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target</th><th>IP</th></tr></thead><tbody>
+        ${log.map((l) => `<tr><td class="nowrap">${esc(new Date(l.created_at.replace(" ", "T") + "Z").toLocaleString("en-IN"))}</td><td>${esc(l.actor)}</td><td>${esc(l.action.replace(/_/g, " "))}</td><td>${esc(l.target)}</td><td class="muted">${esc(l.ip)}</td></tr>`).join("") || '<tr><td colspan="5"><div class="empty">Empty</div></td></tr>'}</tbody></table></div>`;
+    });
     $("#blockForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       try {
@@ -835,6 +927,39 @@
       } catch (ex) { toast(ex.message); }
     });
     $$("[data-unblock]").forEach((b) => b.addEventListener("click", async () => { await api(`/blocked/${b.dataset.unblock}`, { method: "DELETE" }); route(); }));
+
+    // ---- Security panel ----
+    const loadBackups = async () => {
+      const { backups } = await api("/backups");
+      $("#backupList").innerHTML = backups.slice(0, 5).map((b) => `<div class="item" style="grid-template-columns:1fr auto">
+        <div class="item__main"><strong>${esc(new Date(b.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }))}</strong><small>${(b.size / 1024).toFixed(0)} KB · encrypted</small></div>
+        <div class="item__actions"><a class="btn btn--ghost btn--sm" href="/api/admin/backups/${encodeURIComponent(b.file)}">Download</a></div></div>`).join("") || '<div class="empty">No backups yet. The first runs tonight, or use "Back up now".</div>';
+    };
+    loadBackups().catch(() => {});
+    $("#backupNow").addEventListener("click", async () => { try { await api("/backups", { method: "POST" }); toast("Backup created."); loadBackups(); } catch (ex) { toast(ex.message); } });
+    $("#revokeBtn").addEventListener("click", async () => { await api("/sessions/revoke", { method: "POST" }); toast("All other devices have been signed out."); });
+    const setup = $("#tfaSetup");
+    if (setup) setup.addEventListener("click", async () => {
+      const { secret, uri } = await api("/2fa/setup", { method: "POST" });
+      $("#twofa").innerHTML = `<ol class="small">
+          <li>Install Google Authenticator or Microsoft Authenticator on your phone.</li>
+          <li>Tap <em>+</em> → <em>Enter a setup key</em>. Account: <strong>Tailbone Clinic</strong>, key: <code class="key">${esc(secret)}</code> (time-based).</li>
+          <li>Enter the 6-digit code the app shows:</li></ol>
+        <form class="toolbar" id="tfaForm"><div class="field"><input name="code" inputmode="numeric" maxlength="7" placeholder="123456" required></div><button class="btn btn--primary btn--sm">Turn on</button></form>
+        <p class="muted small">On a phone, you can also <a href="${esc(uri)}">open this link</a> to add it automatically.</p>`;
+      $("#tfaForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try { await api("/2fa/enable", { method: "POST", body: { code: e.target.code.value } }); state.admin.twoFactor = true; toast("Two-factor sign-in is on."); route(); } catch (ex) { toast(ex.message); }
+      });
+    });
+    const off = $("#tfaOff");
+    if (off) off.addEventListener("click", async () => {
+      const password = prompt("Your password:");
+      if (!password) return;
+      const code = prompt("Current 6-digit code:");
+      if (!code) return;
+      try { await api("/2fa/disable", { method: "POST", body: { password, code } }); state.admin.twoFactor = false; toast("Two-factor sign-in turned off."); route(); } catch (ex) { toast(ex.message); }
+    });
 
     const pf = $("#policyForm");
     const readPolicy = () => {

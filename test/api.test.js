@@ -19,6 +19,8 @@ const db = openDb(path.join(tmp, "test.db"));
 
 async function api(method, url, body, { auth = false } = {}) {
   const headers = { "content-type": "application/json" };
+  // Public bookings need privacy consent; tests opt out explicitly with consent: false.
+  if (method === "POST" && url === "/api/appointments" && body && typeof body === "object" && body.consent === undefined) body = { ...body, consent: true };
   if (auth) Object.assign(headers, { cookie, "x-requested-with": "fetch" });
   const res = await fetch(base + url, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const setCookie = res.headers.get("set-cookie");
