@@ -14,6 +14,37 @@
   status = 200
   force = true
 
+# Short pages (see public/assets/js/router.js) share index.html.
+[[redirects]]
+  from = "/coccydynia"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/treatment"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/doctor"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/locations"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/faq"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/book"
+  to = "/index.html"
+  status = 200
+
 [[redirects]]
   from = "/admin"
   to = "/admin/index.html"

@@ -89,13 +89,13 @@ export function compose(event, a, base, extra = {}) {
         };
     case "cancelled":
       return extra.actor === "clinic"
-        ? { patient: `Hi ${first}, we're sorry: the clinic had to cancel your appointment ${a.ref} on ${when(a)}.${refund || (a.amount_paid ? "" : "")} Book a new time: ${base}/#appointment` }
+        ? { patient: `Hi ${first}, we're sorry: the clinic had to cancel your appointment ${a.ref} on ${when(a)}.${refund || (a.amount_paid ? "" : "")} Book a new time: ${base}/book` }
         : {
-          patient: `Hi ${first}, your appointment ${a.ref} on ${when(a)} is cancelled.${refund} Book again any time: ${base}/#appointment`,
+          patient: `Hi ${first}, your appointment ${a.ref} on ${when(a)} is cancelled.${refund} Book again any time: ${base}/book`,
           doctor: `Cancelled by patient: ${a.ref} ${who}, ${when(a)}, ${where.short}.${extra.refund ? ` Refund ${rupees(extra.refund.amount)} (${extra.refund.percent}%) per policy.` : ""}${extra.reason ? ` Reason: ${extra.reason}` : ""}`,
         };
     case "no_show":
-      return { patient: `Hi ${first}, we missed you at your appointment ${a.ref} on ${when(a)}. As per our policy this visit isn't refundable. Book a new time: ${base}/#appointment` };
+      return { patient: `Hi ${first}, we missed you at your appointment ${a.ref} on ${when(a)}. As per our policy this visit isn't refundable. Book a new time: ${base}/book` };
     case "refunded":
       return { patient: `Hi ${first}, a refund of ${rupees(extra.amount)} for booking ${a.ref} has been issued. It reaches the original payment method in 5–7 working days.` };
     case "reminder":

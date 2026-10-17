@@ -111,7 +111,7 @@ export function publicRoutes(db) {
     }
 
     notify(db, "booked", appt, { base });
-    const text = `Hello Dr Rajveer Singh, I just booked appointment ${appt.ref} for ${prettyDate(appt.date)} at ${prettyTime(appt.time)} (${CLINICS[appt.clinic].short}).`;
+    const text = `Hi Dr Rajveer, got your details from your website. I have booked an appointment (ref ${appt.ref}) for ${prettyDate(appt.date)} at ${prettyTime(appt.time)}, ${CLINICS[appt.clinic].short}.`;
     res.status(201).json({ appointment: view(appt, req), whatsappUrl: waLink(config.whatsappNumber, text) });
   });
 

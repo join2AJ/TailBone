@@ -45,8 +45,9 @@ npm run admin:create -- doctor@example.com "Dr Rajveer Singh"   # add or reset a
 ### Patient side
 | Page | What it does |
 |------|--------------|
-| `/` | Homepage with live open/closed status, symptom checker, treatment journey, live stories, Instagram highlights, clinic tabs with maps, FAQ |
-| `/#appointment` | **Live booking**: clinic → day strip (free-slot counts) → time slot → details. Returns a booking reference, a WhatsApp hand-off and an "Add to calendar" (.ics) file |
+| `/` | Short homepage: hero, key numbers, and cards linking to each page |
+| `/coccydynia` · `/treatment` · `/doctor` · `/locations` · `/faq` | Separate short pages (symptom checker and tips · treatment journey and Instagram · doctor and stories · clinics with maps and hours · FAQ). They switch instantly without reloading (`public/assets/js/router.js`); old `/#section` links redirect |
+| `/book` | **Live booking**: clinic → day strip (free-slot counts) → time slot → details. Returns a booking reference, a WhatsApp hand-off and an "Add to calendar" (.ics) file |
 | `/manage.html` | Patients **reschedule or cancel** using their reference and phone number |
 | `/checkin.html?t=…` | **Follow-up check-in**: 0–10 pain score, better/same/worse, sitting tolerance. Happy patients are invited to share a story |
 | `/stories.html` | All published stories, plus a **share your story** form (with consent; published as first name and last initial only) |

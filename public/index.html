@@ -6,13 +6,13 @@
   <title>Tailbone Treatment Clinic | Coccydynia Specialist · Bengaluru & New Delhi</title>
   <meta name="description" content="Specialist, non-surgical care for tailbone (coccyx) pain by Dr Rajveer Singh. Clinics in JP Nagar, Bengaluru and Vasant Kunj, New Delhi, plus online consultations.">
   <meta name="theme-color" content="#0b3d2e">
-  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml">
   <meta property="og:title" content="Tailbone Treatment Clinic">
   <meta property="og:description" content="Specialist, non-surgical care for coccydynia. Bengaluru · New Delhi · Online.">
   <meta property="og:type" content="website">
-  <link rel="stylesheet" href="assets/css/fonts.css">
-  <link rel="stylesheet" href="assets/css/styles.css">
-  <script src="assets/js/theme.js"></script>
+  <link rel="stylesheet" href="/assets/css/fonts.css">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <script src="/assets/js/theme.js"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -51,19 +51,19 @@
   <!-- Header -->
   <header class="header" id="header">
     <div class="container header__inner">
-      <a href="#top" class="brand" aria-label="Tailbone Treatment home">
-        <img src="assets/img/logo.svg" alt="" width="40" height="40">
+      <a href="/" class="brand" aria-label="Tailbone Treatment home">
+        <img src="/assets/img/logo.svg" alt="" width="40" height="40">
         <span class="brand__text"><strong>TAILBONE</strong><small>TREATMENT.com</small></span>
       </a>
       <nav class="nav" id="nav" aria-label="Main">
-        <a href="#coccydynia">Coccydynia</a>
-        <a href="#treatment">Treatment</a>
-        <a href="#doctor">Doctor</a>
-        <a href="#stories">Stories</a>
-        <a href="#locations">Locations</a>
-        <a href="#faq">FAQ</a>
-        <a href="manage.html" class="nav__plain">My appointments</a>
-        <a href="#appointment" class="btn btn--primary nav__cta">Book appointment</a>
+        <a href="/coccydynia">Coccydynia</a>
+        <a href="/treatment">Treatment</a>
+        <a href="/doctor">Doctor</a>
+        <a href="/stories.html">Stories</a>
+        <a href="/locations">Locations</a>
+        <a href="/faq">FAQ</a>
+        <a href="/manage.html" class="nav__plain">My appointments</a>
+        <a href="/book" class="btn btn--primary nav__cta">Book appointment</a>
       </nav>
       <div class="header__actions">
         <button class="icon-btn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
@@ -80,7 +80,7 @@
 
   <main id="main">
     <!-- Hero -->
-    <section class="hero" id="top">
+    <section class="hero" id="top" data-page="home">
       <div class="hero__bg" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="grid"></span></div>
       <div class="container hero__inner">
         <div class="hero__copy reveal">
@@ -88,8 +88,8 @@
           <h1>Sit down again <em>without</em> the pain.</h1>
           <p class="lead">Specialist, non-surgical care for tailbone pain (coccydynia) led by Dr Rajveer Singh. See us in Bengaluru, in New Delhi, or online from anywhere in the world.</p>
           <div class="hero__cta">
-            <a href="#appointment" class="btn btn--primary btn--lg">Book an appointment</a>
-            <a href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20I%20would%20like%20to%20consult%20about%20tailbone%20pain." target="_blank" rel="noopener" class="btn btn--ghost btn--lg">
+            <a href="/book" class="btn btn--primary btn--lg">Book an appointment</a>
+            <a href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener" class="btn btn--ghost btn--lg">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>
               Chat on WhatsApp
             </a>
@@ -136,7 +136,7 @@
     </section>
 
     <!-- Stats -->
-    <section class="stats" aria-label="Clinic in numbers">
+    <section class="stats" aria-label="Clinic in numbers" data-page="home">
       <div class="container stats__grid">
         <div class="stat reveal"><span class="stat__n" data-count="10000" data-suffix="+">0</span><span class="stat__l">Patients treated</span></div>
         <div class="stat reveal"><span class="stat__n" data-count="20" data-suffix="+">0</span><span class="stat__l">Years of combined experience</span></div>
@@ -145,8 +145,27 @@
       </div>
     </section>
 
+
+    <!-- Explore (home) -->
+    <section class="section explore" data-page="home" aria-labelledby="exploreTitle">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow">Find what you need</span>
+          <h2 id="exploreTitle">Everything about tailbone pain, one tap away.</h2>
+        </div>
+        <div class="explore__grid">
+          <a class="explore__card" href="/coccydynia"><span class="explore__icon">🩻</span><strong>What is coccydynia?</strong><span>Causes, symptoms and a quick self-check</span><em>Learn more →</em></a>
+          <a class="explore__card" href="/treatment"><span class="explore__icon">✋</span><strong>How treatment works</strong><span>Internal Manipulation, step by step</span><em>See the process →</em></a>
+          <a class="explore__card" href="/doctor"><span class="explore__icon">🩺</span><strong>Meet Dr Rajveer Singh</strong><span>12+ years treating coccyx pain, plus patient stories</span><em>About the doctor →</em></a>
+          <a class="explore__card" href="/locations"><span class="explore__icon">📍</span><strong>Clinics & timings</strong><span>Bengaluru, New Delhi and online</span><em>Find a clinic →</em></a>
+          <a class="explore__card" href="/faq"><span class="explore__icon">💬</span><strong>Questions answered</strong><span>Pain, sessions, referrals, privacy</span><em>Read FAQ →</em></a>
+          <a class="explore__card explore__card--primary" href="/book"><span class="explore__icon">📅</span><strong>Book in 30 seconds</strong><span>Live slots · instant confirmation</span><em>Book now →</em></a>
+        </div>
+      </div>
+    </section>
+
     <!-- Coccydynia -->
-    <section class="section" id="coccydynia">
+    <section class="section" id="coccydynia" data-page="coccydynia">
       <div class="container two-col">
         <div class="reveal">
           <span class="eyebrow">Understanding coccydynia</span>
@@ -181,13 +200,13 @@
           </form>
           <div class="meter" aria-hidden="true"><span id="meterBar"></span></div>
           <p class="checker__result" id="checkerResult" aria-live="polite">Select the symptoms that apply to you.</p>
-          <a href="#appointment" class="btn btn--primary btn--block" id="checkerCta" hidden>Talk to a specialist</a>
+          <a href="/book" class="btn btn--primary btn--block" id="checkerCta" hidden>Talk to a specialist</a>
         </div>
       </div>
     </section>
 
     <!-- Treatment -->
-    <section class="section section--tint" id="treatment">
+    <section class="section section--tint" id="treatment" data-page="treatment">
       <div class="container">
         <div class="section__head reveal">
           <span class="eyebrow">How we treat it</span>
@@ -254,7 +273,7 @@
     </section>
 
     <!-- Doctor -->
-    <section class="section" id="doctor">
+    <section class="section" id="doctor" data-page="doctor">
       <div class="container two-col two-col--center">
         <div class="doctor reveal">
           <div class="doctor__photo">
@@ -278,7 +297,7 @@
             <li>A female clinician is available if you prefer</li>
           </ul>
           <div class="row-gap">
-            <a href="#appointment" class="btn btn--primary">Book with Dr Rajveer</a>
+            <a href="/book" class="btn btn--primary">Book with Dr Rajveer</a>
             <a href="https://www.instagram.com/drrajveersingh_9886688323/" target="_blank" rel="noopener" class="btn btn--ghost">Follow on Instagram</a>
           </div>
         </div>
@@ -286,7 +305,7 @@
     </section>
 
     <!-- Testimonials -->
-    <section class="section section--dark" id="stories">
+    <section class="section section--dark" id="stories" data-page="doctor">
       <div class="container">
         <div class="section__head reveal">
           <span class="eyebrow eyebrow--light">Patient stories</span>
@@ -313,15 +332,15 @@
         <div class="stories-foot">
           <p class="disclaimer" id="storiesMeta">Patient feedback, published with consent. Individual results vary.</p>
           <div class="row-gap">
-            <a href="stories.html" class="btn btn--outline-light">Read all stories</a>
-            <a href="stories.html#share" class="btn btn--light">Share your story</a>
+            <a href="/stories.html" class="btn btn--outline-light">Read all stories</a>
+            <a href="/stories.html#share" class="btn btn--light">Share your story</a>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Instagram -->
-    <section class="section" id="instagram">
+    <section class="section" id="instagram" data-page="treatment">
       <div class="container">
         <div class="section__head reveal">
           <span class="eyebrow">From Instagram</span>
@@ -342,7 +361,7 @@
     </section>
 
     <!-- Self-care tips -->
-    <section class="section" id="tips">
+    <section class="section section--tint" id="tips" data-page="coccydynia">
       <div class="container">
         <div class="section__head reveal">
           <span class="eyebrow">While you wait for your visit</span>
@@ -359,7 +378,7 @@
     </section>
 
     <!-- Locations -->
-    <section class="section section--tint" id="locations">
+    <section class="section section--tint" id="locations" data-page="locations">
       <div class="container">
         <div class="section__head reveal">
           <span class="eyebrow">Our clinics</span>
@@ -409,7 +428,7 @@
                 <li>Report and scan review</li>
                 <li>Help planning your visit for international patients</li>
               </ul>
-              <a class="btn btn--primary" href="#appointment" data-mode="online">Book online consult</a>
+              <a class="btn btn--primary" href="/book" data-mode="online">Book online consult</a>
             </div>
             <div class="globe" aria-hidden="true">🌏</div>
           </div>
@@ -431,15 +450,15 @@
     </section>
 
     <!-- Appointment -->
-    <section class="section" id="appointment">
+    <section class="section" id="appointment" data-page="book">
       <div class="container two-col">
         <div class="reveal">
           <span class="eyebrow">Book an appointment</span>
           <h2>Take the first step today.</h2>
-          <p>Pick a clinic, day and time that suit you and you're booked in seconds. You can reschedule or cancel any time from <a href="manage.html">My appointments</a>. Prefer to talk? Call or WhatsApp us.</p>
+          <p>Pick a clinic, day and time that suit you and you're booked in seconds. You can reschedule or cancel any time from <a href="/manage.html">My appointments</a>. Prefer to talk? Call or WhatsApp us.</p>
           <div class="contact-cards">
             <a class="contact-card" href="tel:+919886688323"><span>📞</span><div><small>Call</small><strong>+91 98866 88323</strong></div></a>
-            <a class="contact-card" href="https://wa.me/919886688323" target="_blank" rel="noopener"><span>💬</span><div><small>WhatsApp</small><strong>Chat with the doctor</strong></div></a>
+            <a class="contact-card" href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener"><span>💬</span><div><small>WhatsApp</small><strong>Chat with the doctor</strong></div></a>
             <a class="contact-card" href="mailto:contact@tailbonetreatment.com"><span>✉️</span><div><small>Email</small><strong>contact@tailbonetreatment.com</strong></div></a>
           </div>
           <div class="pay">
@@ -499,7 +518,7 @@
                 </div>
                 <label class="check"><input type="checkbox" name="prefersFemale"> I'd prefer to see a female clinician</label>
                 <div class="consent">
-                  <label class="check check--top"><input type="checkbox" name="consent" required> <span>I agree that Tailbone Treatment Clinic may use my details, including health information I share, to book, provide and follow up my treatment, as described in the <a href="privacy.html" target="_blank" rel="noopener">privacy notice</a>.</span></label>
+                  <label class="check check--top"><input type="checkbox" name="consent" required> <span>I agree that Tailbone Treatment Clinic may use my details, including health information I share, to book, provide and follow up my treatment, as described in the <a href="/privacy.html" target="_blank" rel="noopener">privacy notice</a>.</span></label>
                   <label class="check check--top"><input type="checkbox" name="whatsappConsent" checked> <span>Send me appointment updates, reminders and follow-up check-ins on WhatsApp. <span class="muted">(Optional. You can stop them any time.)</span></span></label>
                   <span class="err" id="consentErr">Please agree to the privacy notice to book.</span>
                 </div>
@@ -512,7 +531,7 @@
             <div class="policy-note" id="policyNote" hidden>
               <strong>Cancellation & refunds</strong>
               <ul id="policyList"></ul>
-              <a href="policies.html" target="_blank" rel="noopener">Full terms, cancellation & refund policy</a>
+              <a href="/policies.html" target="_blank" rel="noopener">Full terms, cancellation & refund policy</a>
             </div>
             <p class="small muted center" id="bookHint">You'll get a booking reference instantly. Our team confirms every appointment on WhatsApp.</p>
           </form>
@@ -545,7 +564,7 @@
             <h3>Online booking is unavailable right now</h3>
             <p class="muted">Please message us on WhatsApp or call, and we'll book you in.</p>
             <div class="row-gap">
-              <a class="btn btn--wa" href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener">WhatsApp us</a>
+              <a class="btn btn--wa" href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener">WhatsApp us</a>
               <a class="btn btn--ghost" href="tel:+919886688323">Call +91 98866 88323</a>
             </div>
           </div>
@@ -554,7 +573,7 @@
     </section>
 
     <!-- FAQ -->
-    <section class="section section--tint" id="faq">
+    <section class="section section--tint" id="faq" data-page="faq">
       <div class="container narrow">
         <div class="section__head reveal">
           <span class="eyebrow">FAQ</span>
@@ -591,14 +610,14 @@
           </details>
           <details class="reveal">
             <summary>How do I cancel or reschedule?</summary>
-            <p>Open <a href="manage.html">My appointments</a>, enter your booking reference and phone number, and pick a new time or cancel. You can also call or WhatsApp +91 98866 88323.</p>
+            <p>Open <a href="/manage.html">My appointments</a>, enter your booking reference and phone number, and pick a new time or cancel. You can also call or WhatsApp +91 98866 88323.</p>
           </details>
         </div>
       </div>
     </section>
 
     <!-- CTA band -->
-    <section class="cta-band">
+    <section class="cta-band" data-page-except="book">
       <div class="container cta-band__inner reveal">
         <div>
           <h2>Tired of planning your day around a chair?</h2>
@@ -606,7 +625,7 @@
         </div>
         <div class="row-gap">
           <a href="tel:+919886688323" class="btn btn--light btn--lg">Call +91 98866 88323</a>
-          <a href="#appointment" class="btn btn--outline-light btn--lg">Book online</a>
+          <a href="/book" class="btn btn--outline-light btn--lg">Book online</a>
         </div>
       </div>
     </section>
@@ -616,7 +635,7 @@
   <footer class="footer">
     <div class="container footer__grid">
       <div>
-        <a href="#top" class="brand brand--light"><img src="assets/img/logo.svg" alt="" width="36" height="36"><span class="brand__text"><strong>TAILBONE</strong><small>TREATMENT.com</small></span></a>
+        <a href="/" class="brand brand--light"><img src="/assets/img/logo.svg" alt="" width="36" height="36"><span class="brand__text"><strong>TAILBONE</strong><small>TREATMENT.com</small></span></a>
         <p>At Tailbone Treatment Clinic we know how much pain and dysfunction can affect your personal and working life. As primary healthcare professionals, we're committed to helping you get back to living well.</p>
         <div class="social">
           <a href="https://www.facebook.com/" target="_blank" rel="noopener" aria-label="Facebook">f</a>
@@ -628,13 +647,13 @@
       <div>
         <h4>Navigation</h4>
         <ul>
-          <li><a href="#appointment">Appointment</a></li>
-          <li><a href="#doctor">About us</a></li>
-          <li><a href="#locations">Contact us</a></li>
-          <li><a href="#faq">FAQ</a></li>
-          <li><a href="manage.html">My appointments</a></li>
-          <li><a href="policies.html">Terms & refund policy</a></li>
-          <li><a href="privacy.html">Privacy statement</a></li>
+          <li><a href="/book">Appointment</a></li>
+          <li><a href="/doctor">About us</a></li>
+          <li><a href="/locations">Contact us</a></li>
+          <li><a href="/faq">FAQ</a></li>
+          <li><a href="/manage.html">My appointments</a></li>
+          <li><a href="/policies.html">Terms & refund policy</a></li>
+          <li><a href="/privacy.html">Privacy statement</a></li>
         </ul>
       </div>
       <div>
@@ -669,7 +688,7 @@
       <div class="wa__body">
         <div class="bubble">Hi there 👋<br>How can I help with your tailbone pain?</div>
       </div>
-      <a class="btn btn--wa btn--block" href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20I%20have%20a%20question%20about%20tailbone%20pain." target="_blank" rel="noopener">Start chat</a>
+      <a class="btn btn--wa btn--block" href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener">Start chat</a>
     </div>
     <button class="wa__btn" id="waBtn" aria-label="Chat with Dr Rajveer Singh on WhatsApp" aria-expanded="false">
       <svg viewBox="0 0 24 24" width="30" height="30" fill="#fff" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>
@@ -679,12 +698,13 @@
   <!-- Mobile sticky action bar -->
   <div class="mbar">
     <a href="tel:+919886688323">📞 Call</a>
-    <a href="https://wa.me/919886688323" target="_blank" rel="noopener">💬 WhatsApp</a>
-    <a href="#appointment" class="mbar__primary">Book</a>
+    <a href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener">💬 WhatsApp</a>
+    <a href="/book" class="mbar__primary">Book</a>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="assets/js/main.js" defer></script>
+  <script src="/assets/js/router.js" defer></script>
+  <script src="/assets/js/main.js" defer></script>
 </body>
 </html>

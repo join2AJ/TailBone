@@ -37,14 +37,7 @@
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
-  const navLinks = $$('.nav a[href^="#"]:not(.btn)');
-  const spy = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      navLinks.forEach((l) => l.classList.toggle("is-active", l.getAttribute("href") === `#${entry.target.id}`));
-    });
-  }, { rootMargin: "-45% 0px -50% 0px" });
-  navLinks.forEach((l) => { const s = $(l.getAttribute("href")); if (s) spy.observe(s); });
+  // Active menu item is set by router.js for the current page.
 
   // ---- Reveal on scroll ----
   const revealer = new IntersectionObserver((entries, obs) => {
@@ -147,10 +140,14 @@
   const track = $("#track");
   let slides = $$(".quote", track);
   const dotsWrap = $("#dots");
-  const perView = () => Math.max(1, Math.round(track.clientWidth / slides[0].getBoundingClientRect().width));
+  const perView = () => {
+    const w = slides[0].getBoundingClientRect().width;
+    return w ? Math.max(1, Math.round(track.clientWidth / w)) : 1;
+  };
   const pageCount = () => Math.ceil(slides.length / perView());
-  const currentPage = () => Math.round(track.scrollLeft / track.clientWidth);
+  const currentPage = () => (track.clientWidth ? Math.round(track.scrollLeft / track.clientWidth) : 0);
   const goTo = (page) => {
+    if (!track.clientWidth) return; // carousel's page isn't showing
     const n = pageCount();
     const p = ((page % n) + n) % n;
     const slide = slides[Math.min(p * perView(), slides.length - 1)];
@@ -175,6 +172,8 @@
   $("#next").addEventListener("click", () => goTo(currentPage() + 1));
   track.addEventListener("scroll", () => requestAnimationFrame(syncDots), { passive: true });
   window.addEventListener("resize", buildDots);
+  // The carousel has no width while its page is hidden; re-measure when a page is shown.
+  window.addEventListener("routechange", () => requestAnimationFrame(buildDots));
   buildDots();
 
   let autoplay;
@@ -473,7 +472,7 @@
     try {
       const { appointment, whatsappUrl, payment } = await api("/api/appointments", { method: "POST", body: JSON.stringify(payload) });
       lastBooking = appointment;
-      lastWhatsapp = whatsappUrl || `https://wa.me/919886688323?text=${encodeURIComponent(`Hello Dr Rajveer Singh, my booking reference is ${appointment.ref}.`)}`;
+      lastWhatsapp = whatsappUrl || `https://wa.me/919886688323?text=${encodeURIComponent(`Hi Dr Rajveer, got your details from your website. I have booked an appointment (ref ${appointment.ref}).`)}`;
       if (payment) {
         pendingPayment = payment;
         await startPayment();

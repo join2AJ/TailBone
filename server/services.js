@@ -324,7 +324,7 @@ export function messages(appt, base) {
   return {
     confirm: `Hi ${first}, your appointment at Tailbone Treatment Clinic is confirmed for ${when} (${where.short}).\n${where.address}\nRef: ${appt.ref}\nManage or reschedule: ${manage}`,
     reminder: `Hi ${first}, a reminder of your appointment tomorrow, ${when}, at our ${where.short} ${appt.clinic === "online" ? "consultation (we'll send the video link shortly)" : "clinic"}. Ref: ${appt.ref}. Reply here if you need to reschedule.`,
-    cancelled: `Hi ${first}, your appointment on ${when} (Ref ${appt.ref}) has been cancelled. To book a new time, visit ${base}/#appointment or reply to this message.`,
+    cancelled: `Hi ${first}, your appointment on ${when} (Ref ${appt.ref}) has been cancelled. To book a new time, visit ${base}/book or reply to this message.`,
   };
 }
 
