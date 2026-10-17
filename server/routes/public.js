@@ -8,6 +8,10 @@ import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, ver
 import { notify } from "../notify.js";
 import { DEMO_PATIENT } from "../demo.js";
 import { getFeatures, isOn } from "../features.js";
+import QRCode from "qrcode";
+import crypto from "node:crypto";
+import { ensureBusy, isBusy, googleCalendarLink, calendarFeed } from "../gcal.js";
+import { addDays } from "../time.js";
 import { recordConsent, withdrawConsent, exportPatientData, createDataRequest, NOTICE_VERSION, CONSENT_PURPOSES } from "../privacy.js";
 import {
   HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment,
@@ -44,8 +48,13 @@ export function publicRoutes(db) {
       cancelQuote: open && a.amount_paid ? refundQuote(a, policy) : null,
       reschedule: open ? rescheduleCheck(a, policy) : { allowed: false },
       manageUrl: `${siteUrl(req)}/manage.html?ref=${a.ref}`,
+      apptNo: a.appt_no,
+      patientCode: a.patient_code,
+      googleCalendarUrl: open ? googleCalendarLink(a, siteUrl(req)) : null,
     };
   };
+  // QR code (SVG) that opens the patient's booking page; shown on confirmations and the appointment card.
+  const withQr = async (v) => ({ ...v, qrSvg: await QRCode.toString(v.manageUrl, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#0b3d2e", light: "#ffffff" } }) });
 
   r.get("/config", (req, res) => {
     const policy = getPolicy(db);
@@ -65,11 +74,15 @@ export function publicRoutes(db) {
     });
   });
 
-  r.get("/days", (req, res) => {
-    res.json({ days: availableDays(db, requireClinic(req.query.clinic), 21) });
+  r.get("/days", async (req, res) => {
+    const clinic = requireClinic(req.query.clinic);
+    const today = clinicNow().date;
+    await ensureBusy(today, addDays(today, BOOKING.windowDays));
+    res.json({ days: availableDays(db, clinic, 21) });
   });
 
-  r.get("/slots", (req, res) => {
+  r.get("/slots", async (req, res) => {
+    if (typeof req.query.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)) await ensureBusy(req.query.date);
     res.json(availableSlots(db, req.query.clinic, req.query.date));
   });
 
@@ -79,6 +92,8 @@ export function publicRoutes(db) {
     if (!isOn(db, "online_booking")) throw new HttpError(403, "Online booking is turned off. Please WhatsApp or call the clinic.");
     if (req.body.consent !== true) throw new HttpError(400, "Please agree to the privacy notice so we can book and treat you.");
     const data = parseBooking(req.body);
+    await ensureBusy(data.date);
+    if (isBusy(data.date, data.time)) throw new HttpError(409, "Sorry, the doctor isn't available at that time. Please pick another slot.");
     const appt = createAppointment(db, data, { source: "web" });
     recordConsent(db, appt.patient_id, ["care", ...(req.body.whatsappConsent ? ["whatsapp_updates"] : [])], "web");
     const base = siteUrl(req);
@@ -102,7 +117,7 @@ export function publicRoutes(db) {
       }
       db.prepare("UPDATE appointments SET payment_order_id = ? WHERE id = ?").run(order.id, appt.id);
       return res.status(201).json({
-        appointment: view(appt, req),
+        appointment: await withQr(view(appt, req)),
         payment: {
           keyId: publicKeyId(),
           orderId: order.id,
@@ -118,7 +133,7 @@ export function publicRoutes(db) {
 
     notify(db, "booked", appt, { base });
     const text = `Hi Dr Rajveer, got your details from your website. I have booked an appointment (ref ${appt.ref}) for ${prettyDate(appt.date)} at ${prettyTime(appt.time)}, ${CLINICS[appt.clinic].short}.`;
-    res.status(201).json({ appointment: view(appt, req), whatsappUrl: waLink(config.whatsappNumber, text) });
+    res.status(201).json({ appointment: await withQr(view(appt, req)), whatsappUrl: waLink(config.whatsappNumber, text) });
   });
 
   // Checkout success callback from the browser. The signature proves the payment is genuine.
@@ -129,7 +144,7 @@ export function publicRoutes(db) {
     const row = db.prepare(`${APPT_SELECT} WHERE a.payment_order_id = ?`).get(cleanText(orderId, 64));
     if (!row) throw new HttpError(404, "Booking not found for this payment.");
     const { appointment } = await markPaid(db, readAppt(row), { paymentId: cleanText(paymentId, 64), base: siteUrl(req) });
-    res.json({ appointment: view(appointment, req) });
+    res.json({ appointment: await withQr(view(appointment, req)) });
   });
 
   // Server-to-server confirmation from Razorpay (covers closed tabs and dropped connections).
@@ -160,11 +175,11 @@ export function publicRoutes(db) {
     return appt;
   };
 
-  r.post("/manage/lookup", lookupLimit, (req, res) => {
+  r.post("/manage/lookup", lookupLimit, async (req, res) => {
     const appt = findOwn(req);
     const upcoming = db.prepare(`${APPT_SELECT} WHERE a.patient_id = ? AND a.id != ? AND a.status IN ('pending','confirmed') AND a.date >= ? ORDER BY a.date, a.time`)
       .all(appt.patient_id, appt.id, clinicNow().date).map((a) => view(readAppt(a), req));
-    res.json({ appointment: view(appt, req), others: upcoming, policy: policySummary(getPolicy(db)) });
+    res.json({ appointment: await withQr(view(appt, req)), others: upcoming, policy: policySummary(getPolicy(db)) });
   });
 
   r.post("/manage/cancel", lookupLimit, async (req, res) => {
@@ -176,8 +191,12 @@ export function publicRoutes(db) {
     res.json({ appointment: view(appointment, req), refund: refund && { amount: refund.amount, percent: quote.percent, status: refund.status } });
   });
 
-  r.post("/manage/reschedule", lookupLimit, (req, res) => {
+  r.post("/manage/reschedule", lookupLimit, async (req, res) => {
     const appt = findOwn(req);
+    if (typeof req.body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(req.body.date)) {
+      await ensureBusy(req.body.date);
+      if (isBusy(req.body.date, req.body.time)) throw new HttpError(409, "Sorry, the doctor isn't available at that time. Please pick another slot.");
+    }
     if (!view(appt, req).canChange) throw new HttpError(409, "This appointment can no longer be changed online. Please call us.");
     const check = rescheduleCheck(appt, getPolicy(db));
     if (!check.allowed) throw new HttpError(409, check.reason);
@@ -185,6 +204,18 @@ export function publicRoutes(db) {
     const updated = rescheduleAppointment(db, appt, req.body.date, req.body.time, { actor: "patient", actorName: appt.patient_name });
     notify(db, "rescheduled", updated, { base: siteUrl(req), actor: "patient", from });
     res.json({ appointment: view(updated, req) });
+  });
+
+  // ---------- Calendar subscription feed (secret link, for the doctor's Google/Apple/Outlook calendar) ----------
+  r.get("/calendar/:token.ics", lookupLimit, (req, res) => {
+    const row = db.prepare("SELECT value FROM settings WHERE key = 'calendar_feed_token'").get();
+    const given = Buffer.from(String(req.params.token));
+    const expected = Buffer.from(row?.value || "");
+    if (!row || given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) throw new HttpError(404, "Not found.");
+    const rows = db.prepare(`${APPT_SELECT} WHERE a.date >= date('now','-30 days') AND a.status IN ('pending','confirmed','completed') AND a.payment_status != 'awaiting' ORDER BY a.date, a.time LIMIT 2000`).all();
+    res.set("Content-Type", "text/calendar; charset=utf-8");
+    res.set("Cache-Control", "private, max-age=300");
+    res.send(calendarFeed(rows, siteUrl(req)));
   });
 
   // ---------- Privacy self-service (DPDP s.11–13, GDPR Art. 15–21) ----------

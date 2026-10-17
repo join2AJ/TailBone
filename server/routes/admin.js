@@ -10,6 +10,8 @@ import { createBackup, listBackups } from "../backup.js";
 import { DEMO_ADMIN } from "../demo.js";
 import { FEATURES, PERMISSIONS, DEFAULT_PERMISSIONS, getFeatures, saveFeatures, permissionsOf, sanitizePermissions } from "../features.js";
 import crypto from "node:crypto";
+import QRCode from "qrcode";
+import { gcalEnabled } from "../gcal.js";
 import path from "node:path";
 import fs from "node:fs";
 import { clinicNow, addDays, isDate } from "../time.js";
@@ -21,6 +23,7 @@ import {
   HttpError, parseBooking, createAppointment, getAppointment, rescheduleAppointment, createFollowup,
   defaultFollowupDate, cleanText, normalizePhone, validEmail, siteUrl, waLink, messages, checkinMessage, FOLLOWUP_TYPES,
   normalizeInstagramUrl, readAppt, cancelAppointment, issueRefund, logEvent, appointmentEvents, prettyDate, prettyTime,
+  calendarSync,
 } from "../services.js";
 
 const STATUSES = ["pending", "confirmed", "completed", "cancelled", "no_show"];
@@ -107,7 +110,7 @@ export function adminRoutes(db) {
     [/^\/appointments/, "appointments"], [/^\/followups/, "followups"], [/^\/patients/, "patients"],
     [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"],
     [/^\/payments/, "payments"], [/^\/privacy/, "privacy"],
-    [/^\/settings\/policy$/, "settings", "PUT"], [/^\/blocked/, "settings"],
+    [/^\/settings\/policy$/, "settings", "PUT"], [/^\/blocked/, "settings"], [/^\/calendar/, "settings"],
     [/^\/export/, "export"],
   ];
   r.use((req, res, next) => {
@@ -360,11 +363,11 @@ export function adminRoutes(db) {
     };
     stats.collected30Text = rupees(stats.collected30);
     const schedule = db.prepare(
-      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email FROM appointments a JOIN patients p ON p.id = a.patient_id
+      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code FROM appointments a JOIN patients p ON p.id = a.patient_id
        WHERE a.date = ? AND a.status != 'cancelled' ORDER BY a.time`,
     ).all(today).map((a) => withLinks(readAppt(a), req));
     const tomorrow = db.prepare(
-      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email FROM appointments a JOIN patients p ON p.id = a.patient_id
+      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code FROM appointments a JOIN patients p ON p.id = a.patient_id
        WHERE a.date = ? AND a.status IN ('pending','confirmed') ORDER BY a.time`,
     ).all(addDays(today, 1)).map((a) => withLinks(readAppt(a), req));
     const due = db.prepare(
@@ -392,12 +395,12 @@ export function adminRoutes(db) {
     if (CLINICS[clinic]) { where.push("a.clinic = ?"); params.push(clinic); }
     if (q) {
       const term = `%${cleanText(q, 80)}%`;
-      where.push("(p.name LIKE ? OR p.phone LIKE ? OR a.ref LIKE ?)");
-      params.push(term, term, term);
+      where.push("(p.name LIKE ? OR p.phone LIKE ? OR a.ref LIKE ? OR a.appt_no LIKE ? OR p.patient_code LIKE ?)");
+      params.push(term, term, term, term, term);
     }
     const order = req.query.order === "desc" ? "DESC" : "ASC";
     const rows = db.prepare(
-      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email FROM appointments a JOIN patients p ON p.id = a.patient_id
+      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code FROM appointments a JOIN patients p ON p.id = a.patient_id
        ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY a.date ${order}, a.time ${order} LIMIT 500`,
     ).all(...params);
     res.json({ appointments: rows.map((a) => withLinks(readAppt(a), req)) });
@@ -461,6 +464,7 @@ export function adminRoutes(db) {
           throw err;
         }
         logEvent(db, appt.id, "clinic", who, status);
+        calendarSync(db, appt.id);
         if (status === "confirmed" && !silent) notify(db, "confirmed", getAppointment(db, appt.id), { base });
       }
     }
@@ -517,6 +521,32 @@ export function adminRoutes(db) {
   r.patch("/notifications/:id", (req, res) => {
     if (req.body.status === "sent") db.prepare("UPDATE notifications SET status = 'sent', error = '' WHERE id = ? AND audience = 'patient'").run(id(req.params.id));
     res.json({ ok: true });
+  });
+
+  // ---------- Calendar ----------
+  r.get("/calendar", (req, res) => {
+    let row = db.prepare("SELECT value FROM settings WHERE key = 'calendar_feed_token'").get();
+    if (!row) {
+      const tokenValue = crypto.randomBytes(24).toString("base64url");
+      db.prepare("INSERT INTO settings (key, value) VALUES ('calendar_feed_token', ?)").run(tokenValue);
+      row = { value: tokenValue };
+    }
+    const failing = db.prepare("SELECT COUNT(*) n FROM appointments WHERE gcal_status IS NOT NULL AND gcal_status != 'synced' AND date >= date('now')").get().n;
+    res.json({ feedUrl: `${siteUrl(req)}/api/calendar/${row.value}.ics`, googleSync: gcalEnabled(), failing });
+  });
+
+  r.post("/calendar/rotate", (req, res) => {
+    db.prepare("INSERT INTO settings (key, value) VALUES ('calendar_feed_token', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .run(crypto.randomBytes(24).toString("base64url"));
+    securityLog(db, req, "calendar_feed_rotated");
+    res.json({ ok: true });
+  });
+
+  r.get("/appointments/:id/qr.svg", async (req, res) => {
+    const appt = getAppointment(db, id(req.params.id));
+    if (!appt) throw new HttpError(404, "Appointment not found.");
+    res.set("Content-Type", "image/svg+xml");
+    res.send(await QRCode.toString(`${siteUrl(req)}/manage.html?ref=${appt.ref}`, { type: "svg", margin: 1, errorCorrectionLevel: "M" }));
   });
 
   // ---------- Fees & policies ----------
@@ -624,9 +654,9 @@ export function adminRoutes(db) {
          (SELECT COUNT(*) FROM appointments a WHERE a.patient_id = p.id AND a.status = 'completed') AS visits,
          (SELECT MAX(date) FROM appointments a WHERE a.patient_id = p.id AND a.status != 'cancelled') AS last_date,
          (SELECT pain_score FROM checkins c WHERE c.patient_id = p.id ORDER BY c.created_at DESC LIMIT 1) AS last_pain
-       FROM patients p WHERE p.name LIKE ? OR p.phone LIKE ? OR IFNULL(p.email,'') LIKE ?
+       FROM patients p WHERE p.name LIKE ? OR p.phone LIKE ? OR IFNULL(p.email,'') LIKE ? OR p.patient_code LIKE ?
        ORDER BY p.created_at DESC LIMIT 300`,
-    ).all(term, term, term);
+    ).all(term, term, term, term);
     res.json({ patients: rows });
   });
 

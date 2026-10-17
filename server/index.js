@@ -8,6 +8,7 @@ import { createBackup, listBackups } from "./backup.js";
 import { runRetention } from "./privacy.js";
 import path from "node:path";
 import { seedDemo } from "./demo.js";
+import { retryPendingSyncs } from "./gcal.js";
 
 const db = openDb();
 if (config.demo) {
@@ -31,6 +32,7 @@ let demoSeededAt = Date.now();
 const jobs = setInterval(async () => {
   try {
     releaseExpiredHolds(db);
+    await retryPendingSyncs(db, { getAppointment });
     if (config.demo && Date.now() - demoSeededAt > 24 * 3600_000) {
       seedDemo(db);
       demoSeededAt = Date.now();

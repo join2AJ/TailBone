@@ -1,12 +1,16 @@
 import crypto from "node:crypto";
 import { config, CLINICS, BOOKING } from "./config.js";
-import { tx } from "./db.js";
+import { tx, patientCode, nextApptNo } from "./db.js";
 import { clinicNow, slotsForDate, isBookableTime, addDays, isDate, isTime } from "./time.js";
 import { encrypt, decryptFields } from "./crypto.js";
 import { getPolicy, priceFor, refundQuote } from "./policy.js";
 import { paymentsEnabled, refundPayment, rupees } from "./payments.js";
 import { notify } from "./notify.js";
 import { isOn } from "./features.js";
+import { syncAppointment, isBusy } from "./gcal.js";
+
+/** Mirror an appointment to Google Calendar in the background (no-op unless configured). */
+export const calendarSync = (db, id) => { syncAppointment(db, id, { getAppointment }).catch(() => {}); };
 
 export class HttpError extends Error {
   constructor(status, message) {
@@ -81,7 +85,7 @@ export function availableSlots(db, clinic, date, now = new Date(), { skipRelease
     date,
     clinic,
     closed: all.length === 0,
-    slots: all.map((time) => ({ time, available: !taken.has(time) && isBookableTime(date, time, now) })),
+    slots: all.map((time) => ({ time, available: !taken.has(time) && !isBusy(date, time) && isBookableTime(date, time, now) })),
   };
 }
 
@@ -112,7 +116,7 @@ export function appointmentEvents(db, appointmentId) {
 // ---------- Patients & appointments ----------
 
 const APPT_SECRET_FIELDS = ["reason", "notes"];
-const APPT_SELECT = `SELECT a.*, p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email
+const APPT_SELECT = `SELECT a.*, p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email, p.patient_code
   FROM appointments a JOIN patients p ON p.id = a.patient_id`;
 
 /** Decrypt the sensitive fields of an appointment row read with APPT_SELECT. */
@@ -125,7 +129,9 @@ export function upsertPatient(db, { name, phone, email }) {
     db.prepare("UPDATE patients SET name = ?, email = COALESCE(NULLIF(?, ''), email) WHERE id = ?").run(name, email || "", existing.id);
     return existing.id;
   }
-  return Number(db.prepare("INSERT INTO patients (name, phone, email) VALUES (?, ?, ?)").run(name, phone, email || null).lastInsertRowid);
+  const id = Number(db.prepare("INSERT INTO patients (name, phone, email) VALUES (?, ?, ?)").run(name, phone, email || null).lastInsertRowid);
+  db.prepare("UPDATE patients SET patient_code = ? WHERE id = ?").run(patientCode(id), id);
+  return id;
 }
 
 export function parseBooking(body, { allowAnyTime = false } = {}) {
@@ -157,7 +163,7 @@ export function createAppointment(db, data, { source = "web", status = "pending"
   releaseExpiredHolds(db);
   const policy = getPolicy(db);
   try {
-    return tx(db, () => {
+    const created = tx(db, () => {
       const patientId = upsertPatient(db, data);
       // Guard against the same patient stacking several future bookings from the website.
       if (source === "web") {
@@ -172,15 +178,17 @@ export function createAppointment(db, data, { source = "web", status = "pending"
       const holdUntil = payOnline ? new Date(Date.now() + policy.holdMinutes * 60_000).toISOString().replace("T", " ").slice(0, 19) : null;
       const ref = makeRef();
       const id = Number(db.prepare(
-        `INSERT INTO appointments (ref, patient_id, clinic, date, time, status, reason, source, prefers_female,
+        `INSERT INTO appointments (ref, appt_no, patient_id, clinic, date, time, status, reason, source, prefers_female,
            visit_type, fee, platform_fee, payment_status, hold_until)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(ref, patientId, data.clinic, data.date, data.time, status, encrypt(data.reason), source, data.prefersFemale,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(ref, nextApptNo(db), patientId, data.clinic, data.date, data.time, status, encrypt(data.reason), source, data.prefersFemale,
         price.visitType, price.fee, split, paymentStatus, holdUntil).lastInsertRowid);
       logEvent(db, id, source === "web" ? "patient" : "clinic", source === "web" ? data.name : actorName, "booked",
         `${CLINICS[data.clinic].short}, ${data.date} ${data.time}${price.visitType === "followup" ? " (follow-up rate)" : ""}`);
       return getAppointment(db, id);
     });
+    if (created.payment_status !== "awaiting") calendarSync(db, created.id);
+    return created;
   } catch (err) {
     if (String(err.message).includes("UNIQUE") && String(err.message).includes("appointments")) {
       throw new HttpError(409, "Sorry, that slot was just taken. Please pick another time.");
@@ -213,6 +221,7 @@ export function rescheduleAppointment(db, appt, date, time, { allowAnyTime = fal
     throw err;
   }
   logEvent(db, appt.id, actor, actorName, "rescheduled", `${appt.date} ${appt.time} → ${date} ${time}`);
+  calendarSync(db, appt.id);
   return getAppointment(db, appt.id);
 }
 
@@ -261,6 +270,7 @@ export async function cancelAppointment(db, appt, { actor, actorName = "", reaso
   logEvent(db, appt.id, actor, actorName, noShow ? "no_show" : "cancelled", [reason && `Reason: ${reason}`, quote.refundable ? quote.rule : ""].filter(Boolean).join(" · "));
   const refund = quote.amount ? await issueRefund(db, appt, quote.amount, { reason: noShow ? "no-show" : `cancelled by ${actor}`, actor, actorName }) : null;
   const updated = getAppointment(db, appt.id);
+  calendarSync(db, appt.id);
   notify(db, noShow ? "no_show" : "cancelled", updated, { base, actor, reason, refund: refund && { amount: refund.amount, percent: quote.percent } });
   return { appointment: updated, quote, refund };
 }
@@ -285,6 +295,7 @@ export async function markPaid(db, appt, { paymentId, amount, base }) {
        status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END, updated_at = datetime('now') WHERE id = ?`,
   ).run(paymentId, paid, appt.id);
   logEvent(db, appt.id, "patient", appt.patient_name, "paid", `${rupees(paid)} · ${paymentId}`);
+  calendarSync(db, appt.id);
   const updated = getAppointment(db, appt.id);
   notify(db, "booked", updated, { base });
   return { appointment: updated };

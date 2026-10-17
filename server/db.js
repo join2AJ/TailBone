@@ -202,6 +202,9 @@ const MIGRATIONS = {
     hold_until: "TEXT",                                    // unpaid online bookings release the slot after this
     reschedule_count: "INTEGER NOT NULL DEFAULT 0",
     cancelled_by: "TEXT",
+    appt_no: "TEXT",                                       // human-friendly appointment number, e.g. TBA-2610-0007
+    gcal_event_id: "TEXT",                                 // Google Calendar event (when sync is on)
+    gcal_status: "TEXT",                                   // synced | error message
   },
   admins: {
     totp_secret: "TEXT",                                   // encrypted base32 secret
@@ -216,6 +219,7 @@ const MIGRATIONS = {
   },
   patients: {
     anonymised_at: "TEXT",
+    patient_code: "TEXT",                                  // unique patient ID, e.g. TBP-00042
   },
 };
 
@@ -230,11 +234,33 @@ export function openDb(file = config.dbFile) {
     }
   }
   db.exec("CREATE INDEX IF NOT EXISTS idx_appt_order ON appointments(payment_order_id)");
+  // Backfill IDs for records created before they existed, then enforce uniqueness.
+  for (const { id } of db.prepare("SELECT id FROM patients WHERE patient_code IS NULL").all()) {
+    db.prepare("UPDATE patients SET patient_code = ? WHERE id = ?").run(patientCode(id), id);
+  }
+  for (const a of db.prepare("SELECT id, created_at FROM appointments WHERE appt_no IS NULL ORDER BY id").all()) {
+    db.prepare("UPDATE appointments SET appt_no = ? WHERE id = ?").run(nextApptNo(db, a.created_at), a.id);
+  }
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_patient_code ON patients(patient_code)");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_appt_no ON appointments(appt_no)");
   // There must always be a super admin: promote the first account if none exists (upgrades, first run).
   if (!db.prepare("SELECT 1 FROM admins WHERE role = 'superadmin' AND disabled = 0").get()) {
     db.prepare("UPDATE admins SET role = 'superadmin' WHERE id = (SELECT MIN(id) FROM admins WHERE disabled = 0)").run();
   }
   return db;
+}
+
+/** Patient ID from the row id: TBP-00042 (5+ digits). */
+export const patientCode = (id) => `TBP-${String(id).padStart(5, "0")}`;
+
+/** Next appointment number for the month of `when` (UTC timestamp or Date): TBA-YYMM-#### */
+export function nextApptNo(db, when = new Date()) {
+  const d = when instanceof Date ? when : new Date(String(when).replace(" ", "T") + "Z");
+  const ist = new Date(d.getTime() + 330 * 60_000); // numbers follow the clinic's (IST) month
+  const prefix = `TBA-${String(ist.getUTCFullYear()).slice(2)}${String(ist.getUTCMonth() + 1).padStart(2, "0")}-`;
+  const last = db.prepare("SELECT appt_no FROM appointments WHERE appt_no LIKE ? ORDER BY appt_no DESC LIMIT 1").get(`${prefix}%`);
+  const n = last ? Number(last.appt_no.slice(prefix.length)) + 1 : 1;
+  return `${prefix}${String(n).padStart(4, "0")}`;
 }
 
 /** Run fn inside a transaction, rolling back on error. */
