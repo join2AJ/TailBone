@@ -310,6 +310,14 @@ export async function markPaid(db, appt, { paymentId, amount, base }) {
       throw new HttpError(409, "Your payment arrived after the slot was released and someone else booked it. A full refund has been issued. Please choose another time.");
     }
   }
+  if (["cancelled", "no_show"].includes(appt.status) && appt.cancelled_by !== "system") {
+    // The booking was cancelled (by the patient or the clinic) before the payment arrived: record it, then refund it in full.
+    db.prepare("UPDATE appointments SET payment_id = ?, amount_paid = ?, payment_status = 'paid', hold_until = NULL, updated_at = datetime('now') WHERE id = ?")
+      .run(paymentId, paid, appt.id);
+    logEvent(db, appt.id, "system", "", "paid_late", "Payment received after the booking was cancelled; refunding in full.");
+    await issueRefund(db, getAppointment(db, appt.id), paid, { reason: "booking already cancelled", actor: "system" });
+    throw new HttpError(409, "This booking was cancelled before your payment arrived, so we have refunded it in full. Please book again if you'd like a new appointment.");
+  }
   db.prepare(
     `UPDATE appointments SET payment_id = ?, amount_paid = ?, payment_status = 'paid', hold_until = NULL,
        status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END, updated_at = datetime('now') WHERE id = ?`,
@@ -329,7 +337,7 @@ export function createFollowup(db, { patientId, appointmentId = null, dueDate, t
   if (!isDate(dueDate)) throw new HttpError(400, "Invalid follow-up date.");
   if (!FOLLOWUP_TYPES.includes(type)) throw new HttpError(400, "Invalid follow-up type.");
   const id = db.prepare("INSERT INTO followups (patient_id, appointment_id, due_date, type, notes, token) VALUES (?, ?, ?, ?, ?, ?)")
-    .run(patientId, appointmentId, dueDate, type, cleanText(notes, 1000), makeToken()).lastInsertRowid;
+    .run(patientId, appointmentId, dueDate, type, encrypt(cleanText(notes, 1000)), makeToken()).lastInsertRowid;
   return db.prepare("SELECT * FROM followups WHERE id = ?").get(Number(id));
 }
 
@@ -342,7 +350,10 @@ const prettyTime = (time) => { const [h, m] = time.split(":").map(Number); retur
 export { prettyDate, prettyTime };
 
 export function siteUrl(req) {
-  return config.siteUrl || `${req.protocol}://${req.get("host")}`;
+  // Never build patient links from the request's Host header in production: it is set by the caller and could
+  // turn the clinic's own WhatsApp messages into phishing links. Set SITE_URL; the public site is the fallback.
+  if (config.siteUrl) return config.siteUrl;
+  return config.isProd ? "https://tailbone.netlify.app" : `${req.protocol}://${req.get("host")}`;
 }
 
 export function waLink(phone, text) {

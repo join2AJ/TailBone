@@ -61,16 +61,20 @@ export function adminRoutes(db) {
   r.post("/login", loginLimit, (req, res) => {
     const email = cleanText(req.body.email, 200);
     const admin = db.prepare("SELECT * FROM admins WHERE email = ?").get(email);
+    // Every refusal before a correct password looks the same (401, same wording), so the form doesn't reveal which emails
+    // have accounts, or which are locked or disabled.
+    const refuse = `Incorrect email or password. After ${LOCKOUT.attempts} wrong tries the account is locked for ${LOCKOUT.minutes} minutes.`;
+    // Always run the (slow) password check, even for unknown emails, so response time doesn't reveal accounts.
+    const passwordOk = verifyPassword(String(req.body.password || ""), admin?.password_hash || DUMMY_HASH) && !!admin;
     if (admin?.locked_until && admin.locked_until > new Date().toISOString()) {
       securityLog(db, req, "login_blocked_locked", email, null);
-      throw new HttpError(423, `Too many failed attempts. The account is locked for up to ${LOCKOUT.minutes} minutes.`);
+      throw new HttpError(401, refuse);
     }
     if (admin?.disabled) {
       securityLog(db, req, "login_blocked_disabled", email, null);
-      throw new HttpError(403, "This account has been disabled. Contact the super admin.");
+      if (passwordOk) throw new HttpError(403, "This account has been disabled. Contact the super admin.");
+      throw new HttpError(401, refuse);
     }
-    // Always run the (slow) password check, even for unknown emails, so response time doesn't reveal accounts.
-    const passwordOk = verifyPassword(String(req.body.password || ""), admin?.password_hash || DUMMY_HASH) && !!admin;
     if (!passwordOk) {
       if (admin) {
         const fails = admin.failed_logins + 1;
@@ -80,11 +84,11 @@ export function adminRoutes(db) {
       } else {
         securityLog(db, req, "login_failed_unknown_user", email, null);
       }
-      throw new HttpError(401, "Incorrect email or password.");
+      throw new HttpError(401, refuse);
     }
     if (admin.totp_enabled) {
       if (!req.body.code) return res.status(401).json({ error: "Enter the 6-digit code from your authenticator app.", needCode: true });
-      if (!verifyTotp(decrypt(admin.totp_secret), req.body.code)) {
+      if (!verifyTotp(decrypt(admin.totp_secret), req.body.code, Date.now(), admin.id)) {
         securityLog(db, req, "login_failed_2fa", email, admin);
         throw new HttpError(401, "That code didn't work. Check your phone's clock and try the newest code.");
       }
@@ -189,7 +193,9 @@ export function adminRoutes(db) {
     if (!verifyPassword(String(req.body.password || ""), row.password_hash) || !verifyTotp(decrypt(row.totp_secret), req.body.code)) {
       throw new HttpError(400, "Password or code is incorrect.");
     }
-    db.prepare("UPDATE admins SET totp_enabled = 0, totp_secret = NULL WHERE id = ?").run(req.admin.id);
+    // Also signs out every other device, as a password change does.
+    db.prepare("UPDATE admins SET totp_enabled = 0, totp_secret = NULL, session_version = session_version + 1 WHERE id = ?").run(req.admin.id);
+    createSessionCookie(res, db.prepare("SELECT * FROM admins WHERE id = ?").get(req.admin.id));
     securityLog(db, req, "2fa_disabled");
     res.json({ ok: true });
   });
@@ -363,6 +369,7 @@ export function adminRoutes(db) {
   };
   const followupView = (f, req) => ({
     ...f,
+    notes: decrypt(f.notes),
     checkinUrl: `${siteUrl(req)}/checkin.html?t=${f.token}`,
     whatsappUrl: waLink(f.patient_phone, checkinMessage(f.patient_name, f.token, siteUrl(req))),
   });
@@ -682,7 +689,7 @@ export function adminRoutes(db) {
       if (!FOLLOWUP_TYPES.includes(req.body.type)) throw new HttpError(400, "Invalid type.");
       db.prepare("UPDATE followups SET type = ? WHERE id = ?").run(req.body.type, fid);
     }
-    if (req.body.notes !== undefined) db.prepare("UPDATE followups SET notes = ? WHERE id = ?").run(cleanText(req.body.notes, 1000), fid);
+    if (req.body.notes !== undefined) db.prepare("UPDATE followups SET notes = ? WHERE id = ?").run(encrypt(cleanText(req.body.notes, 1000)), fid);
     res.json({ ok: true });
   });
 

@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import crypto from "node:crypto";
 import express from "express";
 import path from "node:path";
 import { config } from "./config.js";
@@ -37,6 +38,20 @@ export function createApp(db) {
   // Proxies in front of the app: 1 = the host's load balancer; 2 = Netlify proxy + host (see render.yaml).
   // Needed so rate limits and the security log see the visitor's real IP.
   if (config.isProd) app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS) || 1);
+  // With PROXY_SECRET set, the extra Netlify hop is trusted only for requests that carry the secret header Netlify adds
+  // (netlify.toml). Anyone calling the server directly could otherwise fake X-Forwarded-For and dodge the rate limits.
+  const proxySecret = process.env.PROXY_SECRET ? Buffer.from(process.env.PROXY_SECRET) : null;
+  if (config.isProd && proxySecret) {
+    app.use((req, res, next) => {
+      const given = Buffer.from(req.get("x-proxy-secret") || "");
+      const viaNetlify = given.length === proxySecret.length && crypto.timingSafeEqual(given, proxySecret);
+      const chain = (req.get("x-forwarded-for") || "").split(",").map((s) => s.trim()).filter(Boolean);
+      const hops = viaNetlify ? 2 : 1;
+      const ip = chain.length >= hops ? chain[chain.length - hops] : req.socket.remoteAddress;
+      Object.defineProperty(req, "ip", { value: ip, configurable: true });
+      next();
+    });
+  }
 
   app.use((req, res, next) => {
     res.set({

@@ -19,6 +19,8 @@ services:
         value: /var/data
       - key: TRUST_PROXY_HOPS
         value: "2"           # Netlify proxy + Render load balancer
+      - key: PROXY_SECRET
+        sync: false          # random value; put the same one in netlify.toml (X-Proxy-Secret) so forged addresses can't dodge rate limits
       - key: RETENTION_YEARS
         value: "3"
       - key: SITE_URL

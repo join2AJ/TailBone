@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS appointments (
   id INTEGER PRIMARY KEY,
   ref TEXT NOT NULL UNIQUE,
   patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
-  clinic TEXT NOT NULL CHECK (clinic IN ('blr','del','online')),
+  clinic TEXT NOT NULL CHECK (clinic IN ('blr','del','lko','online')),
   date TEXT NOT NULL,
   time TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending'
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS media (
 
 CREATE TABLE IF NOT EXISTS blocked_dates (
   id INTEGER PRIMARY KEY,
-  clinic TEXT NOT NULL CHECK (clinic IN ('all','blr','del','online')),
+  clinic TEXT NOT NULL CHECK (clinic IN ('all','blr','del','lko','online')),
   date TEXT NOT NULL,
   reason TEXT NOT NULL DEFAULT '',
   UNIQUE (clinic, date)
@@ -264,6 +264,9 @@ export function openDb(file = config.dbFile) {
     }
   }
   db.exec("CREATE INDEX IF NOT EXISTS idx_appt_order ON appointments(payment_order_id)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_checkin_followup ON checkins(followup_id); CREATE INDEX IF NOT EXISTS idx_checkin_patient ON checkins(patient_id, created_at)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_notif_recipient ON notifications(recipient); CREATE INDEX IF NOT EXISTS idx_notif_appt ON notifications(appointment_id)");
+  allowClinic(db, "lko");
   // Backfill IDs for records created before they existed, then enforce uniqueness.
   for (const { id } of db.prepare("SELECT id FROM patients WHERE patient_code IS NULL").all()) {
     db.prepare("UPDATE patients SET patient_code = ? WHERE id = ?").run(patientCode(id), id);
@@ -278,6 +281,26 @@ export function openDb(file = config.dbFile) {
     db.prepare("UPDATE admins SET role = 'superadmin' WHERE id = (SELECT MIN(id) FROM admins WHERE disabled = 0)").run();
   }
   return db;
+}
+
+/**
+ * Databases created before a clinic existed have a CHECK constraint that rejects it. Widening a CHECK is one of the
+ * schema edits SQLite documents as safe to make in place (existing rows already satisfy the wider rule).
+ */
+function allowClinic(db, code) {
+  const tables = db.prepare("SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name IN ('appointments','blocked_dates') AND sql LIKE '%CHECK (clinic IN (%'").all()
+    .filter((t) => !t.sql.includes(`'${code}'`));
+  if (!tables.length) return;
+  const version = db.prepare("PRAGMA schema_version").get().schema_version;
+  db.exec("PRAGMA writable_schema = ON");
+  try {
+    const upd = db.prepare("UPDATE sqlite_master SET sql = ? WHERE type = 'table' AND name = ?");
+    for (const t of tables) upd.run(t.sql.replace("'del',", `'del','${code}',`), t.name);
+    db.exec(`PRAGMA schema_version = ${version + 1}`);
+  } finally {
+    db.exec("PRAGMA writable_schema = OFF");
+  }
+  if (db.prepare("PRAGMA integrity_check").get().integrity_check !== "ok") throw new Error("Database check failed after adding a clinic.");
 }
 
 /** Patient ID from the row id: TBP-00042 (5+ digits). */

@@ -10,12 +10,17 @@ import path from "node:path";
 import { seedDemo } from "./demo.js";
 import { retryPendingSyncs } from "./gcal.js";
 
+if (config.isProd && !config.demo && !process.env.ENCRYPTION_KEY) {
+  console.error("ENCRYPTION_KEY is not set. Patient notes are encrypted with it: generate one (see README), keep a copy safe, then restart.");
+  process.exit(1);
+}
 const db = openDb();
 if (config.demo) {
   seedDemo(db);
   console.log("DEMO MODE: sample data loaded into demo.db (resets every 24 h). No real payments or messages are sent.");
 }
 seedStories(db);
+if (config.isProd && !config.siteUrl) console.warn("SITE_URL is not set: links in patient messages will point to https://tailbone.netlify.app. Set SITE_URL to the website's address.");
 if (seedAdmin(db)) console.log(`Created admin account for ${config.adminEmail}`);
 if (!db.prepare("SELECT COUNT(*) n FROM admins").get().n) {
   console.warn("No admin account yet. Run `npm run admin:create` or set ADMIN_EMAIL and ADMIN_PASSWORD.");
@@ -44,7 +49,8 @@ const jobs = setInterval(async () => {
     const dataDir = path.dirname(config.dbFile);
     const last = listBackups(dataDir)[0];
     if (minutes >= 120 && (!last || Date.now() - Date.parse(last.at) > 20 * 3600_000)) {
-      createBackup(db, dataDir);
+      // Separate steps: a failed backup (e.g. disk full) must not stop the retention clean-up, or the other way round.
+      try { createBackup(db, dataDir); } catch (err) { console.error("Backup failed:", err.message); }
       const { erased } = runRetention(db);
       if (erased) console.log(`Retention: erased ${erased} inactive patient record(s).`);
     }

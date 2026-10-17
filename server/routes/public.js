@@ -287,8 +287,9 @@ export function publicRoutes(db) {
       details: cleanText(req.body.note, 1000), changes, selfService: true,
     });
     const label = { access: "copy of data", correction: "correction", erasure: "deletion" }[type];
-    db.prepare("INSERT INTO notifications (audience, event, channel, body, status) VALUES ('doctor', 'privacy_request', 'dashboard', ?, 'sent')")
-      .run(encrypt(`Data request ${ref} (${label}) from ${appt.patient_name} ${appt.patient_code || ""}. Completes automatically in 3 days unless you act.`));
+    // Linked to the booking, so the notice is redacted too if the patient's data is later erased.
+    db.prepare("INSERT INTO notifications (appointment_id, audience, event, channel, body, status) VALUES (?, 'doctor', 'privacy_request', 'dashboard', ?, 'sent')")
+      .run(appt.id, encrypt(`Data request ${ref} (${label}) from ${appt.patient_name} ${appt.patient_code || ""}. Completes automatically in 3 days unless you act.`));
     res.status(201).json({ ref, due, privacy: privacyView(appt) });
   });
 

@@ -13,6 +13,9 @@
   to = "https://BACKEND_URL/api/:splat"
   status = 200
   force = true
+  # Optional but recommended: the same random value as PROXY_SECRET on the backend, so the backend can tell real
+  # visitors' addresses from forged ones (rate limits). Keep this repository private if you set it here.
+  # headers = { X-Proxy-Secret = "PUT-THE-SAME-RANDOM-VALUE-HERE" }
 
 # Each short page is its own pre-built file (npm run build).
 [[redirects]]

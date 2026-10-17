@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { encrypt, decrypt, decryptFields } from "./crypto.js";
+import { calendarSync } from "./services.js";
 
 // DPDP Act 2023 (India) and GDPR: consent records, rights requests, export, erasure and retention.
 // The privacy notice shown to patients is versioned so each consent can be tied to the exact text agreed to.
@@ -44,7 +45,8 @@ export function exportPatientData(db, patientId) {
       `SELECT ref, clinic, date, time, status, visit_type, reason, notes, fee, payment_status, amount_paid, amount_refunded, created_at
        FROM appointments WHERE patient_id = ? ORDER BY date`,
     ).all(patientId).map((a) => decryptFields(a, ["reason", "notes"])),
-    followups: db.prepare("SELECT due_date, type, status, notes, completed_at FROM followups WHERE patient_id = ? ORDER BY due_date").all(patientId),
+    followups: db.prepare("SELECT due_date, type, status, notes, completed_at FROM followups WHERE patient_id = ? ORDER BY due_date").all(patientId)
+      .map((f) => ({ ...f, notes: decrypt(f.notes) })),
     checkins: db.prepare("SELECT pain_score, sitting_minutes, trend, notes, created_at FROM checkins WHERE patient_id = ? ORDER BY created_at").all(patientId)
       .map((c) => decryptFields(c, ["notes"])),
     consents: db.prepare("SELECT purpose, notice_version, source, given_at, withdrawn_at FROM consents WHERE patient_id = ? ORDER BY id").all(patientId),
@@ -72,15 +74,21 @@ export function erasePatient(db, patientId, { force = false } = {}) {
     db.prepare("UPDATE appointments SET reason = '', notes = '' WHERE patient_id = ?").run(patientId);
     db.prepare("UPDATE checkins SET notes = '' WHERE patient_id = ?").run(patientId);
     db.prepare("UPDATE followups SET notes = '' WHERE patient_id = ?").run(patientId);
-    db.prepare("UPDATE notifications SET body = ?, recipient = '' WHERE recipient = ?").run(encrypt("[erased]"), patient.phone);
+    // Messages to the patient, and dashboard/email notices about them (which name them and show their phone).
+    db.prepare(`UPDATE notifications SET body = ?, recipient = '' WHERE recipient = ?
+      OR appointment_id IN (SELECT id FROM appointments WHERE patient_id = ?)`).run(encrypt("[erased]"), patient.phone, patientId);
+    db.prepare("UPDATE data_requests SET name = 'Erased patient', phone = NULL, email = NULL, details = ?, changes = NULL WHERE patient_id = ? OR phone = ?")
+      .run(encrypt(""), patientId, patient.phone);
     db.prepare("UPDATE appointment_events SET actor_name = '', detail = '' WHERE actor = 'patient' AND appointment_id IN (SELECT id FROM appointments WHERE patient_id = ?)").run(patientId);
-    db.prepare("UPDATE stories SET phone = NULL WHERE phone = ?").run(patient.phone);
+    db.prepare("DELETE FROM stories WHERE patient_id = ? OR phone = ?").run(patientId, patient.phone);
     db.prepare("UPDATE consents SET withdrawn_at = COALESCE(withdrawn_at, datetime('now')) WHERE patient_id = ?").run(patientId);
     db.exec("COMMIT");
   } catch (err) {
     db.exec("ROLLBACK");
     throw err;
   }
+  // Calendar entries carry the patient's name: update or remove them too.
+  for (const { id } of db.prepare("SELECT id FROM appointments WHERE patient_id = ? AND gcal_event_id IS NOT NULL").all(patientId)) calendarSync(db, id);
   return { erased: true };
 }
 

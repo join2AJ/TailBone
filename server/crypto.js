@@ -1,12 +1,16 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 // AES-256-GCM field encryption for sensitive free text (clinical notes, symptoms, check-in comments).
 // Values are stored as "enc:v1:<iv>:<tag>:<ciphertext>" (base64url). Anything without the prefix is
 // treated as legacy plaintext, so existing rows keep working and get encrypted on their next write.
 
 const PREFIX = "enc:v1:";
+const UNREADABLE = "[unreadable: encryption key changed]";
+// Same folder as the database whatever directory the app is started from (config.js resolves DATA_DIR the same way).
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let key = null;
 
 function loadKey() {
@@ -17,8 +21,12 @@ function loadKey() {
     if (key.length !== 32) throw new Error("ENCRYPTION_KEY must be 32 bytes (64 hex characters).");
     return key;
   }
-  // Development fallback: a key file next to the database. In production set ENCRYPTION_KEY and keep a copy safe.
-  const dir = path.resolve(process.env.DATA_DIR || "data");
+  // Development and demo fallback: a key file next to the database. A real clinic must set ENCRYPTION_KEY (and keep a copy
+  // safe): a key file lost with a server move would make every encrypted note unreadable.
+  if (process.env.NODE_ENV === "production" && process.env.DEMO_MODE !== "true") {
+    throw new Error("ENCRYPTION_KEY is not set. Generate one (see README) and keep a copy somewhere safe.");
+  }
+  const dir = path.resolve(ROOT, process.env.DATA_DIR || "data");
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, ".encryption-key");
   if (!fs.existsSync(file)) fs.writeFileSync(file, crypto.randomBytes(32).toString("hex"), { mode: 0o600 });
@@ -28,6 +36,8 @@ function loadKey() {
 
 export function encrypt(text) {
   if (text == null || text === "") return text ?? "";
+  // Never save the "unreadable" placeholder over real data (it would destroy the original if the right key comes back).
+  if (String(text).includes(UNREADABLE)) throw Object.assign(new Error("This record can't be read with the current encryption key, so it can't be saved. Check ENCRYPTION_KEY."), { status: 409 });
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", loadKey(), iv);
   const ct = Buffer.concat([cipher.update(String(text), "utf8"), cipher.final()]);
@@ -42,7 +52,7 @@ export function decrypt(value) {
     decipher.setAuthTag(Buffer.from(tagB, "base64url"));
     return Buffer.concat([decipher.update(Buffer.from(ctB, "base64url")), decipher.final()]).toString("utf8");
   } catch {
-    return "[unreadable: encryption key changed]";
+    return UNREADABLE;
   }
 }
 

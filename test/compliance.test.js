@@ -111,7 +111,7 @@ test("correction requests are applied by staff or automatically; erasure waits f
 
 test("account lockout after repeated wrong passwords", async () => {
   for (let i = 0; i < 5; i++) assert.equal((await login({ password: "wrong-password-x" })).status, 401);
-  assert.equal((await login()).status, 423, "locked even with the right password");
+  assert.equal((await login()).status, 401, "locked even with the right password (and it looks like any other refusal)");
   db.prepare("UPDATE admins SET locked_until = NULL, failed_logins = 0").run();
   assert.equal((await login()).status, 200);
   const log = db.prepare("SELECT action FROM security_log ORDER BY id").all().map((r) => r.action);
@@ -130,6 +130,10 @@ test("two-factor sign-in", async () => {
   assert.equal(noCode.body.needCode, true);
   assert.equal((await login({ code: "123456" })).status, 401);
   assert.equal((await login({ code: totpCode(secret) })).status, 200);
+  const signedIn = cookie;
+  cookie = "";
+  assert.equal((await login({ code: totpCode(secret) })).status, 401, "each code works only once");
+  cookie = signedIn;
   assert.ok(db.prepare("SELECT totp_secret FROM admins").get().totp_secret.startsWith("enc:v1:"), "2FA secret encrypted at rest");
   // Disable again for the remaining tests.
   await api("POST", "/api/admin/2fa/disable", { password: "correct-horse-battery", code: totpCode(secret) }, { auth: true });

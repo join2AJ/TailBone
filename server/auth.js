@@ -124,13 +124,23 @@ export function totpCode(secret, time = Date.now(), step = 30) {
 }
 
 /** Accepts the current code and one step either side (clock drift). */
-export function verifyTotp(secret, code, time = Date.now()) {
+// Last time step accepted per account, so a code seen over someone's shoulder can't be used again within its window.
+const usedSteps = new Map();
+
+/** Check a 6-digit code (±30 s for clock drift). With `accountId`, each code works once only. */
+export function verifyTotp(secret, code, time = Date.now(), accountId = null) {
   const c = String(code || "").replace(/\s/g, "");
   if (!/^\d{6}$/.test(c)) return false;
-  return [-1, 0, 1].some((w) => {
+  const match = [-1, 0, 1].find((w) => {
     const expected = totpCode(secret, time + w * 30_000);
     return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(c));
   });
+  if (match === undefined) return false;
+  if (accountId == null) return true;
+  const step = Math.floor((time + match * 30_000) / 30_000);
+  if (step <= (usedSteps.get(accountId) ?? -1)) return false;
+  usedSteps.set(accountId, step);
+  return true;
 }
 
 export const totpUri = (secret, email) =>
