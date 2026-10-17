@@ -5,6 +5,8 @@ The website and clinic system for [tailbonetreatment.com](https://tailbonetreatm
 - **Patients** book real slots online, manage their booking, fill in progress check-ins and share their stories.
 - **The clinic** runs everything from a dashboard at `/admin`: appointments, follow-ups, patient records with pain charts, story moderation, Instagram highlights, holidays and exports.
 
+**What's new compared to the old site, the change log and the future plan:** [docs/IMPROVEMENTS-AND-ROADMAP.md](docs/IMPROVEMENTS-AND-ROADMAP.md). Update it with every change.
+
 - **Clinics** can be set to open, closed or "opening soon" from the dashboard (Settings → Fees & policies). Every change to fees, clinics and rules is recorded with date, time and who made it, and each booking keeps the cancellation and reschedule rules in force when it was made.
 - **Data requests** (copy, correction, deletion) from My appointments go to the dashboard and complete automatically after 3 days if staff haven't acted.
 - **Every patient gets a permanent patient ID** (`TBP-00042`) and **every booking an appointment number** (`TBA-2610-0007`), a QR code and a printable appointment card.
