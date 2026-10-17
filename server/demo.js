@@ -4,6 +4,7 @@ import { hashPassword } from "./auth.js";
 import { clinicNow, addDays, slotsForDate } from "./time.js";
 import { seedStories, makeToken } from "./services.js";
 import { NOTICE_VERSION } from "./privacy.js";
+import { patientCode, nextApptNo } from "./db.js";
 
 // Sample data for DEMO_MODE. All people are fictional; phone numbers use the unassigned 9999900xxx range.
 export const DEMO_ADMIN = { email: "demo@tailbonetreatment.com", name: "Demo Doctor" };
@@ -23,15 +24,18 @@ export function seedDemo(db) {
 
     const today = clinicNow().date;
     const slot = (date, i) => { const s = slotsForDate(date); return s[Math.min(i, s.length - 1)]; };
-    const patient = (name, phone, notes = "") => Number(db.prepare("INSERT INTO patients (name, phone, notes) VALUES (?, ?, ?)")
-      .run(name, `91${phone}`, encrypt(notes)).lastInsertRowid);
+    const patient = (name, phone, notes = "") => {
+      const id = Number(db.prepare("INSERT INTO patients (name, phone, notes) VALUES (?, ?, ?)").run(name, `91${phone}`, encrypt(notes)).lastInsertRowid);
+      db.prepare("UPDATE patients SET patient_code = ? WHERE id = ?").run(patientCode(id), id);
+      return id;
+    };
     const appt = (pid, ref, clinic, date, i, status, { reason = "", notes = "", paid = 0, platform = 0, refunded = 0, visit = "new", cancelledBy = null } = {}) => {
       const fee = visit === "followup" ? 50000 : 80000;
       const id = Number(db.prepare(
-        `INSERT INTO appointments (ref, patient_id, clinic, date, time, status, reason, notes, source, visit_type, fee, platform_fee,
+        `INSERT INTO appointments (ref, appt_no, patient_id, clinic, date, time, status, reason, notes, source, visit_type, fee, platform_fee,
            payment_status, payment_id, amount_paid, amount_refunded, cancelled_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'web', ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(ref, pid, clinic, date, slot(date, i), status, encrypt(reason), encrypt(notes), visit, fee, platform,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'web', ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(ref, nextApptNo(db), pid, clinic, date, slot(date, i), status, encrypt(reason), encrypt(notes), visit, fee, platform,
         paid ? (refunded >= paid ? "refunded" : refunded ? "partially_refunded" : "paid") : "pay_at_clinic",
         paid ? `pay_demo_${ref.slice(3)}` : null, paid, refunded, cancelledBy).lastInsertRowid);
       db.prepare("INSERT INTO appointment_events (appointment_id, actor, actor_name, action, detail) VALUES (?, 'patient', ?, 'booked', ?)")

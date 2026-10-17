@@ -84,3 +84,13 @@ test("demo data resets cleanly", async () => {
   const res = await api("POST", "/api/manage/lookup", DEMO_PATIENT);
   assert.equal(res.body.appointment.status, "confirmed");
 });
+
+test("demo patients and appointments have IDs, so the appointment card and QR code show", async () => {
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM patients WHERE patient_code IS NULL").get().n, 0);
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM appointments WHERE appt_no IS NULL").get().n, 0);
+  const r = await api("POST", "/api/manage/lookup", { ref: DEMO_PATIENT.ref, phone: DEMO_PATIENT.phone });
+  assert.equal(r.status, 200);
+  assert.match(r.body.appointment.apptNo, /^TBA-\d{4}-\d{4}$/);
+  assert.match(r.body.appointment.patientCode, /^TBP-\d{5}$/);
+  assert.ok(r.body.appointment.qrSvg.startsWith("<svg"));
+});
