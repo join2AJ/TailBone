@@ -138,6 +138,15 @@ The app is a single Node process plus one SQLite file, so it needs a **persisten
 
 Set `SITE_URL` to the public URL so links in WhatsApp messages are correct. Back up the `data/` folder regularly, since it holds all patient records.
 
+Settings the server needs in production (all on the Render dashboard → Environment):
+
+| Setting | What it's for |
+|---|---|
+| `SITE_URL` | The website's address, used in links sent to patients. If it's missing, links fall back to `https://tailbone.netlify.app` (never the address a request claims). |
+| `ENCRYPTION_KEY` | Encrypts clinical notes. **Required**: the server refuses to start without it (except the demo). Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` and keep a copy somewhere safe; without it, encrypted notes can't be read. |
+| `PROXY_SECRET` | Recommended once Netlify forwards `/api` to the server. Use any long random value, and put the same value in `netlify.toml` (`X-Proxy-Secret`). Rate limits can then trust the visitor address Netlify passes on, and can't be dodged by faking it. |
+| `TRUST_PROXY_HOPS` | `2` behind Netlify and Render, `1` when the server is reached directly. |
+
 ## Customising
 - Clinics, hours and slot length: `server/config.js` (and the hours list in `content/site.html`, then `npm run build`).
 - WhatsApp message wording: `messages()` and `checkinMessage()` in `server/services.js`.

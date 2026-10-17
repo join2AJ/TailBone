@@ -148,3 +148,22 @@ test("permission rules can't be dodged with capital letters or a trailing slash"
     assert.ok([403, 404].includes(res.status), `${method} ${url} → ${res.status}`);
   }
 });
+
+test("a fee paid at the clinic can be recorded, and appears in the payments CSV", async () => {
+  const booked = await api(null, "POST", "/api/appointments", { name: "Kiran Rao", phone: "9811100077", clinic: "del", ...slot(6, 3), consent: true });
+  assert.equal(booked.status, 201);
+  const appt = db.prepare("SELECT id, fee, payment_status, appt_no FROM appointments WHERE appt_no = ?").get(booked.body.appointment.ref);
+  assert.equal(appt.payment_status, "pay_at_clinic");
+  assert.equal((await api("super", "POST", `/api/admin/appointments/${appt.id}/received`, { method: "gold" })).status, 400);
+  assert.equal((await api("super", "POST", `/api/admin/appointments/${appt.id}/received`, { method: "upi" })).status, 200);
+  const after = db.prepare("SELECT payment_status, amount_paid, payment_id FROM appointments WHERE id = ?").get(appt.id);
+  assert.deepEqual({ ...after }, { payment_status: "paid", amount_paid: appt.fee, payment_id: "clinic-upi" });
+  assert.equal((await api("super", "POST", `/api/admin/appointments/${appt.id}/received`, { method: "cash" })).status, 409, "can't be recorded twice");
+  const date = db.prepare("SELECT date FROM appointments WHERE id = ?").get(appt.id).date;
+  const res = await fetch(`${base}/api/admin/payments/export.csv?from=${date}&to=${date}`, { headers: { cookie: jar.super, "x-requested-with": "fetch" } });
+  const csv = await res.text();
+  assert.equal(res.status, 200);
+  assert.ok(csv.includes(appt.appt_no) && csv.includes("clinic-upi"));
+  const dash = (await api("super", "GET", "/api/admin/dashboard")).body.stats;
+  assert.ok("collectedMonth" in dash && "toCollectToday" in dash);
+});

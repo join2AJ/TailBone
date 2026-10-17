@@ -171,11 +171,11 @@ ${body}
 
   ${siteFooter()}
 
-  <div class="mbar">
+  <nav class="mbar" aria-label="Quick actions">
     <a href="tel:+919886688323">📞&nbsp;Call</a>
     <a href="${WA}" target="_blank" rel="noopener">💬 WhatsApp</a>
     <a href="/book" class="mbar__primary">Book</a>
-  </div>
+  </nav>
 
   <script src="/assets/js/site-nav.js" defer></script>
   <script src="/assets/js/anim.js" defer></script>

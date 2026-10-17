@@ -263,6 +263,9 @@
     if (["pending", "confirmed"].includes(a.status)) {
       btns.push(`<button class="btn btn--ghost btn--sm" data-act="complete" data-id="${a.id}">Complete</button>`);
     }
+    if (a.fee && ["pay_at_clinic", "unpaid"].includes(a.payment_status) && ["pending", "confirmed", "completed"].includes(a.status)) {
+      btns.push(`<button class="btn btn--ghost btn--sm" data-act="received" data-id="${a.id}" data-fee="${a.fee}">Received ${rupees(a.fee)}</button>`);
+    }
     btns.push(`<button class="btn btn--ghost btn--sm" data-act="open" data-id="${a.id}">Details</button>`);
     return btns.join("");
   }
@@ -304,6 +307,7 @@
       if (act === "confirm") { await api(`/appointments/${id}`, { method: "PATCH", body: { status: "confirmed" } }); toast("Confirmed. Send the WhatsApp confirmation from Details."); route(); }
       if (act === "complete") completeDialog(id);
       if (act === "open") apptDialog(id);
+      if (act === "received") receivedDialog(id, Number(btn.dataset.fee));
       if (act === "fu-done" || act === "fu-skip") {
         await api(`/followups/${id}`, { method: "PATCH", body: { status: act === "fu-done" ? "done" : "skipped" } });
         route();
@@ -327,15 +331,23 @@
         <div class="kpi kpi--ok"><small>Today's appointments</small><strong>${s.today}</strong></div>
         <div class="kpi ${s.pending ? "kpi--warn" : ""}"><small>Awaiting confirmation</small><strong>${s.pending}</strong></div>
         <div class="kpi ${s.overdue ? "kpi--warn" : ""}"><small>Follow-ups due${s.overdue ? ` (${s.overdue} overdue)` : ""}</small><strong>${s.followupsDue}</strong></div>
-        <div class="kpi"><small>Next 7 days</small><strong>${s.upcoming7}</strong></div>
-        <div class="kpi"><small>New patients (30 days)</small><strong>${s.newPatients30}</strong></div>
-        <div class="kpi"><small>Visits completed (30 days)</small><strong>${s.completed30}</strong></div>
-        <div class="kpi"><small>Avg check-in pain (7 days)</small><strong>${s.avgPain7 ?? "—"}</strong></div>
-        <div class="kpi ${s.storiesPending ? "kpi--warn" : ""}"><small>Stories to review</small><strong>${s.storiesPending}</strong></div>
-        <div class="kpi kpi--ok"><small>Collected (30 days, net)</small><strong>${esc(s.collected30Text)}</strong></div>
-        <div class="kpi ${s.unread ? "kpi--warn" : ""}"><small>Patient changes to read</small><strong><a href="#/inbox">${s.unread}</a></strong></div>
-        <div class="kpi ${s.toSend ? "kpi--warn" : ""}"><small>Messages waiting to send</small><strong><a href="#/inbox/patient">${s.toSend}</a></strong></div>
+        <div class="kpi kpi--ok"><small>Collected this month (net)</small><strong>${esc(s.collectedMonthText)}</strong></div>
       </div>
+      <section class="money" aria-label="Money today">
+        <div><small>Collected for today's visits</small><strong>${esc(s.collectedTodayText)}</strong></div>
+        <div class="${s.toCollectCount ? "money--due" : ""}"><small>Still to collect at the clinic today</small><strong>${esc(s.toCollectTodayText)}</strong><span class="muted small">${s.toCollectCount} ${s.toCollectCount === 1 ? "patient" : "patients"} · tap "Received" when paid</span></div>
+        <div><small>Last 30 days (net)</small><strong>${esc(s.collected30Text)}</strong></div>
+      </section>
+      <details class="more-kpis">
+        <summary>More numbers</summary>
+        <div class="kpis kpis--small">
+          <div class="kpi"><small>Next 7 days</small><strong>${s.upcoming7}</strong></div>
+          <div class="kpi"><small>New patients (30 days)</small><strong>${s.newPatients30}</strong></div>
+          <div class="kpi"><small>Visits completed (30 days)</small><strong>${s.completed30}</strong></div>
+          <div class="kpi"><small>Avg check-in pain (7 days)</small><strong>${s.avgPain7 ?? "—"}</strong></div>
+          <div class="kpi ${s.storiesPending ? "kpi--warn" : ""}"><small>Stories to review</small><strong><a href="#/stories">${s.storiesPending}</a></strong></div>
+        </div>
+      </details>
       <div class="grid-2">
         <div class="stack">
           <section class="panel-card">
@@ -343,10 +355,10 @@
             <div class="list">${d.schedule.map(apptItem).join("") || '<div class="empty">No appointments today.</div>'}</div>
           </section>
           <section class="panel-card">
-            <div class="panel-card__head"><h2>Tomorrow: send reminders</h2></div>
+            <div class="panel-card__head"><h2>Tomorrow: send reminders</h2>${d.tomorrow.length > 1 ? `<button type="button" class="btn btn--wa-sm btn--sm" id="sendAllReminders">Send all ${d.tomorrow.length}, one by one</button>` : ""}</div>
             <div class="list">${d.tomorrow.map((a) => `<div class="item"><div class="item__time">${time12(a.time)}</div>
               <div class="item__main"><strong>${esc(a.patient_name)}</strong><small>${esc(CLINIC[a.clinic])}</small><div>${badge(a.status)}</div></div>
-              <div class="item__actions"><a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(a.links.reminder)}">Send reminder</a></div></div>`).join("") || '<div class="empty">Nothing booked for tomorrow.</div>'}</div>
+              <div class="item__actions"><a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(a.links.reminder)}" data-reminder>Send reminder</a></div></div>`).join("") || '<div class="empty">Nothing booked for tomorrow.</div>'}</div>
           </section>
         </div>
         <div class="stack">
@@ -367,6 +379,22 @@
         </div>
       </div>`;
   }
+
+  // "Send all reminders": each tap opens the next patient's WhatsApp message (browsers allow one new tab per tap).
+  content.addEventListener("click", (e) => {
+    const btn = e.target.closest("#sendAllReminders");
+    if (!btn) return;
+    const links = $$("[data-reminder]");
+    const next = links.find((l) => !l.dataset.sent);
+    if (!next) return;
+    window.open(next.href, "_blank", "noopener");
+    next.dataset.sent = "1";
+    next.textContent = "Sent ✓";
+    next.classList.replace("btn--wa-sm", "btn--ghost");
+    const left = links.filter((l) => !l.dataset.sent).length;
+    btn.textContent = left ? `Send next (${links.length - left + 1} of ${links.length})` : "All reminders opened ✓";
+    btn.disabled = !left;
+  });
 
   // ---------- Appointments ----------
   async function renderAppointments() {
@@ -500,6 +528,25 @@
           apptDialog(id);
         } catch (ex) { btn.disabled = false; toast(ex.message); }
       });
+    });
+  }
+
+  // Fee paid at the desk: record how, so the payments report and the day's takings are complete.
+  function receivedDialog(id, fee) {
+    openModal(`<h2>Payment received at the clinic</h2>
+      <form class="form" id="receivedForm">
+        <p>Record <strong>${rupees(fee)}</strong> as paid for this visit.</p>
+        <fieldset class="field"><legend>Paid by</legend>
+          <div class="seg">${[["upi", "UPI"], ["cash", "Cash"], ["card", "Card"]].map(([v, l], i) => `<label class="seg__opt"><input type="radio" name="method" value="${v}" ${i ? "" : "checked"}><span>${l}</span></label>`).join("")}</div>
+        </fieldset>
+        <button class="btn btn--primary">Save</button>
+      </form>`);
+    $("#receivedForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        await api(`/appointments/${id}/received`, { method: "POST", body: { method: e.target.method.value } });
+        closeModal(); toast(`${rupees(fee)} recorded as paid.`); route();
+      } catch (ex) { toast(ex.message); }
     });
   }
 
@@ -944,6 +991,7 @@
         <div class="field"><label>From</label><input type="date" name="from" value="${esc(from)}"></div>
         <div class="field"><label>To</label><input type="date" name="to" value="${esc(to)}"></div>
         <button class="btn btn--primary btn--sm">Show</button>
+        <a class="btn btn--ghost btn--sm" href="/api/admin/payments/export.csv?from=${esc(from)}&to=${esc(to)}" download>Download for the accountant (CSV)</a>
       </form></section>
       <div class="kpis">
         <div class="kpi"><small>Paid bookings</small><strong>${t.bookings}</strong></div>

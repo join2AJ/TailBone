@@ -156,7 +156,7 @@ td .muted { font-size: .8rem; }
 
 /* Lists inside narrow panels (e.g. Overview side column): stack the actions under the text */
 .panel-card, .profile > .stack { container-type: inline-size; }
-@container (max-width: 520px) {
+@container (max-width: 640px) {
   .item { grid-template-columns: auto 1fr; }
   .item__actions { grid-column: 1 / -1; justify-content: flex-start; }
   .item__main strong { white-space: normal; }
@@ -184,3 +184,20 @@ td .muted { font-size: .8rem; }
 /* Demo bar follows the theme */
 [data-theme="dark"] .demo-bar { background: #3b2f0b; color: #fde68a; border-color: #5b4712; }
 [data-theme="dark"] .demo-bar a { background: #1f1a08; color: #fde68a; border-color: #8a6d1a; }
+
+/* Overview: money strip and the less-used numbers folded away */
+.money { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 1rem 1.2rem; }
+.money small { display: block; color: var(--muted); font-weight: 600; }
+.money strong { display: block; font-family: var(--display); font-size: 1.35rem; }
+.money--due strong { color: #d97706; }
+.more-kpis summary { cursor: pointer; font-weight: 700; color: var(--ink); padding: .2rem 0; }
+.more-kpis[open] summary { margin-bottom: .8rem; }
+.kpis--small .kpi strong { font-size: 1.4rem; }
+.kpis--small { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 1100px) { .kpis--small { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 820px) {
+  .money { grid-template-columns: 1fr; gap: .6rem; }
+  .kpi { padding: .8rem .9rem; }
+  .kpi strong { font-size: 1.5rem; }
+  .kpis--small { grid-template-columns: repeat(2, 1fr); }
+}

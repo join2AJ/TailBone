@@ -23,6 +23,9 @@
   };
   burger.addEventListener("click", () => setNav(!nav.classList.contains("is-open")));
   $$("a", nav).forEach((a) => a.addEventListener("click", () => setNav(false)));
+  document.addEventListener("click", (e) => {
+    if (nav.classList.contains("is-open") && !nav.contains(e.target) && !burger.contains(e.target)) setNav(false);
+  });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { setNav(false); setWa(false); } });
 
   // ---- Header shadow, progress bar, active link ----
@@ -346,6 +349,8 @@
       const open = c.status === "open";
       radio.disabled = !open;
       const label = radio.closest("label");
+      // A clinic that has closed for good isn't offered at all; one opening soon is shown, disabled.
+      label.hidden = c.status === "closed";
       if (open) label.removeAttribute("data-clinic-status"); else label.dataset.clinicStatus = c.status;
       $("span", label).textContent = c.short;
       if (!open) { const tag = document.createElement("small"); tag.textContent = ` ${LABEL[c.status] || "closed"}`; $("span", label).append(tag); }
@@ -556,27 +561,22 @@
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!booking.time) {
-      $("#slotErr").style.display = "block";
-      slotGrid.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-      toast("Please choose a day and time.");
-      return;
-    }
+    // Check everything at once, so the patient sees every missing item in one go, then go to the first one.
     const inputs = $$("input[required]:not([type=checkbox]), input[type=email]", form);
     const results = inputs.map(validate);
-    if (results.includes(false)) {
-      inputs[results.indexOf(false)].focus();
-      toast("Please complete the highlighted fields.");
+    const slotOk = !!booking.time;
+    const consentOk = form.consent.checked;
+    $("#slotErr").style.display = slotOk ? "none" : "block";
+    $("#consentErr").style.display = consentOk ? "none" : "block";
+    if (!slotOk || results.includes(false) || !consentOk) {
+      const missing = [!slotOk && "a day and time", results.includes(false) && "your details", !consentOk && "agreement to the privacy notice"].filter(Boolean);
+      if (!slotOk) slotGrid.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+      else if (results.includes(false)) inputs[results.indexOf(false)].focus();
+      else form.consent.focus();
+      toast(`Please add ${missing.join(", ").replace(/, ([^,]*)$/, " and $1")}.`);
       return;
     }
     const fd = new FormData(form);
-    if (fd.get("consent") !== "on") {
-      $("#consentErr").style.display = "block";
-      form.consent.focus();
-      toast("Please agree to the privacy notice to book.");
-      return;
-    }
-    $("#consentErr").style.display = "none";
     if (offline) {
       const lines = [
         WA_GREETING,
@@ -699,6 +699,7 @@
   });
 
   function showDone(a, whatsappUrl) {
+    $("#toast")?.classList.remove("is-show"); // no leftover "please add…" message on the success screen
     // Measurement (only if the visitor accepted cookies): no names, phone numbers or health details.
     if (window.tbTrack) {
       if (a.apptNo) window.tbTrack("book_appointment", { value: (a.fee || 0) / 100, currency: "INR", transaction_id: a.apptNo, clinic: a.clinic });
@@ -727,7 +728,7 @@
     rows.push(["Status", a.status === "confirmed" ? "Confirmed ✓" : a.status === "requested" ? "Request sent on WhatsApp" : "Awaiting confirmation"]);
     $("#bookingDone h3").textContent = a.status === "confirmed" ? "You're confirmed!" : a.status === "requested" ? "Request ready on WhatsApp" : "You're booked in!";
     const requested = a.status === "requested";
-    $("#doneRef").hidden = requested;
+    $("#doneRef").hidden = requested || !$("#doneRef").textContent;
     $("#doneIcs").hidden = requested;
     $("#doneManage").hidden = requested;
     $("#bookingDone .muted").textContent = requested ? "WhatsApp opened with your details. Just press send, and the clinic will confirm your time." : "Keep this reference to manage your appointment.";

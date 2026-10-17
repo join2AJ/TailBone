@@ -58,7 +58,7 @@ export function seedDemo(db) {
       "INSERT INTO checkins (followup_id, patient_id, pain_score, trend, sitting_minutes, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now', ?))",
     ).run(fid, pid, pain, trend, sitting, encrypt(notes), `-${daysAgo} days`);
 
-    // 1. The demo patient: treated 3 weeks ago, improving, next visit tomorrow.
+    // 1. The demo patient: treated 3 weeks ago, improving, next visit in 3 days (so rescheduling can be tried).
     const asha = patient(DEMO_PATIENT.name, DEMO_PATIENT.phone, "Fall on stairs Jan 2026. MRI: no fracture. Desk job.");
     consent(asha);
     const ashaPast = appt(asha, "TB-DEMO17", "del", addDays(today, -21), 2, "completed", { reason: "Pain when sitting for over 20 minutes since a fall", notes: "IM session 1. Coccyx hypermobile. Advised wedge cushion.", paid: 80000, platform: 10000 });
@@ -76,6 +76,13 @@ export function seedDemo(db) {
     const kavya = patient("Kavya Iyer", "9999900003");
     consent(kavya, false);
     appt(kavya, "TB-DEMO35", "online", today, 4, "pending", { reason: "Tailbone pain after childbirth, 4 months" });
+    // Tomorrow's visits, for the reminders list.
+    const vikram = patient("Vikram Sethi", "9999900011");
+    consent(vikram);
+    appt(vikram, "TB-DEMO51", "del", addDays(today, 1), 2, "confirmed", { reason: "Coccyx pain on long drives" });
+    const meera = patient("Meera Nair", "9999900012");
+    consent(meera);
+    appt(meera, "TB-DEMO52", "online", addDays(today, 1), 5, "pending", { reason: "Pain when sitting after a fall" });
 
     // 3. Follow-up due today.
     const imran = patient("Imran Khan", "9999900004");

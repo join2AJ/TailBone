@@ -195,7 +195,7 @@ export function rescheduleCheck(appt, currentPolicy, now = new Date()) {
     return { allowed: false, reason: `Online rescheduling is limited to ${policy.reschedule.maxTimes} time(s) per booking. Please call the clinic.` };
   }
   if (hours < policy.reschedule.minHoursBefore) {
-    return { allowed: false, reason: `Appointments can be moved online up to ${policy.reschedule.minHoursBefore} hours before. Please call the clinic.` };
+    return { allowed: false, reason: `This appointment is less than ${policy.reschedule.minHoursBefore} hours away, so it can't be moved online. Please call or WhatsApp the clinic on +91 98866 88323.` };
   }
   return { allowed: true, remaining: policy.reschedule.maxTimes - (appt.reschedule_count || 0) };
 }

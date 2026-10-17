@@ -80,7 +80,15 @@
     const payload = Object.fromEntries(fd);
     payload.rating = Number(payload.rating);
     payload.consent = fd.get("consent") === "on";
-    if (!payload.consent) { toast("Please tick the consent box."); return; }
+    // Mark every missing field at once and go to the first one.
+    const required = [...form.querySelectorAll("[required]")];
+    const bad = required.filter((i) => (i.type === "checkbox" ? !i.checked : !i.value.trim()));
+    required.forEach((i) => { i.closest(".field, .check")?.classList.toggle("has-error", bad.includes(i)); i.setAttribute("aria-invalid", String(bad.includes(i))); });
+    if (bad.length) {
+      bad[0].focus();
+      toast(bad.length === 1 && bad[0].name === "consent" ? "Please tick the consent box." : "Please fill in the highlighted fields.");
+      return;
+    }
     const btn = e.submitter;
     btn.disabled = true;
     try {

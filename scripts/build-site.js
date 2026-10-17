@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { root, SITE, siteFooter, siteHeader } from "./partials.js";
 import { buildPages } from "./build-pages.js";
-import { build as buildBlog } from "./build-blog.js";
+import { build as buildBlog, page as blogPage } from "./build-blog.js";
 import { writeRobots, writeLlms } from "./build-ai.js";
 import { buildPress } from "./build-press.js";
 
@@ -33,6 +33,33 @@ export function syncFooters() {
 
 // lastmod is given only where we know the real date (articles). The build date isn't when a page changed, and search
 // engines ignore lastmod that is always "today"; it would also make every build differ.
+/** "Page not found", with the site's menu, a search box and the most useful next steps. Not indexed. */
+export function write404() {
+  const body = `      <div class="narrow center notfound">
+        <span class="eyebrow">Page not found</span>
+        <h1>We couldn't find that page</h1>
+        <p class="muted">The link may be old or mistyped. These may help:</p>
+        <form class="blog-search notfound__search" role="search" action="/blog/" method="get">
+          <label for="nfQ" class="visually-hidden">Search articles</label>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="nfQ" name="q" placeholder="Search articles, e.g. sitting, pregnancy">
+          <button type="submit" class="visually-hidden">Search</button>
+        </form>
+        <ul class="research-links notfound__links">
+          <li><a href="/book">Book an appointment<span>New Delhi or online</span></a></li>
+          <li><a href="/coccydynia">About tailbone pain<span>Causes, symptoms, research</span></a></li>
+          <li><a href="/faq">Questions and answers<span>Fees, visits, what to expect</span></a></li>
+          <li><a href="/manage.html">My appointments<span>Change or cancel a booking</span></a></li>
+        </ul>
+        <p class="small muted">Or call or WhatsApp us on <a href="tel:+919886688323">+91&nbsp;98866&nbsp;88323</a>.</p>
+      </div>`;
+  const html = blogPage({ title: "Page not found | Tailbone Treatment", description: "This page could not be found.", canonical: SITE, jsonLd: {}, body, blogActive: false })
+    .replace(/\s*<link rel="canonical"[^>]*>/, '\n  <meta name="robots" content="noindex">')
+    .replace(/\s*<script type="application\/ld\+json">\{\}<\/script>/, "")
+    .replace(/\s*<meta property="og:[^>]*>/g, "").replace(/\s*<meta name="twitter:card"[^>]*>/, "");
+  fs.writeFileSync(path.join(root, "public/404.html"), html);
+}
+
 export function writeSitemap(pages, posts, today = null) {
   const row = (loc, lastmod, freq, prio) => `  <url><loc>${loc}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}<changefreq>${freq}</changefreq><priority>${prio}</priority></url>`;
   const rows = [
@@ -69,6 +96,7 @@ export function buildSite() {
   syncFooters();
   const posts = buildBlog();
   writeSitemap(pages, posts);
+  write404();
   writeRobots();
   writeLlms(pages, posts);
   return { pages, posts };

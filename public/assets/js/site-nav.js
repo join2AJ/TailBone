@@ -18,6 +18,9 @@
       burger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
     };
     burger.addEventListener("click", () => setNav(!nav.classList.contains("is-open")));
+    document.addEventListener("click", (e) => {
+      if (nav.classList.contains("is-open") && !nav.contains(e.target) && !burger.contains(e.target)) setNav(false);
+    });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") setNav(false); });
   }
 
