@@ -1,0 +1,80 @@
+{
+  "businessName": "Tailbone Treatment",
+  "finalUrl": "https://tailbone.netlify.app/book",
+  "finalUrlNote": "Switch to https://tailbonetreatment.com/book once the domain points to the new site (DEPLOY.md, Step 8). The final URL's domain must match the domain shown in the ad.",
+  "headlines": [
+    "Tailbone Pain Specialist",
+    "Coccyx Pain? Book a Visit",
+    "Non-Surgical Coccyx Care",
+    "Dr Rajveer Singh, BPT",
+    "Pain When Sitting?",
+    "Coccydynia Treatment",
+    "Clinics in Bengaluru & Delhi",
+    "JP Nagar & Vasant Kunj",
+    "Book Online in 1 Minute",
+    "Online Consultations Too",
+    "Post-Pregnancy Coccyx Pain",
+    "Hands-On, No Surgery First",
+    "Exclusive Tailbone Clinic",
+    "Desk Job Tailbone Pain?",
+    "Open 7 Days a Week"
+  ],
+  "longHeadlines": [
+    "Tailbone pain when you sit? See a specialist in Bengaluru or New Delhi. Book online today",
+    "Non-surgical treatment for coccyx pain by Dr Rajveer Singh, BPT, Fellowship (Apollo)",
+    "Pain after a fall or childbirth that won't settle? Get your tailbone properly assessed",
+    "Sit at a desk all day and your tailbone hurts? Book a consultation in Bengaluru or Delhi",
+    "An exclusive tailbone pain clinic in JP Nagar and Vasant Kunj, plus video consultations"
+  ],
+  "descriptions": [
+    "Specialist, non-surgical care for coccyx pain. Book online.",
+    "Dr Rajveer Singh treats tailbone pain from falls, pregnancy and long sitting. Book online.",
+    "Clinics in JP Nagar, Bengaluru and Vasant Kunj, New Delhi. Video consults also available.",
+    "Careful assessment, hands-on treatment and a plan you can follow at home. Book your slot.",
+    "Pick a day and time online, get instant confirmation and reminders on WhatsApp."
+  ],
+  "searchThemes": [
+    "tailbone pain treatment",
+    "coccyx pain doctor",
+    "coccydynia treatment",
+    "tailbone pain specialist near me",
+    "pain while sitting tailbone",
+    "tailbone pain after delivery",
+    "coccyx pain after fall",
+    "tailbone pain Bangalore",
+    "tailbone pain Delhi",
+    "coccyx pain without surgery",
+    "tailbone pain physiotherapy",
+    "sitting pain lower back bottom"
+  ],
+  "sitelinks": [
+    { "text": "Book an Appointment", "d1": "Pick a day and time online", "d2": "Bengaluru, New Delhi or video", "url": "https://tailbone.netlify.app/book" },
+    { "text": "About Tailbone Pain", "d1": "Causes, symptoms, self-check", "d2": "Checked against trusted sources", "url": "https://tailbone.netlify.app/coccydynia" },
+    { "text": "How Treatment Works", "d1": "Non-surgical, hands-on care", "d2": "Four clear steps, explained", "url": "https://tailbone.netlify.app/treatment" },
+    { "text": "Meet Dr Rajveer Singh", "d1": "BPT, Fellowship (Apollo)", "d2": "Exclusive tailbone specialist", "url": "https://tailbone.netlify.app/doctor" },
+    { "text": "Clinics & Timings", "d1": "JP Nagar and Vasant Kunj", "d2": "Open 7 days a week", "url": "https://tailbone.netlify.app/locations" },
+    { "text": "Tips & Articles", "d1": "Sitting, pregnancy, red flags", "d2": "Practical advice from our clinic", "url": "https://tailbone.netlify.app/blog/" }
+  ],
+  "callouts": [
+    "Non-Surgical Care",
+    "Bengaluru & New Delhi",
+    "Video Consultations",
+    "Open 7 Days",
+    "Book Online 24x7",
+    "WhatsApp Reminders"
+  ],
+  "structuredSnippets": {
+    "header": "Services",
+    "values": ["Coccydynia", "Subluxed Coccyx", "Post-Pregnancy Pain", "Sitting Pain", "Post-Injury Pain"]
+  },
+  "callToAction": "Book now",
+  "phone": "+91 98866 88323",
+  "leadForm": {
+    "headline": "Book a tailbone consult",
+    "businessName": "Tailbone Treatment",
+    "description": "Leave your details and the clinic will call or WhatsApp you to fix a convenient time in Bengaluru, New Delhi or online.",
+    "questions": ["Full name", "Phone number", "City (Bengaluru / New Delhi / Online)"],
+    "privacyPolicyUrl": "https://tailbone.netlify.app/privacy.html",
+    "submitMessage": "Thank you! We will contact you within working hours. For urgent questions WhatsApp +91 98866 88323."
+  }
+}

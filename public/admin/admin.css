@@ -150,3 +150,5 @@ td .muted { font-size: .8rem; }
 .toggle__text small { color: var(--muted); }
 .perm-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem .8rem; }
 @media (max-width: 640px) { .perm-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.appt-qr { float: right; margin: 0 0 .5rem 1rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 4px; }

@@ -240,7 +240,7 @@
     return `<div class="item">
       <div class="item__time">${time12(a.time)}</div>
       <div class="item__main"><strong>${esc(a.patient_name)}</strong>
-        <small>${esc(CLINIC[a.clinic])} · ${esc(phonePretty(a.patient_phone))} ${a.prefers_female ? "· prefers female clinician" : ""}</small>
+        <small>${esc(a.appt_no || "")} · ${esc(CLINIC[a.clinic])} · ${esc(phonePretty(a.patient_phone))} ${a.prefers_female ? "· prefers female clinician" : ""}</small>
         <div>${badge(a.status)} ${payBadge(a)}</div></div>
       <div class="item__actions">${apptActions(a)}</div>
     </div>`;
@@ -346,19 +346,19 @@
           <div class="field"><label>To</label><input type="date" name="to" value="${esc(f.to)}"></div>
           <div class="field"><label>Status</label><select name="status"><option value="">All</option>${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${f.status === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>
           <div class="field"><label>Clinic</label><select name="clinic"><option value="">All</option>${Object.entries(CLINIC).map(([k, v]) => `<option value="${k}" ${f.clinic === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>
-          <div class="field" style="flex:1"><label>Search</label><input type="search" name="q" placeholder="Name, phone or ref" value="${esc(f.q)}"></div>
+          <div class="field" style="flex:1"><label>Search</label><input type="search" name="q" placeholder="Name, phone, TBA-…, TBP-… or code" value="${esc(f.q)}"></div>
           <button class="btn btn--primary btn--sm" type="submit">Apply</button>
           <button class="btn btn--ghost btn--sm" type="button" id="clearFilters">Show all</button>
         </form>
       </section>
       <div class="table-wrap"><table>
-        <thead><tr><th>When</th><th>Patient</th><th>Clinic</th><th>Status</th><th>Ref</th><th></th></tr></thead>
+        <thead><tr><th>When</th><th>Patient</th><th>Clinic</th><th>Status</th><th>Appointment no.</th><th></th></tr></thead>
         <tbody>${appointments.map((a) => `<tr>
           <td class="nowrap"><strong>${esc(day(a.date))}</strong><br><span class="muted">${time12(a.time)}</span></td>
-          <td><a href="#/patient/${a.patient_id}"><strong>${esc(a.patient_name)}</strong></a><br><span class="muted">${esc(phonePretty(a.patient_phone))}</span></td>
+          <td><a href="#/patient/${a.patient_id}"><strong>${esc(a.patient_name)}</strong></a><br><span class="muted">${esc(a.patient_code || "")} · ${esc(phonePretty(a.patient_phone))}</span></td>
           <td>${esc(CLINIC[a.clinic])}</td>
           <td>${badge(a.status)}<br>${payBadge(a)}</td>
-          <td class="nowrap muted">${esc(a.ref)}${a.fee ? `<br>${rupees(a.fee)}` : ""}</td>
+          <td class="nowrap"><strong>${esc(a.appt_no || "")}</strong><br><span class="muted">${esc(a.ref)}${a.fee ? ` · ${rupees(a.fee)}` : ""}</span></td>
           <td><div class="item__actions">${apptActions(a)}</div></td>
         </tr>`).join("") || '<tr><td colspan="6"><div class="empty">No appointments match these filters.</div></td></tr>'}</tbody>
       </table></div>`;
@@ -384,11 +384,14 @@
         <dt>Clinic</dt><dd>${esc(CLINIC[a.clinic])}${a.visit_type === "followup" ? " · follow-up visit" : ""}</dd>
         <dt>Phone</dt><dd><a href="tel:+${esc(a.patient_phone)}">${esc(phonePretty(a.patient_phone))}</a></dd>
         ${a.patient_email ? `<dt>Email</dt><dd>${esc(a.patient_email)}</dd>` : ""}
-        <dt>Ref</dt><dd>${esc(a.ref)} · booked via ${esc(a.source)}</dd>
+        <dt>Appointment</dt><dd><strong>${esc(a.appt_no || "")}</strong> · booking code ${esc(a.ref)} · via ${esc(a.source)}</dd>
+        <dt>Patient ID</dt><dd>${esc(a.patient_code || "")}</dd>
+        ${a.gcal_status ? `<dt>Google Calendar</dt><dd>${a.gcal_status === "synced" ? "Synced ✓" : `<span class="trend-worse">Not synced: ${esc(a.gcal_status)}</span> (retries automatically)`}</dd>` : ""}
         ${a.prefers_female ? "<dt>Preference</dt><dd>Female clinician</dd>" : ""}
         ${a.reason ? `<dt>Patient says</dt><dd>${esc(a.reason)}</dd>` : ""}
         ${a.fee ? `<dt>Payment</dt><dd>${rupees(a.fee)} · ${payBadge(a)}${a.amount_paid ? ` · paid ${rupees(a.amount_paid)}` : ""}${a.amount_refunded ? ` · refunded ${rupees(a.amount_refunded)}` : ""}${a.platform_fee ? `<br><span class="muted small">Split: doctor ${rupees(a.fee - a.platform_fee)} · platform ${rupees(a.platform_fee)}</span>` : ""}</dd>` : ""}
       </dl>
+      <img class="appt-qr" src="/api/admin/appointments/${a.id}/qr.svg" alt="QR code for ${esc(a.appt_no || a.ref)}" width="96" height="96">
       <div class="row-gap" style="margin:1rem 0">
         <a class="btn btn--ghost btn--sm" target="_blank" rel="noopener" href="${esc(a.links.chat)}">Open WhatsApp chat</a>
         <a class="btn btn--ghost btn--sm" href="#/patient/${a.patient_id}" id="toPatient">Patient profile</a>
@@ -600,7 +603,7 @@
 
   async function renderPatient(pid) {
     const { patient: p, appointments, followups, checkins, consents, storyInvite } = await api(`/patients/${Number(pid)}`);
-    $("#viewTitle").textContent = p.name;
+    $("#viewTitle").textContent = `${p.name} · ${p.patient_code || ""}`;
     const first = checkins[0]?.pain_score;
     const last = checkins.at(-1)?.pain_score;
     content.innerHTML = `
@@ -950,8 +953,22 @@
             <div class="item__actions"><button class="btn btn--ghost btn--sm" data-unblock="${b.id}">Remove</button></div></div>`).join("") || '<div class="empty">No upcoming closed days.</div>'}</div>
         </section>`;
 
+    const cal = can("settings") ? await api("/calendar") : null;
+    const calendarCard = !cal ? "" : `
+      <section class="panel-card">
+        <div class="panel-card__head"><h2>Calendar</h2>
+          <span class="small">${cal.googleSync ? '<span class="badge badge--confirmed">Google Calendar sync on</span>' : '<span class="badge badge--pending">Google Calendar sync not set up</span>'}
+          ${cal.failing ? `<span class="badge badge--cancelled">${cal.failing} not synced yet</span>` : ""}</span></div>
+        <p class="small"><strong>Live sync</strong> (recommended): every booking appears in the doctor's Google Calendar instantly, changes and cancellations update it, and his own busy times block those slots on the website. Set up once. See DEPLOY.md → "Google Calendar".</p>
+        <p class="small"><strong>Subscribe link</strong> (no setup): in Google Calendar choose <em>Other calendars → + → From URL</em> and paste this private link. Google refreshes it every few hours.</p>
+        <div class="toolbar"><div class="field" style="flex:1"><label for="feedUrl">Private calendar link</label><input id="feedUrl" readonly value="${esc(cal.feedUrl)}"></div>
+          <button class="btn btn--ghost btn--sm" type="button" id="copyFeed">Copy</button>
+          <button class="btn btn--ghost btn--sm" type="button" id="rotateFeed">Change link</button></div>
+        <p class="muted small">Keep this link private: anyone with it can see appointment times and first names. "Change link" stops the old one working.</p>
+      </section>`;
     content.innerHTML = `
       ${policyCard}
+      ${calendarCard}
       <div class="grid-2">
         <div class="stack">
           ${holidaysCard}
@@ -1008,6 +1025,12 @@
       } catch (ex) { toast(ex.message); }
     });
     $$("[data-unblock]").forEach((b) => b.addEventListener("click", async () => { await api(`/blocked/${b.dataset.unblock}`, { method: "DELETE" }); route(); }));
+
+    on("#copyFeed", "click", async () => { try { await navigator.clipboard.writeText($("#feedUrl").value); toast("Link copied."); } catch { $("#feedUrl").select(); } });
+    on("#rotateFeed", "click", async () => {
+      if (!confirm("Create a new private link? Calendars subscribed with the old link will stop updating.")) return;
+      try { await api("/calendar/rotate", { method: "POST" }); toast("New link created. Re-subscribe with it."); route(); } catch (ex) { toast(ex.message); }
+    });
 
     // ---- Backups (super admin) ----
     if (isSuper) {

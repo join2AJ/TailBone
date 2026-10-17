@@ -62,6 +62,21 @@
         <span class="eyebrow">Your appointment</span>
         <h1 id="hello">Your appointment</h1>
         <div id="apptBox"></div>
+        <section class="appt-card" id="apptCard" hidden aria-labelledby="cardTitle">
+          <div class="appt-card__head">
+            <img src="/assets/img/logo.svg" alt="" width="34" height="34">
+            <div><strong id="cardTitle">Tailbone Treatment Clinic</strong><small>Appointment card</small></div>
+          </div>
+          <div class="appt-card__body">
+            <dl class="kv" id="cardDetails"></dl>
+            <div class="appt-card__qr" id="cardQr" role="img" aria-label="QR code that opens this booking"></div>
+          </div>
+          <p class="small muted appt-card__foot">+91&nbsp;98866&nbsp;88323 · contact@tailbonetreatment.com · Please arrive 10 minutes early and bring any X-ray or MRI reports.</p>
+          <div class="row-gap appt-card__actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="printCard">Print / save as PDF</button>
+            <a class="btn btn--ghost btn--sm" id="cardGcal" href="https://calendar.google.com" target="_blank" rel="noopener" hidden>Add to Google Calendar</a>
+          </div>
+        </section>
 
         <p class="small muted" id="reschedNote" hidden></p>
         <div id="actions" class="row-gap" hidden>

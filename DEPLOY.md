@@ -81,6 +81,24 @@ Also choose the admin email and a strong password (12+ characters).
   3. In Render, set `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` and optionally `DOCTOR_WHATSAPP`.
 - **Email alerts to the doctor:** create a Resend account, verify the domain, and set `RESEND_API_KEY`, `EMAIL_FROM` and `DOCTOR_EMAIL`.
 
+## Step 7b (recommended): Google Calendar
+
+Each booking then appears in Dr Rajveer's Google Calendar (with its appointment number, e.g. `TBA-2610-0007`), and moves or disappears when it is rescheduled or cancelled. Anything else he puts in that calendar (a holiday, a meeting) automatically blocks those online slots. Calendar entries show only the appointment number, first name and clinic: no phone number or health details.
+
+**Option A: full sync (about 10 minutes, free)**
+1. Go to console.cloud.google.com and create a project (e.g. "Tailbone clinic").
+2. **APIs & Services → Library**: enable **Google Calendar API**.
+3. **IAM & Admin → Service accounts**: create a service account. Open it, go to **Keys → Add key → JSON** and download the file.
+4. In Google Calendar (as the doctor), open **Settings → (his calendar) → Share with specific people**. Add the service account's email address and choose **Make changes to events**. Copy the **Calendar ID** from **Integrate calendar** (for a main calendar, this is his Gmail address).
+5. In Render → Environment, add:
+   - `GOOGLE_SERVICE_ACCOUNT_EMAIL`: `client_email` from the JSON file
+   - `GOOGLE_PRIVATE_KEY`: `private_key` from the JSON file (paste it exactly as it appears, `\n` included)
+   - `GOOGLE_CALENDAR_ID`: the Calendar ID from step 4
+6. Redeploy. **Dashboard → Settings → Calendar** should show "Google Calendar sync: on". If Google is ever unreachable, bookings still work and the sync retries every 10 minutes.
+
+**Option B: subscribe only (1 minute, one-way)**
+Go to **Dashboard → Settings → Calendar → Copy link**. In Google Calendar, choose **Other calendars → + → From URL** and paste the link. Google refreshes it every few hours. Use **Rotate** if the link is ever shared by mistake.
+
 ## Step 8 (recommended): Your own domain
 1. Netlify → Domain management → add `tailbonetreatment.com`, and follow the DNS steps. HTTPS is automatic.
 2. Update `SITE_URL` in Render, and the Razorpay webhook URL.

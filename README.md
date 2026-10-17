@@ -5,6 +5,9 @@ The website and clinic system for [tailbonetreatment.com](https://tailbonetreatm
 - **Patients** book real slots online, manage their booking, fill in progress check-ins and share their stories.
 - **The clinic** runs everything from a dashboard at `/admin`: appointments, follow-ups, patient records with pain charts, story moderation, Instagram highlights, holidays and exports.
 
+- **Every patient gets a permanent patient ID** (`TBP-00042`) and **every booking an appointment number** (`TBA-2610-0007`), a QR code and a printable appointment card.
+- **Google Calendar:** bookings sync to the doctor's calendar both ways (his busy times block slots), plus a private subscription link. See DEPLOY.md.
+- **Blog:** articles live as Markdown in `content/blog/`. Run `npm run build:blog` to publish them to `/blog/`.
 - **Payments** go through Razorpay, with an optional automatic commission split (Route), policy-based refunds and automatic notifications both ways.
 
 - **Security & privacy controls** for ISO 27001 / 22301 / 31000, NIST CSF, DPDP and GDPR:

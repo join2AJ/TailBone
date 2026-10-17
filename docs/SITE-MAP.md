@@ -6,17 +6,23 @@
 tailbone.netlify.app
 │
 ├── /                     Home: hero, key numbers, 6 "explore" cards
-├── /coccydynia           What is coccydynia: causes, symptom self-check, 5 self-care tips
-├── /treatment            How treatment works: 4-step journey, why choose us, Instagram videos
-├── /doctor               Dr Rajveer Singh: profile, patient stories carousel
+├── /coccydynia           What is coccydynia: causes, symptom self-check, self-care tips,
+│                         key facts, red flags and sources (Cleveland Clinic, NHS)
+├── /treatment            How a visit works (4 steps) · why patients choose us · Instagram videos
+├── /doctor               Dr Rajveer Singh: photo, BPT + Fellowship (Apollo, Chennai), conditions treated, stories
 ├── /locations            Clinics: Bengaluru · New Delhi · Online tabs, maps, opening hours
 ├── /faq                  Frequently asked questions
 ├── /book                 Book an appointment
-│     ├── live slots → pay (Razorpay, if on) → booking reference + WhatsApp + calendar file
+│     ├── live slots → pay (Razorpay, if on) → appointment no. (TBA-YYMM-####), patient ID (TBP-#####),
+│     │   booking code, QR code, Add to Google Calendar, calendar file
 │     └── no server reachable → same form sends a WhatsApp request
+│
+├── /blog/                Articles (built from content/blog/*.md with `npm run build:blog`)
+│     └── /blog/<slug>.html one article: sources, disclaimer, Book / WhatsApp
 │
 ├── /stories.html         All patient stories + "Share your story" form
 ├── /manage.html          My appointments (booking reference + phone)
+│     ├── printable appointment card with QR code, IDs and Add to Google Calendar
 │     ├── reschedule / cancel (shows the refund before confirming)
 │     └── your data: download it, WhatsApp updates on/off, correct or delete
 ├── /checkin.html?t=…     Follow-up check-in from a WhatsApp link (pain 0–10, better/same/worse)
@@ -25,7 +31,8 @@ tailbone.netlify.app
 ├── /404.html             Page not found
 │
 ├── /sitemap.xml · /robots.txt · /.well-known/security.txt
-└── Always available:     top bar (open/closed now) · menu · floating WhatsApp · phone bottom bar (Call · WhatsApp · Book)
+└── Always available:     top bar (open/closed now, My appointments) · menu (Tailbone pain · Treatment · Doctor · Blog ·
+                          Clinics · Book) · floating WhatsApp · phone bottom bar (Call · WhatsApp · Book)
 ```
 
 ## Clinic dashboard (staff)
@@ -44,6 +51,7 @@ tailbone.netlify.app
 ├── #/payments            Collected · refunded · net · doctor's share / platform fee
 ├── #/privacy             Data-rights requests with 30-day deadlines
 ├── #/settings            My password and 2FA · fees and refund rules · holidays · CSV export (by permission)
+│                         · Calendar: Google sync status, subscription link (copy / rotate)
 │                         + commission split, backups, security log (super admin only)
 └── #/control             ★ Super admin only: switch website features on or off · add, disable or reset users · choose each admin's sections
 ```
@@ -71,6 +79,7 @@ Privacy rights (the notice, requests and "download my data") always stay on.
 
 ```
 /api
+├── calendar/:token.ics                                private calendar feed for the doctor
 ├── config · days · slots                              opening hours, fees, policy, free slots
 ├── appointments (POST)                                book
 ├── payments/verify · payments/webhook                 Razorpay
