@@ -52,6 +52,12 @@ export function markdown(md) {
     let m;
     if (!line.trim()) { flushPara(); flushList(); continue; }
     if ((m = /^::anim\s+([\w-]+)$/.exec(line.trim()))) { flushPara(); flushList(); out.push(animFigure(m[1])); continue; }
+    if ((m = /^!\[([^\]]*)\]\((\/[^)\s]+)(?:\s+"(\d+)x(\d+)")?\)$/.exec(line.trim()))) {
+      flushPara(); flushList();
+      const size = m[3] ? ` width="${m[3]}" height="${m[4]}"` : "";
+      out.push(`<figure class="post-figure"><img src="${esc(m[2])}" alt="${esc(m[1])}"${size} loading="lazy" decoding="async"></figure>`);
+      continue;
+    }
     if ((m = /^(#{2,3})\s+(.*)$/.exec(line))) {
       flushPara(); flushList();
       const level = m[1].length;
@@ -79,7 +85,7 @@ export function markdown(md) {
 
 const prettyDate = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
-function page({ title, description, canonical, type = "website", jsonLd, body }) {
+export function page({ title, description, canonical, type = "website", jsonLd, body, image = `${SITE}/assets/img/og-image.png`, blogActive = true }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -98,7 +104,7 @@ function page({ title, description, canonical, type = "website", jsonLd, body })
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:type" content="${type}">
   <meta property="og:url" content="${esc(canonical)}">
-  <meta property="og:image" content="${SITE}/assets/img/og-image.png">
+  <meta property="og:image" content="${image}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Tailbone Treatment Clinic: sit down again without the pain. New Delhi and online.">
@@ -121,7 +127,7 @@ function page({ title, description, canonical, type = "website", jsonLd, body })
         <a href="/coccydynia">Tailbone pain</a>
         <a href="/treatment">Treatment</a>
         <a href="/doctor">Doctor</a>
-        <a href="/blog/" class="is-active" aria-current="page">Blog</a>
+        ${blogActive ? '<a href="/blog/" class="is-active" aria-current="page">Blog</a>' : '<a href="/blog/">Blog</a>'}
         <a href="/locations">Clinics</a>
         <a href="/manage.html" class="nav__mobile-only">My appointments</a>
         <a href="/book" class="btn btn--primary nav__cta">Book appointment</a>
@@ -174,7 +180,8 @@ function articlePage(post, others) {
         ${tagsHtml(meta.tags)}
         <h1>${esc(meta.title)}</h1>
         <p class="post-lede">${esc(meta.summary)}</p>
-        <p class="post-meta muted small">By Tailbone Treatment Clinic · ${metaLine(meta)}</p>
+        <p class="post-meta muted small">By ${esc(meta.author || "Tailbone Treatment Clinic")} · ${metaLine(meta)}${meta.originalUrl ? " · first published on tailbonetreatment.com" : ""}</p>
+        ${meta.image ? `<figure class="post-cover"><img src="${esc(meta.image)}" alt="" loading="eager" decoding="async"></figure>` : ""}
         <div class="post-body">
 ${post.html}
         </div>
@@ -206,12 +213,14 @@ ${post.html}
       datePublished: meta.date,
       dateModified: meta.updated || meta.date,
       mainEntityOfPage: url,
-      image: `${SITE}/assets/img/og-image.png`,
-      author: { "@type": "Organization", name: "Tailbone Treatment Clinic", url: `${SITE}/` },
+      image: meta.image ? `${SITE}${meta.image}` : `${SITE}/assets/img/og-image.png`,
+      author: meta.author ? { "@type": "Person", name: meta.author, ...(meta.author.includes("Rajveer") ? { "@id": `${SITE}/doctor#rajveer-singh`, url: `${SITE}/doctor` } : {}) }
+        : { "@type": "Organization", name: "Tailbone Treatment Clinic", url: `${SITE}/` },
       publisher,
       keywords: meta.tags.join(", "),
     },
     body,
+    image: meta.image ? `${SITE}${meta.image}` : undefined,
   });
 }
 

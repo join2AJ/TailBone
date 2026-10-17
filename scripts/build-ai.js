@@ -86,6 +86,10 @@ ${pages.map((p) => `- [${p.title}](${link(p)}): ${p.description}`).join("\n")}
 
 ${posts.map(({ meta }) => `- [${meta.title}](${SITE}/blog/${meta.slug}.html): ${meta.summary}`).join("\n")}
 
+## In the news
+
+- [Newspaper coverage of Dr Rajveer Singh's tailbone pain work](${SITE}/press.html): The Times of India, Deccan Herald, Hindustan (Delhi), Rajasthan Patrika, Prajavani and others, 2013–2016.
+
 ## Optional
 
 - [Full text of this site in one file](${SITE}/llms-full.txt)

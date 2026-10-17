@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import express from "express";
 import path from "node:path";
 import { config } from "./config.js";
@@ -58,6 +59,19 @@ export function createApp(db) {
   app.use("/api/admin", adminRoutes(db));
   app.use("/api", publicRoutes(db));
   app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
+
+  // Old tailbonetreatment.com (WordPress) addresses → new pages, so links and search rankings carry over.
+  const redirectsFile = path.join(config.publicDir, "..", "content", "redirects.json");
+  const OLD = fs.existsSync(redirectsFile) ? JSON.parse(fs.readFileSync(redirectsFile, "utf8")) : {};
+  const bare = (p) => p.replace(/\/$/, "") || "/";
+  const exact = new Map(Object.entries(OLD).filter(([k]) => !k.endsWith("*")).map(([k, v]) => [bare(k), v]));
+  const prefixes = Object.entries(OLD).filter(([k]) => k.endsWith("*")).map(([k, v]) => [k.slice(0, -1), v]);
+  app.use((req, res, next) => {
+    if (req.method !== "GET" || req.path === "/") return next();
+    const to = exact.get(bare(req.path)) || prefixes.find(([p]) => req.path.startsWith(p))?.[1];
+    if (to && bare(to.split("#")[0]) !== bare(req.path)) return res.redirect(301, to);
+    next();
+  });
 
   // Each short page is its own pre-built file (/coccydynia → coccydynia.html, via `extensions` below).
   const noCache = (res) => res.set("Cache-Control", "no-cache");

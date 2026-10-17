@@ -183,7 +183,7 @@ export function renderPage(template, p) {
   for (const s of [...sections].reverse()) {
     if (!keep(s, p.page)) html = html.slice(0, mainStart + s.start) + html.slice(mainStart + s.end);
   }
-  html = html.replace(/\n{3,}/g, "\n\n");
+  html = html.replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n");
   const pageUrl = url(p.slug);
   const head = [
     `<title>${esc(p.title)}</title>`,

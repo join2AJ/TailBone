@@ -65,3 +65,25 @@ test("AI assistants: robots.txt welcomes their crawlers, llms.txt summarises the
   const full = fs.readFileSync("public/llms-full.txt", "utf8");
   assert.ok(full.includes("Source: https://tailbone.netlify.app/faq") && !full.includes("<div"));
 });
+
+test("old WordPress addresses redirect permanently to the new pages", async () => {
+  const { createApp } = await import("../server/app.js");
+  const { openDb } = await import("../server/db.js");
+  const srv = createApp(openDb(":memory:")).listen(0);
+  await new Promise((r) => srv.once("listening", r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const go = (p) => fetch(base + p, { redirect: "manual" });
+  try {
+    for (const [from, to] of [["/coccygodynia/", "/coccydynia"], ["/dr-rajveer-singh", "/doctor"], ["/appointment/", "/book"], ["/tag/coccydynia/", "/blog/"],
+      ["/bruised-tailbone-requires-special-precautions-slow-to-heal/", "/blog/bruised-tailbone-requires-special-precautions-slow-to-heal.html"]]) {
+      const r = await go(from);
+      assert.equal(r.status, 301, from);
+      assert.equal(r.headers.get("location"), to);
+    }
+    assert.equal((await go("/faq")).status, 200, "new pages are not redirected");
+    assert.equal((await go("/coccydynia")).status, 200);
+    assert.ok(fs.readFileSync("public/_redirects", "utf8").split("\n").every((l) => !/^\/faq\s/.test(l)), "no self-redirects for Netlify");
+  } finally {
+    srv.close();
+  }
+});
