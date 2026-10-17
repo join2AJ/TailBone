@@ -110,7 +110,11 @@
     e.preventDefault();
     const ref = $("#ref").value.trim();
     const phone = $("#phone").value.trim();
-    if (!ref || !phone) { toast("Please enter your reference and phone number."); return; }
+    if (!ref || !phone) {
+      toast(!ref && !phone ? "Please enter your appointment number and phone number." : !ref ? "Please enter your appointment number." : "Please enter your phone number.");
+      $(ref ? "#phone" : "#ref").focus();
+      return;
+    }
     lookup(ref, phone);
   });
 

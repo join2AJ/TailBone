@@ -92,6 +92,7 @@ Newest first. Add one line per change.
 
 | Date | Change |
 |---|---|
+| 17 Oct 2026 | Patient login (My appointments) checked end to end: login, reschedule, cancel, WhatsApp setting, data requests, past and cancelled bookings. The appointment number now works however it's typed (lower case, spaces, no dashes), and an empty form points to the missing field. |
 | 17 Oct 2026 | Full audit of website, dashboard, backend and speed. Fixed two serious security issues (record takeover by phone number; permission bypass), plus Lucknow bookings, data erasure gaps and date checks. Added the money panel, "Received" button, payments spreadsheet and reminders queue. Made the mobile menu, forms and appointment card easier to use, and added a new 404 page. Pages load faster (first screen, fonts, images, compression). |
 | 17 Oct 2026 | Blog: search, topic tags, numbered articles that the admin can switch off, "On this page" contents, WhatsApp share. The full menu now appears on My appointments and other pages. |
 | 17 Oct 2026 | Nine evidence-based articles (facts and figures, coccyx shapes, body weight, women, two-wheelers, linked conditions, conditions that mimic tailbone pain, treatment steps, history), with tables, 8 new animated diagrams and verified sources. |
@@ -131,7 +132,8 @@ Newest first. Add one line per change.
 | 7 | **Symptom check result sent to WhatsApp** with how long the pain has lasted and the city | More bookings from the symptom check | Low |
 | 8 | **Patient timeline and visit-notes template** (one feed of visits, notes, check-ins, messages and payments) | Quicker review before each visit | Medium |
 | 9 | **No-show and drop-off watchlist** with a one-tap re-engage message | Brings patients back for review | Low |
-| 10 | **Install as an app (PWA)** and new-booking alerts on the doctor's phone | Alerts without checking email | Medium |
+| 10 | **Documents:** the clinic shares treatment/exercise plans and visit summaries; patients can optionally upload earlier reports before a visit. Stored encrypted, visible only to that patient and the clinic, included in data downloads and deletion | Fewer papers lost; everything in one place | Medium (best after #3, the login code) |
+| 11 | **Install as an app (PWA)** and new-booking alerts on the doctor's phone | Alerts without checking email | Medium |
 
 ### Content (ongoing)
 - Two articles a month, reviewed and signed by Dr Rajveer. Topics are listed in [SEO-AND-AI-VISIBILITY.md](SEO-AND-AI-VISIBILITY.md).

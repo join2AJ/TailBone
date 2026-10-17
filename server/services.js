@@ -213,7 +213,10 @@ export function findAppointmentForPatient(db, ref, phone) {
   const normalized = normalizePhone(phone);
   if (!normalized || !ref) return null;
   // The appointment number (TBA-2610-0007) is the patient's reference; older TB-XXXXXX codes still work.
-  const key = cleanText(ref, 20).toUpperCase();
+  // Accept it however it's typed: "tba 2610 0007", "TBA26100007", "tb-demo42".
+  const compact = String(ref).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 20);
+  const key = /^TBA\d{8,}$/.test(compact) ? `TBA-${compact.slice(3, 7)}-${compact.slice(7)}`
+    : /^TB[A-Z0-9]{6}$/.test(compact) ? `TB-${compact.slice(2)}` : cleanText(ref, 20).toUpperCase();
   return readAppt(db.prepare(`${APPT_SELECT} WHERE (a.appt_no = ? OR a.ref = ?) AND p.phone = ?`).get(key, key, normalized));
 }
 

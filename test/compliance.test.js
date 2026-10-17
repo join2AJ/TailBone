@@ -225,3 +225,13 @@ test("a website booking with someone else's phone number can't read, change or e
   for (let i = 0; i < 11; i++) last = await api("POST", "/api/manage/lookup", { ref: `TBA-0000-${i}`, phone: "9812300555" });
   assert.equal(last.status, 429);
 });
+
+test("patients can type their appointment number however they like", async () => {
+  const ok = await api("POST", "/api/appointments", { name: "Rina Das", phone: "9812300888", clinic: "online", ...slot(10), consent: true });
+  const no = ok.body.appointment.ref; // e.g. TBA-2610-0012
+  const { findAppointmentForPatient } = await import("../server/services.js");
+  for (const typed of [no, no.toLowerCase(), no.replace(/-/g, ""), no.replace(/-/g, " "), ` ${no} `]) {
+    assert.equal(findAppointmentForPatient(db, typed, "+91 98123 00888")?.appt_no, no, typed);
+  }
+  assert.equal(findAppointmentForPatient(db, no, "9000000000"), undefined, "the phone number must still match");
+});
