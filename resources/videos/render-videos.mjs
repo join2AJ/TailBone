@@ -27,7 +27,7 @@ for (const name of Object.keys(ANIMS)) {
       .stage .anim{margin:0;border:0;background:none;padding:0;min-height:0;height:100%}.stage figcaption{display:none}.stage svg{width:100%;height:100%}
       .brandbar{display:flex;justify-content:space-between;align-items:center;font:600 22px Inter,sans-serif;color:#0b3d2e}
       .brandbar strong{font-family:Sora,sans-serif;color:#15803d;font-size:26px}</style></head>
-      <body><div class="stage">${animFigure(name)}<div class="brandbar"><strong>TAILBONE TREATMENT</strong><span>Bengaluru · New Delhi · Online · +91 98866 88323</span></div></div></body></html>`);
+      <body><div class="stage">${animFigure(name)}<div class="brandbar"><strong>TAILBONE TREATMENT</strong><span>New Delhi · Online · +91 98866 88323</span></div></div></body></html>`);
     await page.evaluate(() => document.fonts.ready);
     await page.evaluate(() => document.querySelector("svg").setCurrentTime(0));
     await page.waitForTimeout(dur * LOOPS * 1000);

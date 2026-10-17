@@ -290,8 +290,29 @@
   const slotGrid = $("#slotGrid");
   const bookBtn = $("#bookBtn");
   const summary = $("#bookingSummary");
-  const CLINIC_NAMES = { blr: "Bengaluru clinic", del: "New Delhi clinic", online: "Online consultation" };
-  const booking = { clinic: "blr", date: null, time: null };
+  const CLINIC_NAMES = { del: "New Delhi clinic", online: "Online consultation", lko: "Lucknow clinic", blr: "Bengaluru clinic" };
+  const booking = { clinic: "del", date: null, time: null };
+  const firstOpenClinic = () => ($('input[name="clinic"]:not(:disabled)', form) || {}).value || "online";
+
+  // Which clinics take bookings is set in the dashboard (open / closed / opening soon).
+  function applyClinicStatus(clinics) {
+    const LABEL = { closed: "closed", soon: "soon" };
+    clinics.forEach((c) => {
+      const radio = $(`input[name="clinic"][value="${c.id}"]`, form);
+      if (!radio) return;
+      const open = c.status === "open";
+      radio.disabled = !open;
+      const label = radio.closest("label");
+      if (open) label.removeAttribute("data-clinic-status"); else label.dataset.clinicStatus = c.status;
+      $("span", label).textContent = c.short;
+      if (!open) { const tag = document.createElement("small"); tag.textContent = ` ${LABEL[c.status] || "closed"}`; $("span", label).append(tag); }
+    });
+    const checked = $('input[name="clinic"]:checked', form);
+    if (!checked || checked.disabled) {
+      const first = $('input[name="clinic"]:not(:disabled)', form);
+      if (first) { first.checked = true; booking.clinic = first.value; }
+    }
+  }
   let lastBooking = null;
 
   const api = async (url, options = {}) => {
@@ -352,8 +373,8 @@
     const fee = feeFor(booking.clinic);
     bookBtn.textContent = siteCfg?.payOnline && fee ? `Pay ${rupee(fee)} & confirm` : "Confirm booking";
     $("#bookHint").textContent = siteCfg?.payOnline && fee
-      ? "Secure payment by Razorpay (UPI, cards, net banking). You'll get a booking reference instantly."
-      : `You'll get a booking reference instantly.${fee ? ` Consultation fee ${rupee(fee)}, payable at the clinic.` : ""} Our team confirms every appointment on WhatsApp.`;
+      ? "Secure payment by Razorpay (UPI, cards, net banking). You'll get your appointment number instantly."
+      : `You'll get your appointment number instantly.${fee ? ` Consultation fee ${rupee(fee)}, payable at the clinic.` : ""} Our team confirms every appointment on WhatsApp.`;
   };
 
   const updateSummary = () => {
@@ -377,6 +398,7 @@
 
   api("/api/config").then((cfg) => {
     siteCfg = cfg;
+    if (cfg.clinics) applyClinicStatus(cfg.clinics);
     if (cfg.demo) showDemoBar();
     applyFeatures(cfg.features || {});
     if (cfg.features && cfg.features.online_booking === false) {
@@ -472,7 +494,7 @@
   // Preselect clinic from links like "Book online consult"
   $$("[data-mode]").forEach((a) => a.addEventListener("click", () => {
     const radio = $(`input[name="clinic"][value="${a.dataset.mode}"]`, form);
-    if (radio && !radio.checked) { radio.checked = true; radio.dispatchEvent(new Event("change")); }
+    if (radio && !radio.disabled && !radio.checked) { radio.checked = true; radio.dispatchEvent(new Event("change")); }
   }));
 
   // Load availability once the booking section is near the viewport.
@@ -530,7 +552,7 @@
         name: String(fd.get("name")).trim(),
         when: `${prettyDay(booking.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}, ${prettyTime(booking.time)}`,
         clinicName: CLINIC_NAMES[booking.clinic],
-        address: { blr: "No. 213, 9th Cross, 2nd Phase, JP Nagar, Bengaluru", del: "150A/09, Kishangarh, Vasant Kunj, New Delhi", online: "Video call (link shared on WhatsApp)" }[booking.clinic],
+        address: { del: "150A/09, Shanti Apartment, Kishangarh, Vasant Kunj, New Delhi 110070", online: "Video call (link shared on WhatsApp)" }[booking.clinic] || "",
         status: "requested",
       }, url);
       return;
@@ -656,7 +678,9 @@
     form.hidden = true;
     const done = $("#bookingDone");
     done.hidden = false;
-    $("#doneRef").textContent = a.ref ? `Booking code ${a.ref}` : "";
+    // The appointment number is the patient's reference; the old code line only shows for WhatsApp requests.
+    $("#doneRef").textContent = a.ref && !a.apptNo ? `Reference ${a.ref}` : "";
+    $("#doneRef").hidden = !$("#doneRef").textContent;
     // Appointment number, patient ID and QR code (server bookings only)
     $("#doneIds").hidden = !a.apptNo;
     if (a.apptNo) {
@@ -706,7 +730,7 @@
       `DTEND:${utcStamp(a.date, end)}`,
       `SUMMARY:${esc(`Tailbone Treatment – ${a.clinicName}`)}`,
       `LOCATION:${esc(a.address)}`,
-      `DESCRIPTION:${esc(`Appointment ${a.apptNo || ""} · Patient ID ${a.patientCode || ""} · Booking code ${a.ref}. Manage: ${a.manageUrl}`)}`,
+      `DESCRIPTION:${esc(`Appointment no. ${a.apptNo || a.ref || ""} · Patient ID ${a.patientCode || ""}. Manage: ${a.manageUrl}`)}`,
       "END:VEVENT", "END:VCALENDAR",
     ].join("\r\n");
     const link = document.createElement("a");
@@ -718,7 +742,7 @@
 
   $("#bookAnother").addEventListener("click", () => {
     form.reset();
-    booking.clinic = "blr";
+    booking.clinic = firstOpenClinic();
     $("#bookingDone").hidden = true;
     form.hidden = false;
     loadDays();

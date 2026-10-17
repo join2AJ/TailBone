@@ -102,7 +102,7 @@ function page({ title, description, canonical, type = "website", jsonLd, body })
   <meta property="og:image" content="${SITE}/assets/img/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Tailbone Treatment Clinic: sit down again without the pain. Bengaluru, New Delhi, online.">
+  <meta property="og:image:alt" content="Tailbone Treatment Clinic: sit down again without the pain. New Delhi and online.">
   <meta property="og:site_name" content="Tailbone Treatment Clinic">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="/assets/css/fonts.css">
@@ -184,7 +184,7 @@ ${post.html}
         <div class="post-cta">
           <div>
             <h2>Still sore when you sit?</h2>
-            <p>Dr Rajveer Singh treats tailbone pain without surgery, in Bengaluru, New Delhi and online.</p>
+            <p>Dr Rajveer Singh treats tailbone pain without surgery, in New Delhi and online.</p>
           </div>
           <div class="post-cta__actions">
             <a href="/book" class="btn btn--primary">Book appointment</a>

@@ -176,6 +176,15 @@ CREATE TABLE IF NOT EXISTS data_requests (
 );
 
 -- Security log (ISO 27001 A.8.15 / NIST CSF DE.CM): sign-ins, exports, erasures, setting changes.
+CREATE TABLE IF NOT EXISTS policy_history (
+  id INTEGER PRIMARY KEY,
+  changed_at TEXT NOT NULL,              -- ISO timestamp
+  admin_id INTEGER,
+  admin_name TEXT NOT NULL DEFAULT '',
+  policy TEXT NOT NULL,                  -- full JSON after the change
+  changes TEXT NOT NULL DEFAULT '[]'     -- JSON list of plain-language changes
+);
+
 CREATE TABLE IF NOT EXISTS security_log (
   id INTEGER PRIMARY KEY,
   admin_id INTEGER,
@@ -205,6 +214,16 @@ const MIGRATIONS = {
     appt_no: "TEXT",                                       // human-friendly appointment number, e.g. TBA-2610-0007
     gcal_event_id: "TEXT",                                 // Google Calendar event (when sync is on)
     gcal_status: "TEXT",                                   // synced | error message
+    policy_snapshot: "TEXT",                               // cancellation/reschedule rules in force when booked
+  },
+  data_requests: {
+    auto_at: "TEXT",                                       // when it is completed automatically if staff haven't acted
+    completed_by: "TEXT",                                  // admin name | auto
+    changes: "TEXT",                                       // encrypted JSON of requested corrections
+  },
+  stories: {
+    patient_id: "INTEGER",                                 // verified via patient ID + appointment number
+    appointment_id: "INTEGER",
   },
   admins: {
     totp_secret: "TEXT",                                   // encrypted base32 secret

@@ -3,7 +3,7 @@ import { CLINICS, HOURS, BOOKING, config } from "../config.js";
 import { rateLimit } from "../auth.js";
 import { clinicNow } from "../time.js";
 import { encrypt } from "../crypto.js";
-import { getPolicy, policySummary, refundQuote, rescheduleCheck } from "../policy.js";
+import { getPolicy, policySummary, refundQuote, rescheduleCheck, isClinicOpen, policyUpdatedAt } from "../policy.js";
 import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, verifyWebhookSignature, rupees } from "../payments.js";
 import { notify } from "../notify.js";
 import { DEMO_PATIENT } from "../demo.js";
@@ -12,7 +12,10 @@ import QRCode from "qrcode";
 import crypto from "node:crypto";
 import { ensureBusy, isBusy, googleCalendarLink, calendarFeed } from "../gcal.js";
 import { addDays } from "../time.js";
-import { recordConsent, withdrawConsent, exportPatientData, createDataRequest, NOTICE_VERSION, CONSENT_PURPOSES } from "../privacy.js";
+import {
+  recordConsent, withdrawConsent, exportPatientData, createDataRequest, processDueRequests, patientRequests,
+  NOTICE_VERSION, CONSENT_PURPOSES, SELF_SERVICE_TYPES, PROMISE_DAYS,
+} from "../privacy.js";
 import {
   HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment,
   rescheduleAppointment, cancelAppointment, markPaid, logEvent, readAppt, APPT_SELECT,
@@ -29,8 +32,9 @@ export function publicRoutes(db) {
   const view = (a, req) => {
     const policy = getPolicy(db);
     const open = ["pending", "confirmed"].includes(a.status) && a.date >= clinicNow().date;
+    const no = a.appt_no || a.ref; // the appointment number is the patient's reference
     return {
-      ref: a.ref,
+      ref: no,
       name: a.patient_name,
       clinic: a.clinic,
       clinicName: CLINICS[a.clinic].name,
@@ -47,7 +51,7 @@ export function publicRoutes(db) {
       selfService: isOn(db, "patient_self_service"),
       cancelQuote: open && a.amount_paid ? refundQuote(a, policy) : null,
       reschedule: open ? rescheduleCheck(a, policy) : { allowed: false },
-      manageUrl: `${siteUrl(req)}/manage.html?ref=${a.ref}`,
+      manageUrl: `${siteUrl(req)}/manage.html?ref=${no}`,
       apptNo: a.appt_no,
       patientCode: a.patient_code,
       googleCalendarUrl: open ? googleCalendarLink(a, siteUrl(req)) : null,
@@ -59,7 +63,8 @@ export function publicRoutes(db) {
   r.get("/config", (req, res) => {
     const policy = getPolicy(db);
     res.json({
-      clinics: Object.values(CLINICS),
+      clinics: Object.values(CLINICS).map((c) => ({ ...c, status: policy.clinics[c.id] || "closed" })),
+      policyUpdatedAt: policyUpdatedAt(db),
       hours: HOURS,
       booking: BOOKING,
       whatsapp: config.whatsappNumber,
@@ -76,12 +81,14 @@ export function publicRoutes(db) {
 
   r.get("/days", async (req, res) => {
     const clinic = requireClinic(req.query.clinic);
+    if (!isClinicOpen(getPolicy(db), clinic)) return res.json({ days: [], clinicClosed: true });
     const today = clinicNow().date;
     await ensureBusy(today, addDays(today, BOOKING.windowDays));
     res.json({ days: availableDays(db, clinic, 21) });
   });
 
   r.get("/slots", async (req, res) => {
+    if (CLINICS[req.query.clinic] && !isClinicOpen(getPolicy(db), req.query.clinic)) return res.json({ date: req.query.date, clinic: req.query.clinic, closed: true, slots: [] });
     if (typeof req.query.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)) await ensureBusy(req.query.date);
     res.json(availableSlots(db, req.query.clinic, req.query.date));
   });
@@ -124,7 +131,7 @@ export function publicRoutes(db) {
           amount: appt.fee,
           currency: "INR",
           name: "Tailbone Treatment Clinic",
-          description: `${appt.visit_type === "followup" ? "Follow-up" : "Consultation"} · ${CLINICS[appt.clinic].short} · ${appt.ref}`,
+          description: `${appt.visit_type === "followup" ? "Follow-up" : "Consultation"} · ${CLINICS[appt.clinic].short} · ${appt.appt_no}`,
           prefill: { name: appt.patient_name, contact: `+${appt.patient_phone}`, email: appt.patient_email || "" },
           holdMinutes: policy.holdMinutes,
         },
@@ -132,7 +139,7 @@ export function publicRoutes(db) {
     }
 
     notify(db, "booked", appt, { base });
-    const text = `Hi Dr Rajveer, got your details from your website. I have booked an appointment (ref ${appt.ref}) for ${prettyDate(appt.date)} at ${prettyTime(appt.time)}, ${CLINICS[appt.clinic].short}.`;
+    const text = `Hi Dr Rajveer, got your details from your website. I have booked an appointment (no. ${appt.appt_no}) for ${prettyDate(appt.date)} at ${prettyTime(appt.time)}, ${CLINICS[appt.clinic].short}.`;
     res.status(201).json({ appointment: await withQr(view(appt, req)), whatsappUrl: waLink(config.whatsappNumber, text) });
   });
 
@@ -176,10 +183,16 @@ export function publicRoutes(db) {
   };
 
   r.post("/manage/lookup", lookupLimit, async (req, res) => {
-    const appt = findOwn(req);
+    const found = findOwn(req);
+    // Requests the clinic hasn't handled within the automatic period are completed now ("on next login").
+    if (processDueRequests(db, new Date(), found.patient_id)) {
+      const again = findAppointmentForPatient(db, req.body.ref, req.body.phone);
+      if (!again) throw new HttpError(404, "Your details have been updated or erased as you asked, so this booking can no longer be found with that phone number.");
+    }
+    const appt = findAppointmentForPatient(db, req.body.ref, req.body.phone);
     const upcoming = db.prepare(`${APPT_SELECT} WHERE a.patient_id = ? AND a.id != ? AND a.status IN ('pending','confirmed') AND a.date >= ? ORDER BY a.date, a.time`)
       .all(appt.patient_id, appt.id, clinicNow().date).map((a) => view(readAppt(a), req));
-    res.json({ appointment: await withQr(view(appt, req)), others: upcoming, policy: policySummary(getPolicy(db)) });
+    res.json({ appointment: await withQr(view(appt, req)), others: upcoming, policy: policySummary(getPolicy(db)), privacy: patientRequests(db, appt.patient_id) });
   });
 
   r.post("/manage/cancel", lookupLimit, async (req, res) => {
@@ -198,6 +211,7 @@ export function publicRoutes(db) {
       if (isBusy(req.body.date, req.body.time)) throw new HttpError(409, "Sorry, the doctor isn't available at that time. Please pick another slot.");
     }
     if (!view(appt, req).canChange) throw new HttpError(409, "This appointment can no longer be changed online. Please call us.");
+    if (!isClinicOpen(getPolicy(db), appt.clinic)) throw new HttpError(409, "This clinic is no longer taking bookings. Please call or WhatsApp us to move your appointment.");
     const check = rescheduleCheck(appt, getPolicy(db));
     if (!check.allowed) throw new HttpError(409, check.reason);
     const from = `${prettyDate(appt.date)} at ${prettyTime(appt.time)}`;
@@ -221,11 +235,40 @@ export function publicRoutes(db) {
   // ---------- Privacy self-service (DPDP s.11–13, GDPR Art. 15–21) ----------
   r.post("/manage/export", lookupLimit, (req, res) => {
     const appt = findOwn(req);
+    if (!patientRequests(db, appt.patient_id).downloadReady) throw new HttpError(403, `Please request a copy of your data first. It will be ready within ${PROMISE_DAYS} days.`);
     const data = exportPatientData(db, appt.patient_id);
     db.prepare("INSERT INTO security_log (actor, action, target, ip) VALUES ('patient', 'patient_self_export', ?, ?)")
       .run(`patient #${appt.patient_id}`, String(req.ip || "").replace(/^::ffff:/, ""));
     res.set("Content-Disposition", `attachment; filename="my-data-${appt.ref}.json"`);
     res.json(data);
+  });
+
+  // Download / correct / delete from "My appointments": a request to the clinic, completed by staff or
+  // automatically after a few days (see privacy.js).
+  r.post("/manage/privacy", lookupLimit, (req, res) => {
+    const appt = findOwn(req);
+    const type = req.body.type;
+    if (!SELF_SERVICE_TYPES.includes(type)) throw new HttpError(400, "Please choose what you'd like us to do.");
+    const pending = db.prepare("SELECT ref FROM data_requests WHERE patient_id = ? AND type = ? AND status IN ('open','verifying')").get(appt.patient_id, type);
+    if (pending) throw new HttpError(409, `You already have a request in progress (${pending.ref}). It will be completed within ${PROMISE_DAYS} days.`);
+    let changes = null;
+    if (type === "correction") {
+      const c = req.body.changes || {};
+      changes = {};
+      const name = cleanText(c.name, 120);
+      if (name) { if (name.length < 2) throw new HttpError(400, "Please enter your full name."); changes.name = name; }
+      if (c.email) { const email = cleanText(c.email, 200); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, "Please enter a valid email address."); changes.email = email; }
+      if (c.phone) { const phone = normalizePhone(c.phone); if (!phone) throw new HttpError(400, "Please enter a valid phone number."); changes.phone = phone; }
+      if (!Object.keys(changes).length) throw new HttpError(400, "Please enter the details you'd like corrected.");
+    }
+    const { ref, due } = createDataRequest(db, {
+      type, name: appt.patient_name, phone: appt.patient_phone, email: appt.patient_email, patientId: appt.patient_id,
+      details: cleanText(req.body.note, 1000), changes, selfService: true,
+    });
+    const label = { access: "copy of data", correction: "correction", erasure: "deletion" }[type];
+    db.prepare("INSERT INTO notifications (audience, event, channel, body, status) VALUES ('doctor', 'privacy_request', 'dashboard', ?, 'sent')")
+      .run(encrypt(`Data request ${ref} (${label}) from ${appt.patient_name} ${appt.patient_code || ""}. Completes automatically in 3 days unless you act.`));
+    res.status(201).json({ ref, due, privacy: patientRequests(db, appt.patient_id) });
   });
 
   r.post("/manage/consent", lookupLimit, (req, res) => {
@@ -310,8 +353,14 @@ export function publicRoutes(db) {
     if (body.length < 30) throw new HttpError(400, "Please write at least a couple of sentences about your experience.");
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new HttpError(400, "Please choose a rating.");
     if (!req.body.consent) throw new HttpError(400, "Please confirm we may publish your story.");
-    db.prepare("INSERT INTO stories (name, city, rating, title, body, duration, phone) VALUES (?, ?, ?, ?, ?, ?, ?)")
-      .run(name, cleanText(req.body.city, 60), rating, cleanText(req.body.title, 100), body, cleanText(req.body.duration, 60), normalizePhone(req.body.phone));
+    // Only real patients: the patient ID and appointment number must belong together.
+    const visit = db.prepare(
+      `SELECT a.id, a.patient_id, p.phone FROM appointments a JOIN patients p ON p.id = a.patient_id
+       WHERE a.appt_no = ? AND p.patient_code = ? AND p.anonymised_at IS NULL`,
+    ).get(cleanText(req.body.apptNo, 20).toUpperCase(), cleanText(req.body.patientCode, 20).toUpperCase());
+    if (!visit) throw new HttpError(400, "We couldn't match that patient ID and appointment number. You'll find both on your appointment confirmation or in 'My appointments'.");
+    db.prepare("INSERT INTO stories (name, city, rating, title, body, duration, phone, patient_id, appointment_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(name, cleanText(req.body.city, 60), rating, cleanText(req.body.title, 100), body, cleanText(req.body.duration, 60), visit.phone, visit.patient_id, visit.id);
     res.status(201).json({ ok: true });
   });
 

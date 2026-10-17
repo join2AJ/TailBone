@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Patient Stories | Tailbone Treatment</title>
-  <meta name="description" content="Real experiences from patients treated for tailbone (coccyx) pain by Dr Rajveer Singh in Bengaluru, New Delhi and online.">
+  <meta name="description" content="Real experiences from patients treated for tailbone (coccyx) pain by Dr Rajveer Singh in New Delhi and online.">
   <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.webmanifest">
@@ -13,11 +13,11 @@
   <meta property="og:image" content="https://tailbone.netlify.app/assets/img/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Tailbone Treatment Clinic: sit down again without the pain. Bengaluru, New Delhi, online.">
+  <meta property="og:image:alt" content="Tailbone Treatment Clinic: sit down again without the pain. New Delhi and online.">
   <meta property="og:site_name" content="Tailbone Treatment Clinic">
   <meta name="twitter:card" content="summary_large_image">
   <meta property="og:title" content="Patient Stories | Tailbone Treatment">
-  <meta property="og:description" content="Real experiences from patients treated for tailbone (coccyx) pain by Dr Rajveer Singh in Bengaluru, New Delhi and online.">
+  <meta property="og:description" content="Real experiences from patients treated for tailbone (coccyx) pain by Dr Rajveer Singh in New Delhi and online.">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="assets/css/fonts.css">
   <link rel="stylesheet" href="assets/css/styles.css">
@@ -69,9 +69,14 @@
           <div class="field"><label for="sBody">Your story</label><textarea id="sBody" name="body" rows="6" required maxlength="2000" placeholder="What was the pain like? How did treatment go? How do you feel now?"></textarea><span class="small muted" id="charCount">0 / 2000</span></div>
           <div class="field-row">
             <div class="field"><label for="sDur">How long had you had the pain? <span class="muted">(optional)</span></label><input type="text" id="sDur" name="duration" placeholder="e.g. 2 years"></div>
-            <div class="field"><label for="sPhone">Phone <span class="muted">(optional, never published)</span></label><input id="sPhone" name="phone" type="tel" autocomplete="tel"></div>
           </div>
+          <div class="field-row">
+            <div class="field"><label for="sPid">Patient ID</label><input type="text" id="sPid" name="patientCode" required placeholder="TBP-00042" autocapitalize="characters" maxlength="20"></div>
+            <div class="field"><label for="sAppt">Appointment number</label><input type="text" id="sAppt" name="apptNo" required placeholder="TBA-2610-0007" autocapitalize="characters" maxlength="20"></div>
+          </div>
+          <p class="small muted">Both are on your appointment confirmation and in <a href="/manage.html">My appointments</a>. They are only used to check you are a patient and are never published.</p>
           <label class="check"><input type="checkbox" name="consent" required> I agree that Tailbone Treatment Clinic may publish this story with my first name and last initial.</label>
+          <p class="small muted">Stories are reviewed before they appear. Tailbone Treatment Clinic holds the right to publish, keep, edit for length, or remove any story at any time.</p>
           <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
           <button class="btn btn--primary btn--lg btn--block" type="submit">Submit my story</button>
         </form>
@@ -98,8 +103,9 @@
       </div>
       <div>
         <h2 class="footer__title">Clinics</h2>
-        <address class="footer__clinic"><strong>Bengaluru</strong>No. 213, 9th Cross, 2nd Phase, JP Nagar, Bengaluru<a href="https://www.google.com/maps/search/?api=1&amp;query=Trinity+Diagnostic+Imaging+Research+Centre+9th+Cross+2nd+Phase+JP+Nagar+Bengaluru" target="_blank" rel="noopener">Directions ↗</a></address>
         <address class="footer__clinic"><strong>New Delhi</strong>150A/09, Shanti Apartment, Kishangarh, Vasant Kunj, New Delhi 110070<a href="https://www.google.com/maps/search/?api=1&amp;query=Shanti+Apartment+Kishangarh+Vasant+Kunj+New+Delhi+110070" target="_blank" rel="noopener">Directions ↗</a></address>
+        <address class="footer__clinic"><strong>Lucknow</strong>Opening soon</address>
+        <address class="footer__clinic"><strong>Online</strong>Video consultations, anywhere</address>
       </div>
       <div>
         <h2 class="footer__title">Opening hours</h2>
@@ -108,7 +114,7 @@
           <li><span>Saturday</span><span>10:00 – 15:00</span></li>
           <li><span>Sunday</span><span>08:00 – 15:00</span></li>
         </ul>
-        <p class="footer__note">Both clinics. Video consultations by appointment.</p>
+        <p class="footer__note">New Delhi clinic. Video consultations by appointment.</p>
       </div>
       <div>
         <h2 class="footer__title">Useful links</h2>

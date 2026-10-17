@@ -91,7 +91,7 @@ test("there is always a super admin; disabled users are locked out at once", asy
 
 test("feature switches are enforced on the public site", async () => {
   // Book one appointment while everything is on.
-  const booking = { name: "Lata Shah", phone: "9811100022", clinic: "blr", ...slot(5), consent: true };
+  const booking = { name: "Lata Shah", phone: "9811100022", clinic: "del", ...slot(5), consent: true };
   const ok = await api(null, "POST", "/api/appointments", booking);
   assert.equal(ok.status, 201);
 
@@ -110,7 +110,7 @@ test("feature switches are enforced on the public site", async () => {
   assert.deepEqual((await api(null, "GET", "/api/media")).body.media, []);
   assert.equal((await api(null, "GET", "/api/checkin/whatever")).status, 404);
   // Legal rights stay available whatever the switches say.
-  assert.equal((await api(null, "POST", "/api/manage/export", { ref: ok.body.appointment.ref, phone: booking.phone })).status, 200);
+  assert.equal((await api(null, "POST", "/api/manage/privacy", { ref: ok.body.appointment.ref, phone: booking.phone, type: "access" })).status, 201);
 
   await api("super", "PUT", "/api/admin/superadmin/features", { online_booking: true, patient_self_service: true, stories: true, instagram: true, followup_checkins: true });
   assert.equal((await api(null, "POST", "/api/manage/cancel", { ref: ok.body.appointment.ref, phone: booking.phone })).status, 200);

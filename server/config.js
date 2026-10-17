@@ -49,7 +49,9 @@ export const CLINICS = {
   blr: { id: "blr", name: "Bengaluru clinic", short: "Bengaluru", address: "No. 213, 9th Cross, 2nd Phase, JP Nagar, Bengaluru (opp. Diwakar Hospital)" },
   del: { id: "del", name: "New Delhi clinic", short: "New Delhi", address: "150A/09, Shanti Apartment, Kishangarh, Vasant Kunj, New Delhi 110070" },
   online: { id: "online", name: "Online consultation", short: "Online", address: "Video call (link shared on WhatsApp)" },
+  lko: { id: "lko", name: "Lucknow clinic", short: "Lucknow", address: "Opening soon in Lucknow" },
 };
+// Whether each clinic takes bookings (open / closed / soon) is a dashboard setting: see policy.js.
 
 export const HOURS = {
   0: ["08:00", "15:00"],

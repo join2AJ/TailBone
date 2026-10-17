@@ -36,8 +36,8 @@ const slot = (o, i = 0) => { const date = addDays(clinicNow().date, o); return {
 const settle = () => new Promise((r) => setTimeout(r, 50));
 
 test("automatic WhatsApp only reaches patients who agreed to it", async () => {
-  await post("/api/appointments", { name: "Yes Please", phone: "9811000001", clinic: "blr", ...slot(4, 0), consent: true, whatsappConsent: true });
-  await post("/api/appointments", { name: "No Thanks", phone: "9811000002", clinic: "blr", ...slot(4, 1), consent: true, whatsappConsent: false });
+  await post("/api/appointments", { name: "Yes Please", phone: "9811000001", clinic: "del", ...slot(4, 0), consent: true, whatsappConsent: true });
+  await post("/api/appointments", { name: "No Thanks", phone: "9811000002", clinic: "del", ...slot(4, 1), consent: true, whatsappConsent: false });
   await settle();
   assert.deepEqual(sent.map((m) => m.to), ["919811000001"]);
   const queued = db.prepare("SELECT status, error FROM notifications WHERE audience = 'patient' AND recipient = '919811000002'").get();

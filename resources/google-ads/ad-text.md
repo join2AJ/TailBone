@@ -19,8 +19,8 @@ Generated from ad-text.json. The numbers show characters used out of Google's li
 - Dr Rajveer Singh, BPT  _(21/30)_
 - Pain When Sitting?  _(18/30)_
 - Coccydynia Treatment  _(20/30)_
-- Clinics in Bengaluru & Delhi  _(28/30)_
-- JP Nagar & Vasant Kunj  _(22/30)_
+- Clinic in New Delhi + Online  _(28/30)_
+- Vasant Kunj, New Delhi  _(22/30)_
 - Book Online in 1 Minute  _(23/30)_
 - Online Consultations Too  _(24/30)_
 - Post-Pregnancy Coccyx Pain  _(26/30)_
@@ -31,17 +31,17 @@ Generated from ad-text.json. The numbers show characters used out of Google's li
 
 ## Long headlines
 
-- Tailbone pain when you sit? See a specialist in Bengaluru or New Delhi. Book online today  _(89/90)_
+- Tailbone pain when you sit? See a specialist in New Delhi or online. Book today  _(79/90)_
 - Non-surgical treatment for coccyx pain by Dr Rajveer Singh, BPT, Fellowship (Apollo)  _(84/90)_
 - Pain after a fall or childbirth that won't settle? Get your tailbone properly assessed  _(86/90)_
-- Sit at a desk all day and your tailbone hurts? Book a consultation in Bengaluru or Delhi  _(88/90)_
-- An exclusive tailbone pain clinic in JP Nagar and Vasant Kunj, plus video consultations  _(87/90)_
+- Sit at a desk all day and your tailbone hurts? Book a consultation in Delhi or by video  _(87/90)_
+- An exclusive tailbone pain clinic in Vasant Kunj, New Delhi, plus video consultations  _(85/90)_
 
 ## Descriptions
 
 - Specialist, non-surgical care for coccyx pain. Book online.  _(59/90)_
 - Dr Rajveer Singh treats tailbone pain from falls, pregnancy and long sitting. Book online.  _(90/90)_
-- Clinics in JP Nagar, Bengaluru and Vasant Kunj, New Delhi. Video consults also available.  _(89/90)_
+- Clinic in Vasant Kunj, New Delhi, and video consults anywhere. Lucknow opening soon.  _(84/90)_
 - Careful assessment, hands-on treatment and a plan you can follow at home. Book your slot.  _(89/90)_
 - Pick a day and time online, get instant confirmation and reminders on WhatsApp.  _(79/90)_
 
@@ -54,7 +54,7 @@ Generated from ad-text.json. The numbers show characters used out of Google's li
 - pain while sitting tailbone
 - tailbone pain after delivery
 - coccyx pain after fall
-- tailbone pain Bangalore
+- tailbone pain Lucknow
 - tailbone pain Delhi
 - coccyx pain without surgery
 - tailbone pain physiotherapy
@@ -64,17 +64,17 @@ Generated from ad-text.json. The numbers show characters used out of Google's li
 
 | Text | Description 1 | Description 2 | URL |
 |---|---|---|---|
-| Book an Appointment | Pick a day and time online | Bengaluru, New Delhi or video | https://tailbone.netlify.app/book |
+| Book an Appointment | Pick a day and time online | New Delhi or video call | https://tailbone.netlify.app/book |
 | About Tailbone Pain | Causes, symptoms, self-check | Checked against trusted sources | https://tailbone.netlify.app/coccydynia |
 | How Treatment Works | Non-surgical, hands-on care | Four clear steps, explained | https://tailbone.netlify.app/treatment |
 | Meet Dr Rajveer Singh | BPT, Fellowship (Apollo) | Exclusive tailbone specialist | https://tailbone.netlify.app/doctor |
-| Clinics & Timings | JP Nagar and Vasant Kunj | Open 7 days a week | https://tailbone.netlify.app/locations |
+| Clinics & Timings | Vasant Kunj, New Delhi | Open 7 days a week | https://tailbone.netlify.app/locations |
 | Tips & Articles | Sitting, pregnancy, red flags | Practical advice from our clinic | https://tailbone.netlify.app/blog/ |
 
 ## Callouts
 
 - Non-Surgical Care  _(17/25)_
-- Bengaluru & New Delhi  _(21/25)_
+- New Delhi & Online  _(18/25)_
 - Video Consultations  _(19/25)_
 - Open 7 Days  _(11/25)_
 - Book Online 24x7  _(16/25)_
@@ -94,8 +94,8 @@ Header: **Services**
 
 - Headline: Book a tailbone consult
 - Business name: Tailbone Treatment
-- Description: Leave your details and the clinic will call or WhatsApp you to fix a convenient time in Bengaluru, New Delhi or online.
-- Questions: Full name; Phone number; City (Bengaluru / New Delhi / Online)
+- Description: Leave your details and the clinic will call or WhatsApp you to fix a convenient time in New Delhi or online.
+- Questions: Full name; Phone number; City (New Delhi / Online / Lucknow)
 - Privacy policy URL: https://tailbone.netlify.app/privacy.html
 - Submission message: Thank you! We will contact you within working hours. For urgent questions WhatsApp +91 98866 88323.
 

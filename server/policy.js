@@ -2,9 +2,13 @@
 // Stored in the `settings` table so the clinic can change them from the dashboard.
 // Amounts in settings are whole rupees (easy to edit); everything else in the app uses paise.
 
+// Clinic status: open = bookable; closed = shown as closed, no new bookings; soon = "opening soon".
+export const CLINIC_STATUSES = ["open", "closed", "soon"];
+
 export const DEFAULT_POLICY = {
-  fees: { blr: 800, del: 800, online: 800 },
-  followup: { fee: 500, windowDays: 30 },          // review visit within N days of a completed visit
+  fees: { del: 800, online: 800, blr: 800, lko: 800 },
+  clinics: { del: "open", online: "open", blr: "closed", lko: "soon" },
+  followup: { fee: 500, windowDays: 7 },          // review visit within N days of a completed visit
   payments: { mode: "online" },                      // online = pay to confirm (when a gateway is configured) | clinic = pay at clinic
   commission: { enabled: false, type: "fixed", value: 100, doctorAccountId: "" },
   cancellation: [                                    // first tier whose hoursBefore is met applies
@@ -25,6 +29,10 @@ const clampInt = (v, min, max, fallback) => {
 export function sanitizePolicy(input = {}, base = DEFAULT_POLICY) {
   const p = structuredClone(base);
   if (input.fees) for (const k of Object.keys(p.fees)) p.fees[k] = clampInt(input.fees[k], 0, 100000, p.fees[k]);
+  if (input.clinics) {
+    for (const k of Object.keys(p.clinics)) if (CLINIC_STATUSES.includes(input.clinics[k])) p.clinics[k] = input.clinics[k];
+    if (!Object.values(p.clinics).includes("open")) throw Object.assign(new Error("At least one clinic (or online consultations) must stay open."), { status: 400 });
+  }
   if (input.followup) {
     p.followup.fee = clampInt(input.followup.fee, 0, 100000, p.followup.fee);
     p.followup.windowDays = clampInt(input.followup.windowDays, 0, 365, p.followup.windowDays);
@@ -66,10 +74,67 @@ export function getPolicy(db) {
   }
 }
 
-export function savePolicy(db, input) {
-  const policy = sanitizePolicy(input, getPolicy(db));
+/** Save new rules and record who changed what, and when, in policy_history. */
+export function savePolicy(db, input, actor = {}) {
+  const before = getPolicy(db);
+  const policy = sanitizePolicy(input, before);
+  const changes = describeChanges(before, policy);
   db.prepare("INSERT INTO settings (key, value) VALUES ('policy', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(JSON.stringify(policy));
+  if (changes.length) {
+    ensurePolicyHistory(db, before);
+    db.prepare("INSERT INTO policy_history (changed_at, admin_id, admin_name, policy, changes) VALUES (?, ?, ?, ?, ?)")
+      .run(new Date().toISOString(), actor.id ?? null, actor.name || actor.email || "", JSON.stringify(policy), JSON.stringify(changes));
+  }
   return policy;
+}
+
+/** The first history entry records the rules in force before anyone edited them. */
+export function ensurePolicyHistory(db, current = getPolicy(db)) {
+  if (db.prepare("SELECT 1 FROM policy_history LIMIT 1").get()) return;
+  db.prepare("INSERT INTO policy_history (changed_at, admin_id, admin_name, policy, changes) VALUES (?, NULL, 'System', ?, ?)")
+    .run(new Date().toISOString(), JSON.stringify(current), JSON.stringify(["Initial fees and rules"]));
+}
+
+export function policyHistory(db, limit = 50) {
+  ensurePolicyHistory(db);
+  return db.prepare("SELECT id, changed_at, admin_name, changes FROM policy_history ORDER BY id DESC LIMIT ?").all(limit)
+    .map((h) => ({ id: h.id, changedAt: h.changed_at, by: h.admin_name || "Unknown", changes: JSON.parse(h.changes) }));
+}
+
+export const policyUpdatedAt = (db) => policyHistory(db, 1)[0]?.changedAt || null;
+
+const CLINIC_LABEL = { del: "New Delhi", online: "Online", blr: "Bengaluru", lko: "Lucknow" };
+const STATUS_LABEL = { open: "open", closed: "closed", soon: "opening soon" };
+const tiersText = (t) => t.map((x) => `${x.hoursBefore}h+: ${x.refundPercent}%`).join(", ");
+
+/** Plain-language list of what changed between two policies (for the history log). */
+export function describeChanges(a, b) {
+  const out = [];
+  for (const k of Object.keys(b.fees)) if (a.fees[k] !== b.fees[k]) out.push(`Fee ${CLINIC_LABEL[k] || k}: ₹${a.fees[k]} → ₹${b.fees[k]}`);
+  for (const k of Object.keys(b.clinics)) if (a.clinics[k] !== b.clinics[k]) out.push(`${CLINIC_LABEL[k] || k} clinic: ${STATUS_LABEL[a.clinics[k]]} → ${STATUS_LABEL[b.clinics[k]]}`);
+  if (a.followup.fee !== b.followup.fee) out.push(`Follow-up fee: ₹${a.followup.fee} → ₹${b.followup.fee}`);
+  if (a.followup.windowDays !== b.followup.windowDays) out.push(`Follow-up window: ${a.followup.windowDays} → ${b.followup.windowDays} days`);
+  if (a.payments.mode !== b.payments.mode) out.push(`Payment: ${a.payments.mode} → ${b.payments.mode}`);
+  if (JSON.stringify(a.cancellation) !== JSON.stringify(b.cancellation)) out.push(`Cancellation refunds: ${tiersText(a.cancellation)} → ${tiersText(b.cancellation)}`);
+  if (a.reschedule.minHoursBefore !== b.reschedule.minHoursBefore) out.push(`Free rescheduling up to: ${a.reschedule.minHoursBefore} → ${b.reschedule.minHoursBefore} hours before`);
+  if (a.reschedule.maxTimes !== b.reschedule.maxTimes) out.push(`Reschedules per booking: ${a.reschedule.maxTimes} → ${b.reschedule.maxTimes}`);
+  if (a.holdMinutes !== b.holdMinutes) out.push(`Unpaid booking hold: ${a.holdMinutes} → ${b.holdMinutes} minutes`);
+  if (JSON.stringify(a.commission) !== JSON.stringify(b.commission)) out.push("Commission settings changed");
+  return out;
+}
+
+export const isClinicOpen = (policy, clinic) => policy.clinics[clinic] === "open";
+
+/** The cancellation and reschedule rules saved with a booking, so later edits never change a booking already made. */
+export const policySnapshot = (policy) => JSON.stringify({ cancellation: policy.cancellation, reschedule: policy.reschedule });
+function rulesFor(appt, policy) {
+  if (!appt.policy_snapshot) return policy;
+  try {
+    const snap = JSON.parse(appt.policy_snapshot);
+    return { ...policy, cancellation: snap.cancellation || policy.cancellation, reschedule: snap.reschedule || policy.reschedule };
+  } catch {
+    return policy;
+  }
 }
 
 /** Appointment start as a real instant (clinic time is IST, UTC+05:30). */
@@ -100,7 +165,8 @@ export function platformFee(policy, fee) {
 }
 
 /** How much of what was paid goes back, given who cancels and when. */
-export function refundQuote(appt, policy, { actor = "patient", now = new Date(), noShow = false } = {}) {
+export function refundQuote(appt, currentPolicy, { actor = "patient", now = new Date(), noShow = false } = {}) {
+  const policy = rulesFor(appt, currentPolicy);
   const refundable = Math.max(0, (appt.amount_paid || 0) - (appt.amount_refunded || 0));
   const hours = hoursUntil(appt, now);
   let percent;
@@ -122,7 +188,8 @@ export function refundQuote(appt, policy, { actor = "patient", now = new Date(),
 }
 
 /** Whether a patient may reschedule online, and why not. */
-export function rescheduleCheck(appt, policy, now = new Date()) {
+export function rescheduleCheck(appt, currentPolicy, now = new Date()) {
+  const policy = rulesFor(appt, currentPolicy);
   const hours = hoursUntil(appt, now);
   if ((appt.reschedule_count || 0) >= policy.reschedule.maxTimes) {
     return { allowed: false, reason: `Online rescheduling is limited to ${policy.reschedule.maxTimes} time(s) per booking. Please call the clinic.` };

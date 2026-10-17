@@ -38,7 +38,7 @@ const ART = {
   "image-landscape-1200x628-a": [1200, 628, `<div class="art" style="width:1200px;height:628px;padding:64px 72px;align-items:center;gap:40px">
     <div style="flex:1"><div class="brand" style="font-size:26px">${MARK}TAILBONE TREATMENT</div>
     <h1 style="font-size:66px;margin:36px 0 22px">Tailbone pain<br>when you sit?</h1>
-    <p class="muted" style="font-size:28px">Non-surgical specialist care · Bengaluru · New Delhi · Online</p></div>
+    <p class="muted" style="font-size:28px">Non-surgical specialist care · New Delhi · Online · Lucknow soon</p></div>
     <div style="width:300px;height:520px">${SPINE.replace('class="spine"', 'class="spine" width="300" height="520"')}</div></div>`],
   "image-landscape-1200x628-b": [1200, 628, `<div class="art" style="width:1200px;height:628px;padding:64px 72px;flex-direction:column;justify-content:center">
     <div class="brand" style="font-size:26px">${MARK}TAILBONE TREATMENT</div>
@@ -49,20 +49,20 @@ const ART = {
     <div class="brand" style="font-size:34px">${MARK}TAILBONE TREATMENT</div>
     <div style="height:600px;margin:40px 0">${SPINE.replace('class="spine"', 'class="spine" width="340" height="600"')}</div>
     <h1 style="font-size:78px">Sit again without the pain</h1>
-    <p class="muted" style="font-size:34px;margin-top:22px">Bengaluru · New Delhi · Online</p></div>`],
+    <p class="muted" style="font-size:34px;margin-top:22px">New Delhi · Online · Lucknow soon</p></div>`],
   "image-square-1200-b": [1200, 1200, `<div class="art" style="width:1200px;height:1200px;padding:100px;flex-direction:column;justify-content:center">
     <div class="brand" style="font-size:34px">${MARK}TAILBONE TREATMENT</div>
     <h1 style="font-size:84px;margin:50px 0 44px">We treat</h1>
     <ul style="font-size:44px;line-height:1.65;padding-left:1.1em">
       <li>Tailbone pain (coccydynia)</li><li>Subluxed / dislocated coccyx</li><li>Post-injury tailbone pain</li>
       <li>Post-pregnancy tailbone pain</li><li>Sitting pain</li></ul>
-    <p class="muted" style="font-size:34px;margin-top:50px">Non-surgical treatment · Bengaluru · New Delhi</p></div>`],
+    <p class="muted" style="font-size:34px;margin-top:50px">Non-surgical treatment · New Delhi · Online</p></div>`],
   // Portrait 4:5
   "image-portrait-960x1200": [960, 1200, `<div class="art" style="width:960px;height:1200px;padding:80px;flex-direction:column;align-items:center;text-align:center">
     <div class="brand" style="font-size:30px">${MARK}TAILBONE TREATMENT</div>
     <div style="height:560px;margin:50px 0">${SPINE.replace('class="spine"', 'class="spine" width="320" height="560"')}</div>
     <h1 style="font-size:70px">Coccyx pain?<br>Get it properly treated</h1>
-    <p class="muted" style="font-size:30px;margin-top:24px">Bengaluru · New Delhi · Online</p></div>`],
+    <p class="muted" style="font-size:30px;margin-top:24px">New Delhi · Online · Lucknow soon</p></div>`],
   // Logos
   "logo-square-1200": [1200, 1200, `<div style="width:1200px;height:1200px;background:#fff;display:grid;place-items:center"><div style="width:880px;height:880px">${MARK}</div></div>`],
   "logo-landscape-1200x300": [1200, 300, `<div style="width:1200px;height:300px;background:#fff;display:flex;align-items:center;justify-content:center;gap:40px">

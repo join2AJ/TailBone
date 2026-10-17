@@ -57,13 +57,13 @@ export function seedDemo(db) {
     // 1. The demo patient: treated 3 weeks ago, improving, next visit tomorrow.
     const asha = patient(DEMO_PATIENT.name, DEMO_PATIENT.phone, "Fall on stairs Jan 2026. MRI: no fracture. Desk job.");
     consent(asha);
-    const ashaPast = appt(asha, "TB-DEMO17", "blr", addDays(today, -21), 2, "completed", { reason: "Pain when sitting for over 20 minutes since a fall", notes: "IM session 1. Coccyx hypermobile. Advised wedge cushion.", paid: 80000, platform: 10000 });
+    const ashaPast = appt(asha, "TB-DEMO17", "del", addDays(today, -21), 2, "completed", { reason: "Pain when sitting for over 20 minutes since a fall", notes: "IM session 1. Coccyx hypermobile. Advised wedge cushion.", paid: 80000, platform: 10000 });
     checkin(asha, null, 7, "same", 21, "Before treatment", 15);
     const f1 = followup(asha, ashaPast, addDays(today, -14), "done");
     checkin(asha, f1, 4, "better", 14, "Much easier to sit at work", 45);
     const f2 = followup(asha, ashaPast, addDays(today, -7), "done");
     checkin(asha, f2, 2, "better", 7, "", 90);
-    appt(asha, DEMO_PATIENT.ref, "blr", addDays(today, 1), 3, "confirmed", { reason: "Review visit", paid: 50000, platform: 10000, visit: "followup" });
+    appt(asha, DEMO_PATIENT.ref, "del", addDays(today, 1), 3, "confirmed", { reason: "Review visit", paid: 50000, platform: 10000, visit: "followup" });
 
     // 2. Today's patients.
     const rohan = patient("Rohan Mehta", "9999900002");
@@ -82,7 +82,7 @@ export function seedDemo(db) {
     // 4. Pain getting worse → alert, overdue follow-up call.
     const neha = patient("Neha Kapoor", "9999900005");
     consent(neha);
-    const nehaPast = appt(neha, "TB-DEMO56", "blr", addDays(today, -10), 1, "completed", { notes: "Stiff coccyx; discussed 2nd session.", paid: 80000 });
+    const nehaPast = appt(neha, "TB-DEMO56", "del", addDays(today, -10), 1, "completed", { notes: "Stiff coccyx; discussed 2nd session.", paid: 80000 });
     const f3 = followup(neha, nehaPast, addDays(today, -3), "done");
     checkin(neha, f3, 8, "worse", 3, "Long drive to Mysore, pain flared up", 10);
     followup(neha, nehaPast, addDays(today, -1), "pending", "call", "Call about flare-up");

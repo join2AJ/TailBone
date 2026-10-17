@@ -1,7 +1,7 @@
 {
   "name": "Tailbone Treatment Clinic",
   "short_name": "Tailbone",
-  "description": "Specialist, non-surgical care for tailbone (coccyx) pain. Book in Bengaluru, New Delhi or online.",
+  "description": "Specialist, non-surgical care for tailbone (coccyx) pain. Book in New Delhi or online.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -10,7 +10,7 @@
 
   // ---------- Utilities ----------
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const CLINIC = { blr: "Bengaluru", del: "New Delhi", online: "Online" };
+  const CLINIC = { del: "New Delhi", online: "Online", lko: "Lucknow", blr: "Bengaluru" };
   const STATUS = { pending: "Pending", confirmed: "Confirmed", completed: "Completed", cancelled: "Cancelled", no_show: "No-show" };
   const FU_TYPE = { checkin: "Check-in form", call: "Phone call", visit: "Review visit", whatsapp: "WhatsApp message" };
   const day = (d, opts = { weekday: "short", day: "numeric", month: "short" }) => (d ? new Date(`${d.slice(0, 10)}T00:00:00`).toLocaleDateString("en-IN", opts) : "");
@@ -412,7 +412,7 @@
       ${refunds.length ? `<h3 style="margin-top:1.4rem">Refunds</h3><div class="list">${refunds.map((r) => `<div class="item"><div class="item__time">${rupees(r.amount)}</div>
         <div class="item__main"><strong>${esc(r.status)}</strong><small>${esc(day(r.created_at))} · ${esc(r.reason)}${r.error ? ` · ${esc(r.error)}` : ""}</small></div><div></div></div>`).join("")}</div>` : ""}
       <h3 style="margin-top:1.4rem">History</h3>
-      <ol class="timeline">${events.map((e) => `<li><strong>${esc(EVENT[e.action] || e.action)}</strong> <span class="muted small">by ${esc(e.actor === "clinic" ? e.actor_name || "clinic" : e.actor === "patient" ? "patient" : "system")} · ${esc(new Date(e.created_at.replace(" ", "T") + "Z").toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }))}</span>${e.detail ? `<br><span class="small">${esc(e.detail)}</span>` : ""}</li>`).join("") || '<li class="muted">No history yet.</li>'}</ol>`);
+      <ol class="timeline">${events.map((e) => `<li><strong>${esc(EVENT[e.action] || e.action)}</strong> <span class="muted small">by ${esc(e.actor === "clinic" ? e.actor_name || "clinic" : e.actor === "patient" ? "patient" : "system")} · ${esc(new Date(e.created_at.replace(" ", "T") + "Z").toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }))}</span>${e.detail ? `<br><span class="small">${esc(e.detail)}</span>` : ""}</li>`).join("") || '<li class="muted">No history yet.</li>'}</ol>`);
     $("#toPatient").addEventListener("click", closeModal);
     const form = $("#apptEdit");
     const impact = () => {
@@ -699,7 +699,7 @@
         <div class="item__main">
           <strong>${"★".repeat(s.rating)}${"☆".repeat(5 - s.rating)} ${esc(s.title || "Untitled")}</strong>
           <p style="margin:.3rem 0">${esc(s.body)}</p>
-          <small>${esc(s.name)}${s.city ? `, ${esc(s.city)}` : ""}${s.duration ? ` · had pain for ${esc(s.duration)}` : ""}${s.phone ? ` · ${esc(phonePretty(s.phone))}` : ""} · ${esc(day(s.created_at))} · via ${esc(s.source)}</small>
+          <small>${esc(s.name)}${s.city ? `, ${esc(s.city)}` : ""}${s.duration ? ` · had pain for ${esc(s.duration)}` : ""}${s.patient_code ? ` · ${esc(s.patient_code)} / ${esc(s.appt_no || "")}` : ""}${s.phone ? ` · ${esc(phonePretty(s.phone))}` : ""} · ${esc(day(s.created_at))} · via ${esc(s.source)}</small>
         </div>
         <div class="item__actions">
           ${s.status !== "approved" ? `<button class="btn btn--primary btn--sm" data-story="${s.id}" data-set="approved">Approve</button>` : `<button class="btn btn--ghost btn--sm" data-story="${s.id}" data-feature="${s.featured ? 0 : 1}">${s.featured ? "★ Featured" : "☆ Feature"}</button>`}
@@ -820,7 +820,7 @@
     const TYPE = { access: "Copy of data", correction: "Correction", erasure: "Erasure", withdraw_consent: "Withdraw consent", grievance: "Grievance" };
     content.innerHTML = `
       <section class="panel-card">
-        <p class="muted small" style="margin:0">Requests from the <a href="/privacy.html#request" target="_blank">privacy page</a>. Verify the person's identity (for example, call the phone number on file), act on the request, then mark it completed with a short note. Answer within 30 days; overdue requests are highlighted. Privacy notice in force: v${esc(noticeVersion)}.</p>
+        <p class="muted small" style="margin:0">Requests from patients' <strong>My appointments</strong> page (identity already checked by appointment number and phone) and from the <a href="/privacy.html#request" target="_blank">privacy page</a>. <strong>Completed</strong> on a copy, correction or deletion request carries it out: the patient can download their data, the corrected details are saved, or their personal data is erased. If nobody acts, these happen <strong>automatically after 3 days</strong> (patients are promised 7). Other requests: verify identity, act, then mark completed within 30 days. Privacy notice in force: v${esc(noticeVersion)}.</p>
       </section>
       <div class="table-wrap"><table>
         <thead><tr><th>Due</th><th>Request</th><th>From</th><th>Details</th><th>Status</th><th></th></tr></thead>
@@ -830,7 +830,7 @@
           <td class="nowrap"><strong>${esc(day(q.due_at))}</strong>${overdue ? '<br><span class="badge badge--cancelled">Overdue</span>' : ""}<br><span class="muted">${esc(q.ref)}</span></td>
           <td>${esc(TYPE[q.type])}</td>
           <td>${esc(q.name)}<br><span class="muted">${esc(q.phone ? phonePretty(q.phone) : "")} ${esc(q.email || "")}</span>${q.patient_id ? `<br><a href="#/patient/${q.patient_id}">Matched patient →</a>` : '<br><span class="muted small">No matching patient</span>'}</td>
-          <td style="max-width:280px">${esc(q.details)}${q.resolution ? `<br><span class="muted small">Resolution: ${esc(q.resolution)}</span>` : ""}</td>
+          <td style="max-width:300px">${q.changes ? `Change to: ${Object.entries(q.changes).map(([k, v]) => `<strong>${esc(k)}</strong> ${esc(k === "phone" ? phonePretty(v) : v)}`).join(", ")}<br>` : ""}${esc(q.details)}${q.auto_at && ["open", "verifying"].includes(q.status) ? `<br><span class="small">⏱ Completes automatically ${esc(new Date(q.auto_at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }))}</span>` : ""}${q.resolution ? `<br><span class="muted small">${q.completed_by ? `By ${esc(q.completed_by === "auto" ? "automatic step" : q.completed_by)} · ` : ""}${esc(q.resolution)}</span>` : ""}</td>
           <td>${badge({ open: "pending", verifying: "pending", completed: "completed", rejected: "cancelled" }[q.status]).replace(/>[^<]+</, `>${esc(q.status)}<`)}</td>
           <td><div class="item__actions">${["open", "verifying"].includes(q.status) ? `
             <button class="btn btn--ghost btn--sm" data-req="${q.id}" data-st="verifying">Verifying</button>
@@ -840,8 +840,11 @@
         }).join("") || '<tr><td colspan="6"><div class="empty">No requests yet.</div></td></tr>'}</tbody>
       </table></div>`;
     $$("[data-req]").forEach((b) => b.addEventListener("click", async () => {
-      const resolution = b.dataset.st === "verifying" ? "" : prompt(b.dataset.st === "completed" ? "What was done? (e.g. Data exported and sent by email; erased on request)" : "Reason for rejecting (shared with the person):");
-      if (b.dataset.st !== "verifying" && !resolution) return;
+      const q = requests.find((x) => String(x.id) === b.dataset.req);
+      const automatic = b.dataset.st === "completed" && q.patient_id && ["access", "correction", "erasure"].includes(q.type);
+      if (automatic && !confirm({ access: "Make the data download available to this patient now?", correction: "Save the corrected details now?", erasure: "Erase this patient's personal data now? This cannot be undone." }[q.type])) return;
+      const resolution = b.dataset.st === "verifying" || automatic ? "" : prompt(b.dataset.st === "completed" ? "What was done? (e.g. Data exported and sent by email; erased on request)" : "Reason for rejecting (shared with the person):");
+      if (b.dataset.st !== "verifying" && !automatic && !resolution) return;
       try { await api(`/privacy/requests/${b.dataset.req}`, { method: "PATCH", body: { status: b.dataset.st, resolution: resolution || undefined } }); toast("Updated."); route(); } catch (ex) { toast(ex.message); }
     }));
   }
@@ -900,13 +903,14 @@
           <span class="small">${pol.paymentsEnabled ? '<span class="badge badge--confirmed">Razorpay connected</span>' : '<span class="badge badge--pending">Razorpay not connected: pay at clinic</span>'}
           ${pol.whatsappApi ? '<span class="badge badge--confirmed">WhatsApp API connected</span>' : '<span class="badge badge--pending">WhatsApp: one-tap manual sending</span>'}</span></div>
         <form class="form" id="policyForm">
-          <h3>Consultation fees (₹)</h3>
-          <div class="field-row">
-            <div class="field"><label>Bengaluru</label><input type="number" min="0" name="fees.blr" value="${P.fees.blr}"></div>
-            <div class="field"><label>New Delhi</label><input type="number" min="0" name="fees.del" value="${P.fees.del}"></div>
+          <h3>Clinics and consultation fees (₹)</h3>
+          <p class="muted small">Closed or "opening soon" clinics can't be booked on the website. Existing bookings stay; contact those patients to move them.</p>
+          <div class="clinic-grid">${Object.entries(CLINIC).map(([k, v]) => `
+            <div class="field"><label for="st-${k}">${esc(v)}</label>
+              <div class="field-row"><select id="st-${k}" name="clinics.${k}">${[["open", "Open"], ["closed", "Closed"], ["soon", "Opening soon"]].map(([val, lab]) => `<option value="${val}" ${P.clinics[k] === val ? "selected" : ""}>${lab}</option>`).join("")}</select>
+              <input type="number" min="0" name="fees.${k}" value="${P.fees[k]}" aria-label="${esc(v)} fee in rupees" title="Fee ₹"></div></div>`).join("")}
           </div>
           <div class="field-row">
-            <div class="field"><label>Online</label><input type="number" min="0" name="fees.online" value="${P.fees.online}"></div>
             <div class="field"><label>Follow-up fee (₹) within N days</label><div class="field-row"><input type="number" min="0" name="followup.fee" value="${P.followup.fee}"><input type="number" min="0" max="365" name="followup.windowDays" value="${P.followup.windowDays}" aria-label="Follow-up window in days" title="days"></div></div>
           </div>
           <div class="field"><label>Payment</label><select name="payments.mode">
@@ -936,6 +940,10 @@
           <p class="small" id="splitPreview"></p>` : ""}
           <button class="btn btn--primary">Save fees & policies</button>
         </form>
+        <h3>Change history</h3>
+        <p class="muted small">Every change is recorded with the date, time and who made it. Bookings keep the cancellation and reschedule rules that applied when they were made.</p>
+        <div class="list">${(pol.history || []).map((h) => `<div class="item"><div class="item__time">${esc(new Date(h.changedAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }))}</div>
+          <div class="item__main"><strong>${esc(h.by)}</strong><small>${h.changes.map(esc).join("<br>")}</small></div></div>`).join("") || '<div class="empty">No changes yet.</div>'}</div>
       </section>`;
 
     const holidaysCard = !can("settings") ? "" : `
@@ -1037,7 +1045,7 @@
       const loadBackups = async () => {
         const { backups } = await api("/backups");
         $("#backupList").innerHTML = backups.slice(0, 5).map((b) => `<div class="item" style="grid-template-columns:1fr auto">
-          <div class="item__main"><strong>${esc(new Date(b.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }))}</strong><small>${(b.size / 1024).toFixed(0)} KB · encrypted</small></div>
+          <div class="item__main"><strong>${esc(new Date(b.at).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }))}</strong><small>${(b.size / 1024).toFixed(0)} KB · encrypted</small></div>
           <div class="item__actions"><a class="btn btn--ghost btn--sm" href="/api/admin/backups/${encodeURIComponent(b.file)}">Download</a></div></div>`).join("") || '<div class="empty">No backups yet. The first runs tonight, or use "Back up now".</div>';
       };
       loadBackups().catch((ex) => { $("#backupList").innerHTML = `<div class="empty">${esc(ex.message)}</div>`; });
@@ -1080,7 +1088,8 @@
       const fd = new FormData(pf);
       const n = (k) => Number(fd.get(k));
       const body = {
-        fees: { blr: n("fees.blr"), del: n("fees.del"), online: n("fees.online") },
+        fees: Object.fromEntries(Object.keys(CLINIC).map((k) => [k, n(`fees.${k}`)])),
+        clinics: Object.fromEntries(Object.keys(CLINIC).map((k) => [k, fd.get(`clinics.${k}`)])),
         followup: { fee: n("followup.fee"), windowDays: n("followup.windowDays") },
         payments: { mode: fd.get("payments.mode") },
         cancellation: P.cancellation.map((_, i) => ({ hoursBefore: n(`cancel.${i}.hoursBefore`), refundPercent: n(`cancel.${i}.refundPercent`) })),
@@ -1092,7 +1101,7 @@
     const preview = () => {
       if (!C) return;
       const p = readPolicy();
-      const fee = p.fees.blr;
+      const fee = p.fees.del;
       const cut = !p.commission.enabled ? 0 : Math.min(fee, p.commission.type === "percent" ? Math.round((fee * p.commission.value) / 100) : p.commission.value);
       $("#splitPreview").textContent = p.commission.enabled
         ? `Example: patient pays ₹${fee} → doctor receives ₹${fee - cut}, platform keeps ₹${cut} (before Razorpay's gateway charges).`
@@ -1102,7 +1111,7 @@
     preview();
     pf.addEventListener("submit", async (e) => {
       e.preventDefault();
-      try { await api("/settings/policy", { method: "PUT", body: readPolicy() }); toast("Fees and policies saved. They apply to new bookings."); route(); } catch (ex) { toast(ex.message); }
+      try { await api("/settings/policy", { method: "PUT", body: readPolicy() }); toast("Saved and recorded in the change history. New rules apply to new bookings."); route(); } catch (ex) { toast(ex.message); }
     });
   }
 

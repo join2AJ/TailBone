@@ -21,7 +21,7 @@ export function animFigure(name) {
   const svg = fs.readFileSync(path.join(root, "content/animations", `${name}.svg`), "utf8").trim();
   return `<figure class="anim" data-anim="${name}" data-still="${a.still}">
 ${svg}
-<figcaption><span>${a.caption}</span><button type="button" class="anim__toggle">Pause animation</button></figcaption>
+<figcaption>${a.caption}</figcaption>
 </figure>`;
 }
 

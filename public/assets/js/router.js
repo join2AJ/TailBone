@@ -5,16 +5,16 @@
   "use strict";
 
   const ROUTES = {
-    "/": { page: "home", heading: "Tailbone Treatment Clinic", title: "Tailbone Treatment Clinic | Coccydynia Specialist · Bengaluru & New Delhi",
-      description: "Specialist, non-surgical care for tailbone (coccyx) pain by Dr Rajveer Singh. Clinics in Bengaluru and New Delhi, plus online consultations." },
+    "/": { page: "home", heading: "Tailbone Treatment Clinic", title: "Tailbone Treatment Clinic | Coccydynia Specialist · New Delhi & Online",
+      description: "Specialist, non-surgical care for tailbone (coccyx) pain by Dr Rajveer Singh. Clinic in New Delhi, plus online consultations. Lucknow opening soon." },
     "/coccydynia": { page: "coccydynia", heading: "Coccydynia: symptoms, causes and self-check", title: "What is Coccydynia? Symptoms, Causes & Self-check | Tailbone Treatment",
       description: "Understand tailbone pain: what the coccyx is, common causes, typical symptoms, a quick self-check and everyday tips." },
     "/treatment": { page: "treatment", heading: "Non-surgical tailbone pain treatment", title: "Non-surgical Tailbone Pain Treatment | Tailbone Treatment",
       description: "How Internal Manipulation and a personalised plan treat coccydynia without surgery, step by step." },
     "/doctor": { page: "doctor", heading: "Dr Rajveer Singh, coccydynia specialist", title: "Dr Rajveer Singh, Coccydynia Specialist | Tailbone Treatment",
-      description: "Meet Dr Rajveer Singh, consulting in Bengaluru, New Delhi and online, and read what patients say." },
-    "/locations": { page: "locations", heading: "Our clinics and opening hours", title: "Clinics in Bengaluru & New Delhi · Timings | Tailbone Treatment",
-      description: "Addresses, maps and opening hours of our Bengaluru and New Delhi clinics, plus online consultations." },
+      description: "Meet Dr Rajveer Singh, consulting in New Delhi and online, and read what patients say." },
+    "/locations": { page: "locations", heading: "Our clinics and opening hours", title: "Clinic in New Delhi, Online & Lucknow (soon) · Timings | Tailbone Treatment",
+      description: "Address, map and opening hours of our New Delhi clinic, online consultations, and our Lucknow clinic opening soon." },
     "/faq": { page: "faq", heading: "Frequently asked questions", title: "Frequently Asked Questions | Tailbone Treatment",
       description: "Answers about coccydynia, Internal Manipulation, sessions, referrals and appointments." },
     "/book": { page: "book", heading: "Book an appointment", title: "Book an Appointment | Tailbone Treatment",

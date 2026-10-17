@@ -48,7 +48,7 @@ async function api(method, url, body, { auth = false, headers = {} } = {}) {
 const sign = (orderId, paymentId) => crypto.createHmac("sha256", "rzp_test_secret").update(`${orderId}|${paymentId}`).digest("hex");
 const slot = (offset, i = 0) => { const date = addDays(clinicNow().date, offset); return { date, time: slotsForDate(date)[i] }; };
 let phoneSeq = 9700000000;
-const book = (offset, i, extra = {}) => api("POST", "/api/appointments", { name: "Kavya Menon", phone: String(phoneSeq++), clinic: "blr", ...slot(offset, i), reason: "Sharp pain when sitting", ...extra });
+const book = (offset, i, extra = {}) => api("POST", "/api/appointments", { name: "Kavya Menon", phone: String(phoneSeq++), clinic: "del", ...slot(offset, i), reason: "Sharp pain when sitting", ...extra });
 
 async function payFor(created) {
   const { orderId } = created.body.payment;
@@ -86,7 +86,7 @@ test("commission split: order carries the doctor's transfer, platform keeps its 
   assert.deepEqual(order.body.transfers.map((t) => [t.account, t.amount]), [["acc_TestDoctor01", 70000]]);
 
   // Slot is held while the patient pays.
-  const slots = await api("GET", `/api/slots?clinic=blr&date=${slot(5).date}`);
+  const slots = await api("GET", `/api/slots?clinic=del&date=${slot(5).date}`);
   assert.equal(slots.body.slots[0].available, false);
 });
 
@@ -143,7 +143,7 @@ test("patient cancels early: full refund with split reversal, doctor notified", 
 test("clinic cancels: patient always gets a full refund and a message", async () => {
   const created = await book(8, 0);
   await payFor(created);
-  const appt = db.prepare("SELECT id FROM appointments WHERE ref = ?").get(created.body.appointment.ref);
+  const appt = db.prepare("SELECT id FROM appointments WHERE appt_no = ?").get(created.body.appointment.ref);
   const res = await api("PATCH", `/api/admin/appointments/${appt.id}`, { status: "cancelled", reason: "Doctor travelling" }, { auth: true });
   assert.equal(res.status, 200);
   assert.equal(res.body.refund.amount, 80000);
@@ -159,7 +159,7 @@ test("clinic reschedule notifies the patient; patient reschedule notifies the do
   await payFor(created);
   const phone = String(phoneSeq - 1);
   const { ref } = created.body.appointment;
-  const appt = db.prepare("SELECT id FROM appointments WHERE ref = ?").get(ref);
+  const appt = db.prepare("SELECT id FROM appointments WHERE appt_no = ?").get(ref);
 
   const moved = await api("PATCH", `/api/admin/appointments/${appt.id}`, { ...slot(9, 3) }, { auth: true });
   assert.equal(moved.status, 200);
@@ -189,7 +189,7 @@ test("follow-up visits within the window get the follow-up rate", async () => {
   const phone = "9811234567";
   const first = await api("POST", "/api/admin/appointments", { name: "Arjun Rao", phone, clinic: "del", ...slot(0, 0) }, { auth: true });
   await api("PATCH", `/api/admin/appointments/${first.body.appointment.id}`, { status: "completed" }, { auth: true });
-  const again = await api("POST", "/api/appointments", { name: "Arjun Rao", phone, clinic: "del", ...slot(11, 0) });
+  const again = await api("POST", "/api/appointments", { name: "Arjun Rao", phone, clinic: "del", ...slot(5, 3) });
   assert.equal(again.status, 201);
   assert.equal(again.body.appointment.visitType, "followup");
   assert.equal(again.body.payment.amount, 50000);
@@ -197,8 +197,8 @@ test("follow-up visits within the window get the follow-up rate", async () => {
 
 test("unpaid holds expire and free the slot", async () => {
   const created = await book(12, 0);
-  db.prepare("UPDATE appointments SET hold_until = datetime('now','-1 minute') WHERE ref = ?").run(created.body.appointment.ref);
-  const slots = await api("GET", `/api/slots?clinic=blr&date=${slot(12).date}`);
+  db.prepare("UPDATE appointments SET hold_until = datetime('now','-1 minute') WHERE appt_no = ?").run(created.body.appointment.ref);
+  const slots = await api("GET", `/api/slots?clinic=del&date=${slot(12).date}`);
   assert.equal(slots.body.slots[0].available, true);
 });
 
@@ -217,4 +217,15 @@ test("security headers are set", async () => {
   assert.ok(csp.includes("script-src 'self' https://checkout.razorpay.com"));
   assert.ok(!/script-src[^;]*unsafe-inline/.test(csp), "no inline scripts allowed");
   assert.equal(res.headers.get("x-frame-options"), "SAMEORIGIN");
+});
+
+test("a booking keeps the cancellation and reschedule rules in force when it was made", async () => {
+  const { refundQuote, rescheduleCheck, policySnapshot, DEFAULT_POLICY } = await import("../server/policy.js");
+  const appt = { date: "2026-11-10", time: "10:00", amount_paid: 80000, amount_refunded: 0, reschedule_count: 0,
+    policy_snapshot: policySnapshot(DEFAULT_POLICY) };
+  const stricter = { ...DEFAULT_POLICY, cancellation: [{ hoursBefore: 0, refundPercent: 0 }], reschedule: { minHoursBefore: 48, maxTimes: 0 } };
+  const now = new Date("2026-11-08T12:00:00+05:30"); // 46 hours before
+  assert.equal(refundQuote(appt, stricter, { now }).percent, 100, "rules saved with the booking apply");
+  assert.equal(rescheduleCheck(appt, stricter, now).allowed, true);
+  assert.equal(refundQuote({ ...appt, policy_snapshot: null }, stricter, { now }).percent, 0, "older bookings without a snapshot use current rules");
 });

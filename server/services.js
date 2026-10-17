@@ -3,7 +3,7 @@ import { config, CLINICS, BOOKING } from "./config.js";
 import { tx, patientCode, nextApptNo } from "./db.js";
 import { clinicNow, slotsForDate, isBookableTime, addDays, isDate, isTime } from "./time.js";
 import { encrypt, decryptFields } from "./crypto.js";
-import { getPolicy, priceFor, refundQuote } from "./policy.js";
+import { getPolicy, priceFor, refundQuote, isClinicOpen, policySnapshot } from "./policy.js";
 import { paymentsEnabled, refundPayment, rupees } from "./payments.js";
 import { notify } from "./notify.js";
 import { isOn } from "./features.js";
@@ -162,6 +162,9 @@ export function createAppointment(db, data, { source = "web", status = "pending"
   if (source === "web" && isBlocked(db, data.clinic, data.date)) throw new HttpError(409, "The clinic is closed on that day. Please choose another date.");
   releaseExpiredHolds(db);
   const policy = getPolicy(db);
+  if (source === "web" && !isClinicOpen(policy, data.clinic)) {
+    throw new HttpError(409, `The ${CLINICS[data.clinic].short} clinic is not taking bookings. Please choose another clinic or an online consultation.`);
+  }
   try {
     const created = tx(db, () => {
       const patientId = upsertPatient(db, data);
@@ -179,10 +182,10 @@ export function createAppointment(db, data, { source = "web", status = "pending"
       const ref = makeRef();
       const id = Number(db.prepare(
         `INSERT INTO appointments (ref, appt_no, patient_id, clinic, date, time, status, reason, source, prefers_female,
-           visit_type, fee, platform_fee, payment_status, hold_until)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           visit_type, fee, platform_fee, payment_status, hold_until, policy_snapshot)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(ref, nextApptNo(db), patientId, data.clinic, data.date, data.time, status, encrypt(data.reason), source, data.prefersFemale,
-        price.visitType, price.fee, split, paymentStatus, holdUntil).lastInsertRowid);
+        price.visitType, price.fee, split, paymentStatus, holdUntil, policySnapshot(policy)).lastInsertRowid);
       logEvent(db, id, source === "web" ? "patient" : "clinic", source === "web" ? data.name : actorName, "booked",
         `${CLINICS[data.clinic].short}, ${data.date} ${data.time}${price.visitType === "followup" ? " (follow-up rate)" : ""}`);
       return getAppointment(db, id);
@@ -204,7 +207,9 @@ export function getAppointment(db, id) {
 export function findAppointmentForPatient(db, ref, phone) {
   const normalized = normalizePhone(phone);
   if (!normalized || !ref) return null;
-  return readAppt(db.prepare(`${APPT_SELECT} WHERE a.ref = ? COLLATE NOCASE AND p.phone = ?`).get(cleanText(ref, 20).toUpperCase(), normalized));
+  // The appointment number (TBA-2610-0007) is the patient's reference; older TB-XXXXXX codes still work.
+  const key = cleanText(ref, 20).toUpperCase();
+  return readAppt(db.prepare(`${APPT_SELECT} WHERE (a.appt_no = ? OR a.ref = ?) AND p.phone = ?`).get(key, key, normalized));
 }
 
 export function rescheduleAppointment(db, appt, date, time, { allowAnyTime = false, actor = "patient", actorName = "" } = {}) {

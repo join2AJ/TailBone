@@ -42,7 +42,7 @@ before(async () => {
 after(() => { server.close(); db.close(); fs.rmSync(tmp, { recursive: true, force: true }); });
 
 test("booking requires consent and records it against the notice version", async () => {
-  const body = { name: "Neha Gupta", phone: "9812300001", clinic: "blr", ...slot(4), reason: "Coccyx pain" };
+  const body = { name: "Neha Gupta", phone: "9812300001", clinic: "del", ...slot(4), reason: "Coccyx pain" };
   assert.equal((await api("POST", "/api/appointments", body)).status, 400);
   const ok = await api("POST", "/api/appointments", { ...body, consent: true, whatsappConsent: true });
   assert.equal(ok.status, 201);
@@ -54,10 +54,53 @@ test("booking requires consent and records it against the notice version", async
   const creds = { ref: ok.body.appointment.ref, phone: "9812300001" };
   const c = await api("POST", "/api/manage/consent", { ...creds, whatsappUpdates: false });
   assert.deepEqual(c.body.consents, ["care"]);
+  // Download is a request to the clinic: not available until completed (by staff, or automatically after 3 days).
+  assert.equal((await api("POST", "/api/manage/export", creds)).status, 403);
+  const reqd = await api("POST", "/api/manage/privacy", { ...creds, type: "access" });
+  assert.equal(reqd.status, 201);
+  assert.match(reqd.body.ref, /^DR-/);
+  assert.equal(reqd.body.privacy.downloadReady, false);
+  assert.equal((await api("POST", "/api/manage/privacy", { ...creds, type: "access" })).status, 409, "one open request per type");
+  const row = db.prepare("SELECT auto_at, due_at FROM data_requests WHERE ref = ?").get(reqd.body.ref);
+  const days = (Date.parse(row.auto_at) - Date.now()) / 86_400_000;
+  assert.ok(days > 2.9 && days <= 3, "completes automatically after 3 days");
+  // Three days pass with no action from the clinic; the next login completes it.
+  db.prepare("UPDATE data_requests SET auto_at = datetime('now','-1 minute') WHERE ref = ?").run(reqd.body.ref);
+  const look = await api("POST", "/api/manage/lookup", creds);
+  assert.equal(look.body.privacy.downloadReady, true);
+  assert.equal(db.prepare("SELECT completed_by FROM data_requests WHERE ref = ?").get(reqd.body.ref).completed_by, "auto");
   const exp = await api("POST", "/api/manage/export", creds);
   assert.equal(exp.status, 200);
   assert.equal(exp.body.patient.name, "Neha Gupta");
   assert.equal(exp.body.appointments[0].reason, "Coccyx pain", "export is decrypted for the patient");
+});
+
+test("correction requests are applied by staff or automatically; erasure waits for upcoming visits", async () => {
+  const body = { name: "Ritu Sharma", phone: "9812300077", clinic: "online", ...slot(6), consent: true };
+  const ok = await api("POST", "/api/appointments", body);
+  const creds = { ref: ok.body.appointment.ref, phone: "9812300077" };
+  assert.equal((await api("POST", "/api/manage/privacy", { ...creds, type: "correction", changes: {} })).status, 400);
+  const corr = await api("POST", "/api/manage/privacy", { ...creds, type: "correction", changes: { name: "Ritu S. Sharma", email: "ritu@example.com" } });
+  assert.equal(corr.status, 201);
+  const pid = db.prepare("SELECT patient_id FROM data_requests WHERE ref = ?").get(corr.body.ref).patient_id;
+  assert.equal(db.prepare("SELECT name FROM patients WHERE id = ?").get(pid).name, "Ritu Sharma", "not applied before the clinic or the timer acts");
+  // Staff complete it from the dashboard.
+  assert.equal((await login()).status, 200);
+  const list = await api("GET", "/api/admin/privacy/requests", null, { auth: true });
+  const item = list.body.requests.find((r) => r.ref === corr.body.ref);
+  assert.deepEqual(item.changes, { name: "Ritu S. Sharma", email: "ritu@example.com" });
+  assert.equal((await api("PATCH", `/api/admin/privacy/requests/${item.id}`, { status: "completed" }, { auth: true })).status, 200);
+  assert.equal(db.prepare("SELECT name, email FROM patients WHERE id = ?").get(pid).name, "Ritu S. Sharma");
+
+  // Erasure: an upcoming appointment stops the automatic step and flags it for staff.
+  const er = await api("POST", "/api/manage/privacy", { ...creds, type: "erasure" });
+  assert.equal(er.status, 201);
+  db.prepare("UPDATE data_requests SET auto_at = datetime('now','-1 minute') WHERE ref = ?").run(er.body.ref);
+  await api("POST", "/api/manage/lookup", creds);
+  const after = db.prepare("SELECT status, auto_at, resolution FROM data_requests WHERE ref = ?").get(er.body.ref);
+  assert.equal(after.status, "open");
+  assert.equal(after.auto_at, null);
+  assert.match(after.resolution, /Needs staff/);
 });
 
 test("account lockout after repeated wrong passwords", async () => {
@@ -103,7 +146,7 @@ test("privacy request reaches the clinic; erasure removes identity but keeps fin
   assert.equal(req.status, 201);
   assert.match(req.body.ref, /^DR-/);
   const list = await api("GET", "/api/admin/privacy/requests", null, { auth: true });
-  const r = list.body.requests[0];
+  const r = list.body.requests.find((x) => x.ref === req.body.ref);
   assert.equal(r.details, "Please delete my data");
   assert.ok(r.patient_id, "matched to the patient by phone");
 

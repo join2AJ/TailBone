@@ -5,7 +5,7 @@ import {
   LOCKOUT, newTotpSecret, verifyTotp, totpUri, securityLog,
 } from "../auth.js";
 import { config } from "../config.js";
-import { exportPatientData, erasePatient, readDataRequest, recordConsent, NOTICE_VERSION } from "../privacy.js";
+import { exportPatientData, erasePatient, readDataRequest, recordConsent, completeDataRequest, NOTICE_VERSION } from "../privacy.js";
 import { createBackup, listBackups } from "../backup.js";
 import { DEMO_ADMIN } from "../demo.js";
 import { FEATURES, PERMISSIONS, DEFAULT_PERMISSIONS, getFeatures, saveFeatures, permissionsOf, sanitizePermissions } from "../features.js";
@@ -16,7 +16,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { clinicNow, addDays, isDate } from "../time.js";
 import { encrypt, decrypt } from "../crypto.js";
-import { getPolicy, savePolicy, refundQuote, policySummary } from "../policy.js";
+import { getPolicy, savePolicy, refundQuote, policySummary, policyHistory } from "../policy.js";
 import { paymentsEnabled, rupees } from "../payments.js";
 import { notify, readNotification, whatsappApiEnabled } from "../notify.js";
 import {
@@ -273,6 +273,13 @@ export function adminRoutes(db) {
     if (!row) throw new HttpError(404, "Request not found.");
     const status = ["open", "verifying", "completed", "rejected"].includes(req.body.status) ? req.body.status : row.status;
     const patientId = req.body.patientId ? id(req.body.patientId) : row.patient_id;
+    // Completing a download / correction / deletion request carries it out (same as the automatic step).
+    if (status === "completed" && ["access", "correction", "erasure"].includes(row.type) && patientId && ["open", "verifying"].includes(row.status)) {
+      if (patientId !== row.patient_id) db.prepare("UPDATE data_requests SET patient_id = ? WHERE id = ?").run(patientId, rid);
+      completeDataRequest(db, { ...row, patient_id: patientId }, { by: req.admin.name || req.admin.email, resolution: cleanText(req.body.resolution, 1000) });
+      securityLog(db, req, "privacy_request_completed", row.ref);
+      return res.json({ ok: true });
+    }
     db.prepare(
       `UPDATE data_requests SET status = ?, resolution = ?, patient_id = ?,
          closed_at = CASE WHEN ? IN ('completed','rejected') THEN datetime('now') ELSE NULL END WHERE id = ?`,
@@ -553,16 +560,16 @@ export function adminRoutes(db) {
   r.get("/settings/policy", (req, res) => {
     const policy = getPolicy(db);
     if (req.admin.role !== "superadmin") delete policy.commission;
-    res.json({ policy, summary: policySummary(getPolicy(db)), paymentsEnabled: paymentsEnabled(), whatsappApi: whatsappApiEnabled() });
+    res.json({ policy, summary: policySummary(getPolicy(db)), history: policyHistory(db), paymentsEnabled: paymentsEnabled(), whatsappApi: whatsappApiEnabled() });
   });
 
   r.put("/settings/policy", (req, res) => {
     const input = { ...req.body };
     if (req.admin.role !== "superadmin") delete input.commission; // only the super admin sets the platform fee
-    const policy = savePolicy(db, input);
+    const policy = savePolicy(db, input, req.admin);
     if (req.admin.role !== "superadmin") delete policy.commission;
     securityLog(db, req, "settings_changed", "fees & policies");
-    res.json({ policy, summary: policySummary(policy) });
+    res.json({ policy, summary: policySummary(policy), history: policyHistory(db) });
   });
 
   // ---------- Payments report ----------
@@ -700,7 +707,11 @@ export function adminRoutes(db) {
   // ---------- Stories ----------
   r.get("/stories", (req, res) => {
     const status = ["pending", "approved", "rejected"].includes(req.query.status) ? req.query.status : "pending";
-    res.json({ stories: db.prepare("SELECT * FROM stories WHERE status = ? ORDER BY featured DESC, created_at DESC LIMIT 300").all(status) });
+    res.json({ stories: db.prepare(
+      `SELECT s.*, p.patient_code, a.appt_no FROM stories s
+       LEFT JOIN patients p ON p.id = s.patient_id LEFT JOIN appointments a ON a.id = s.appointment_id
+       WHERE s.status = ? ORDER BY s.featured DESC, s.created_at DESC LIMIT 300`,
+    ).all(status) });
   });
 
   r.post("/stories", (req, res) => {

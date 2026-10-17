@@ -33,7 +33,7 @@ Everything the Performance Max "Edit assets" screen asks for, ready to copy or u
 | **Lead form** | `leadForm` plus the privacy URL | ✅ |
 | **Call to action** | "Book now" (or leave on Automated) | ✅ |
 | **Search themes** (max 25) | 12 in `searchThemes` | ✅ |
-| **Locations** | Instead of all of India: **Bengaluru + 40 km** and **New Delhi + 40 km** (Gurugram and Noida included). Add **India** only in a separate campaign for online consultations. | Change |
+| **Locations** | Instead of all of India: **New Delhi + 40 km** (Gurugram and Noida included). The Bengaluru clinic has closed; add **Lucknow + 40 km** when that clinic opens. Add **India** only in a separate campaign for online consultations. | Change |
 | **Languages** | English **and Hindi** | Change |
 | **Audience signal** | Create a custom segment: "people who searched for" the search themes, plus the interests *Back pain*, *Pregnancy & new parents* and *IT professionals*. Upload your patient list as Customer Match **only with patient consent** (DPDP). | Add |
 | **Budget** | Google suggests ₹753 a day. Start at ₹500–750 a day for 2 weeks, then adjust using cost per booking. | – |
@@ -48,7 +48,7 @@ The new website does not yet send conversions to Google Ads. Until it does, Perf
 
 Performance Max favours real photos over graphics. Please send them in high resolution (straight from the phone, not via WhatsApp, which compresses them):
 - Dr Rajveer in the clinic (a plain background, a smile, a white coat or scrubs): **landscape and square**
-- the reception and treatment room in Bengaluru and Delhi (no patients, or only with written consent)
+- the reception and treatment room in Delhi (no patients, or only with written consent)
 - the clinic signboard and building entrance (helps people find you)
 - a consultation photo with a model or staff member (no real patient without consent)
 

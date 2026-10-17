@@ -23,7 +23,7 @@
   <text x="560" y="144" class="a-lbl">Recover &amp;</text><text x="560" y="166" class="a-lbl">prevent</text>
   <rect x="40" y="200" width="560" height="76" rx="16" class="a-row"/>
   <g opacity="0"><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.03;.22;.25;1" dur="10s" repeatCount="indefinite"/>
-    <text x="320" y="246" text-anchor="middle" class="a-t2">Your story, your reports and a careful examination</text></g>
+    <text x="320" y="246" text-anchor="middle" class="a-t2">Your story, your symptoms and a careful examination</text></g>
   <g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.25;.28;.47;.5;1" dur="10s" repeatCount="indefinite"/>
     <text x="320" y="246" text-anchor="middle" class="a-t2">Is the coccyx stiff, too mobile or out of place?</text></g>
   <g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.5;.53;.72;.75;1" dur="10s" repeatCount="indefinite"/>

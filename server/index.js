@@ -5,7 +5,7 @@ import { seedStories, getAppointment, releaseExpiredHolds } from "./services.js"
 import { runReminderJob } from "./notify.js";
 import { clinicNow, addDays } from "./time.js";
 import { createBackup, listBackups } from "./backup.js";
-import { runRetention } from "./privacy.js";
+import { runRetention, processDueRequests } from "./privacy.js";
 import path from "node:path";
 import { seedDemo } from "./demo.js";
 import { retryPendingSyncs } from "./gcal.js";
@@ -32,6 +32,7 @@ let demoSeededAt = Date.now();
 const jobs = setInterval(async () => {
   try {
     releaseExpiredHolds(db);
+    processDueRequests(db); // data requests nobody handled within 3 days
     await retryPendingSyncs(db, { getAppointment });
     if (config.demo && Date.now() - demoSeededAt > 24 * 3600_000) {
       seedDemo(db);

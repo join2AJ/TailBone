@@ -50,7 +50,7 @@ after(() => {
 
 test("lists slots and days for a clinic", async () => {
   const { date } = futureSlot();
-  const slots = await api("GET", `/api/slots?clinic=blr&date=${date}`);
+  const slots = await api("GET", `/api/slots?clinic=del&date=${date}`);
   assert.equal(slots.status, 200);
   assert.ok(slots.body.slots.length > 0);
   assert.ok(slots.body.slots.every((s) => s.available));
@@ -62,17 +62,17 @@ test("lists slots and days for a clinic", async () => {
 
 test("books, prevents double booking, and lets the patient manage it", async () => {
   const slot = futureSlot(4);
-  const booking = { name: "Asha Rao", phone: "98450 12345", clinic: "blr", ...slot, reason: "Pain when sitting" };
+  const booking = { name: "Asha Rao", phone: "98450 12345", clinic: "del", ...slot, reason: "Pain when sitting" };
   const created = await api("POST", "/api/appointments", booking);
   assert.equal(created.status, 201);
   const { ref } = created.body.appointment;
-  assert.match(ref, /^TB-[A-Z2-9]{6}$/);
+  assert.match(ref, /^TBA-\d{4}-\d{4}$/);
   assert.ok(created.body.whatsappUrl.startsWith("https://wa.me/"));
 
   const dup = await api("POST", "/api/appointments", { ...booking, name: "Someone Else", phone: "9000000000" });
   assert.equal(dup.status, 409);
 
-  const taken = await api("GET", `/api/slots?clinic=blr&date=${slot.date}`);
+  const taken = await api("GET", `/api/slots?clinic=del&date=${slot.date}`);
   assert.equal(taken.body.slots.find((s) => s.time === slot.time).available, false);
 
   const wrongPhone = await api("POST", "/api/manage/lookup", { ref, phone: "9999999999" });
@@ -88,17 +88,17 @@ test("books, prevents double booking, and lets the patient manage it", async () 
 
   const cancelled = await api("POST", "/api/manage/cancel", { ref, phone: "9845012345" });
   assert.equal(cancelled.body.appointment.status, "cancelled");
-  const free = await api("GET", `/api/slots?clinic=blr&date=${next.date}`);
+  const free = await api("GET", `/api/slots?clinic=del&date=${next.date}`);
   assert.equal(free.body.slots.find((s) => s.time === next.time).available, true);
 });
 
 test("rejects invalid bookings", async () => {
   const slot = futureSlot();
-  assert.equal((await api("POST", "/api/appointments", { name: "A", phone: "98450", clinic: "blr", ...slot })).status, 400);
-  assert.equal((await api("POST", "/api/appointments", { name: "Valid Name", phone: "9845011111", clinic: "blr", date: slot.date, time: "03:00" })).status, 409);
+  assert.equal((await api("POST", "/api/appointments", { name: "A", phone: "98450", clinic: "del", ...slot })).status, 400);
+  assert.equal((await api("POST", "/api/appointments", { name: "Valid Name", phone: "9845011111", clinic: "del", date: slot.date, time: "03:00" })).status, 409);
   const past = addDays(clinicNow().date, -1);
-  assert.equal((await api("POST", "/api/appointments", { name: "Valid Name", phone: "9845011111", clinic: "blr", date: past, time: slotsForDate(past)[0] })).status, 409);
-  assert.equal((await api("POST", "/api/appointments", { name: "Bot", phone: "9845011111", clinic: "blr", ...slot, website: "spam" })).status, 400);
+  assert.equal((await api("POST", "/api/appointments", { name: "Valid Name", phone: "9845011111", clinic: "del", date: past, time: slotsForDate(past)[0] })).status, 409);
+  assert.equal((await api("POST", "/api/appointments", { name: "Bot", phone: "9845011111", clinic: "del", ...slot, website: "spam" })).status, 400);
 });
 
 test("admin API requires sign-in and the fetch header", async () => {
@@ -147,7 +147,7 @@ test("blocked dates close booking for that clinic", async () => {
   assert.equal(slots.body.closed, true);
   const attempt = await api("POST", "/api/appointments", { name: "Neha Singh", phone: "9811100000", clinic: "del", ...slot });
   assert.equal(attempt.status, 409);
-  const otherClinic = await api("GET", `/api/slots?clinic=blr&date=${slot.date}`);
+  const otherClinic = await api("GET", `/api/slots?clinic=online&date=${slot.date}`);
   assert.equal(otherClinic.body.closed, false);
 });
 
@@ -168,8 +168,15 @@ test("patient stories: submit, moderate, publish", async () => {
 
   assert.equal((await api("POST", "/api/stories", { name: "Meera Iyer", rating: 5, body: "Too short", consent: true })).status, 400);
   assert.equal((await api("POST", "/api/stories", { name: "Meera Iyer", rating: 5, body: "x".repeat(40) })).status, 400);
-  const ok = await api("POST", "/api/stories", { name: "Meera Iyer", city: "Pune", rating: 5, title: "Back at my desk", body: "After two years of pain I can sit through a full workday again. Thank you!", consent: true });
+  const booked = await api("POST", "/api/appointments", { name: "Meera Iyer", phone: "9811155555", clinic: "online", date: futureSlot(13).date, time: slotsForDate(futureSlot(13).date)[3], consent: true });
+  assert.equal(booked.status, 201, JSON.stringify(booked.body));
+  const visit = booked.body.appointment;
+  const story0 = { name: "Meera Iyer", city: "Pune", rating: 5, title: "Back at my desk", body: "After two years of pain I can sit through a full workday again. Thank you!", consent: true };
+  assert.equal((await api("POST", "/api/stories", story0)).status, 400, "patient ID and appointment number are required");
+  assert.equal((await api("POST", "/api/stories", { ...story0, patientCode: visit.patientCode, apptNo: "TBA-0000-9999" })).status, 400, "they must belong together");
+  const ok = await api("POST", "/api/stories", { ...story0, patientCode: visit.patientCode.toLowerCase(), apptNo: visit.apptNo });
   assert.equal(ok.status, 201);
+  assert.ok(db.prepare("SELECT 1 FROM stories WHERE name = 'Meera Iyer' AND appointment_id IS NOT NULL").get(), "story is linked to the visit");
   assert.equal((await api("GET", "/api/stories?limit=60")).body.total, seeded, "pending stories stay hidden");
 
   const pending = await api("GET", "/api/admin/stories?status=pending", null, { auth: true });
@@ -195,4 +202,24 @@ test("instagram highlights accept only instagram post/reel links", async () => {
 test("demo sign-in does not exist outside demo mode", async () => {
   assert.equal((await api("POST", "/api/admin/demo-login")).status, 404);
   assert.equal((await api("GET", "/api/config")).body.demo, null);
+});
+
+test("clinic status and fee changes are recorded with time and author; closed clinics can't be booked", async () => {
+  const cfg = await api("GET", "/api/config");
+  const status = Object.fromEntries(cfg.body.clinics.map((c) => [c.id, c.status]));
+  assert.deepEqual(status, { blr: "closed", del: "open", online: "open", lko: "soon" });
+  assert.ok(cfg.body.policyUpdatedAt);
+  assert.equal((await api("GET", "/api/days?clinic=blr")).body.days.length, 0);
+  const slot = futureSlot(15);
+  assert.equal((await api("POST", "/api/appointments", { name: "Test Patient", phone: "9811177777", clinic: "blr", ...slot, consent: true })).status, 409);
+
+  const saved = await api("PUT", "/api/admin/settings/policy", { fees: { del: 900 }, followup: { fee: 500, windowDays: 7 }, clinics: { lko: "open" } }, { auth: true });
+  assert.equal(saved.status, 200);
+  const latest = saved.body.history[0];
+  assert.ok(latest.changes.includes("Fee New Delhi: ₹800 → ₹900"));
+  assert.ok(latest.changes.includes("Lucknow clinic: opening soon → open"));
+  assert.ok(latest.by && !Number.isNaN(Date.parse(latest.changedAt)));
+  assert.ok(saved.body.history.at(-1).changes.includes("Initial fees and rules"), "the original rules are kept too");
+  assert.equal((await api("PUT", "/api/admin/settings/policy", { clinics: { del: "closed", online: "closed", lko: "closed" } }, { auth: true })).status, 400, "something must stay open");
+  await api("PUT", "/api/admin/settings/policy", { fees: { del: 800 }, clinics: { lko: "soon" } }, { auth: true });
 });

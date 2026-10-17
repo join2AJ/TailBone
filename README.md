@@ -1,10 +1,12 @@
 # Tailbone Treatment Clinic
 
-The website and clinic system for [tailbonetreatment.com](https://tailbonetreatment.com/), the coccydynia clinic run by Dr Rajveer Singh in Bengaluru, New Delhi and online.
+The website and clinic system for [tailbonetreatment.com](https://tailbonetreatment.com/), the coccydynia clinic run by Dr Rajveer Singh in New Delhi and online (Lucknow opening soon; the Bengaluru clinic has closed).
 
 - **Patients** book real slots online, manage their booking, fill in progress check-ins and share their stories.
 - **The clinic** runs everything from a dashboard at `/admin`: appointments, follow-ups, patient records with pain charts, story moderation, Instagram highlights, holidays and exports.
 
+- **Clinics** can be set to open, closed or "opening soon" from the dashboard (Settings → Fees & policies). Every change to fees, clinics and rules is recorded with date, time and who made it, and each booking keeps the cancellation and reschedule rules in force when it was made.
+- **Data requests** (copy, correction, deletion) from My appointments go to the dashboard and complete automatically after 3 days if staff haven't acted.
 - **Every patient gets a permanent patient ID** (`TBP-00042`) and **every booking an appointment number** (`TBA-2610-0007`), a QR code and a printable appointment card.
 - **Google Calendar:** bookings sync to the doctor's calendar both ways (his busy times block slots), plus a private subscription link. See DEPLOY.md.
 - **Blog:** articles live as Markdown in `content/blog/`. Run `npm run build` to publish them to `/blog/`. Add a line `::anim sitting` (or `cushion`, `pregnancy`, `red-flags`, `visit-steps`) to place an animated explainer.

@@ -69,39 +69,40 @@ const paymentLine = (a) => {
 export function compose(event, a, base, extra = {}) {
   const first = a.patient_name.split(" ")[0];
   const where = CLINICS[a.clinic];
-  const manage = `${base}/manage.html?ref=${a.ref}`;
+  const no = a.appt_no || a.ref; // the appointment number is the patient's reference
+  const manage = `${base}/manage.html?ref=${no}`;
   const refund = extra.refund ? ` Refund: ${rupees(extra.refund.amount)} (${extra.refund.percent}%). It reaches the original payment method in 5–7 working days.` : "";
-  const who = `${a.patient_name} (+${a.patient_phone})`;
+  const who = `${a.patient_name}${a.patient_code ? ` ${a.patient_code}` : ""} (+${a.patient_phone})`;
   switch (event) {
     case "booked":
       return {
         patient: a.status === "confirmed"
-          ? `Hi ${first}, your appointment ${a.ref} at Tailbone Treatment Clinic is confirmed for ${when(a)} (${where.short}). ${paymentLine(a)} Manage or reschedule: ${manage}`
-          : `Hi ${first}, your booking ${a.ref} at Tailbone Treatment Clinic is received for ${when(a)} (${where.short}). ${paymentLine(a)} We'll confirm shortly. Manage or reschedule: ${manage}`,
-        doctor: `New booking ${a.ref}: ${who}, ${when(a)}, ${where.short}. ${a.visit_type === "followup" ? "Follow-up visit. " : ""}${paymentLine(a)}`,
+          ? `Hi ${first}, your appointment ${no} at Tailbone Treatment Clinic is confirmed for ${when(a)} (${where.short}). ${paymentLine(a)} Manage or reschedule: ${manage}`
+          : `Hi ${first}, your booking ${no} at Tailbone Treatment Clinic is received for ${when(a)} (${where.short}). ${paymentLine(a)} We'll confirm shortly. Manage or reschedule: ${manage}`,
+        doctor: `New booking ${no}: ${who}, ${when(a)}, ${where.short}. ${a.visit_type === "followup" ? "Follow-up visit. " : ""}${paymentLine(a)}`,
       };
     case "confirmed":
-      return { patient: `Hi ${first}, your appointment ${a.ref} is confirmed for ${when(a)} at our ${where.short} ${a.clinic === "online" ? "consultation (video link will be shared)" : `clinic, ${where.address}`}. Manage: ${manage}` };
+      return { patient: `Hi ${first}, your appointment ${no} is confirmed for ${when(a)} at our ${where.short} ${a.clinic === "online" ? "consultation (video link will be shared)" : `clinic, ${where.address}`}. Manage: ${manage}` };
     case "rescheduled":
       return extra.actor === "clinic"
-        ? { patient: `Hi ${first}, the clinic has moved your appointment ${a.ref} from ${extra.from} to ${when(a)} (${where.short}). If this doesn't suit you, reschedule or cancel free of charge: ${manage}` }
+        ? { patient: `Hi ${first}, the clinic has moved your appointment ${no} from ${extra.from} to ${when(a)} (${where.short}). If this doesn't suit you, reschedule or cancel free of charge: ${manage}` }
         : {
-          patient: `Hi ${first}, your appointment ${a.ref} is now ${when(a)} (${where.short}). Manage: ${manage}`,
-          doctor: `Rescheduled by patient: ${a.ref} ${who} moved from ${extra.from} to ${when(a)} (${where.short}).`,
+          patient: `Hi ${first}, your appointment ${no} is now ${when(a)} (${where.short}). Manage: ${manage}`,
+          doctor: `Rescheduled by patient: ${no} ${who} moved from ${extra.from} to ${when(a)} (${where.short}).`,
         };
     case "cancelled":
       return extra.actor === "clinic"
-        ? { patient: `Hi ${first}, we're sorry: the clinic had to cancel your appointment ${a.ref} on ${when(a)}.${refund || (a.amount_paid ? "" : "")} Book a new time: ${base}/book` }
+        ? { patient: `Hi ${first}, we're sorry: the clinic had to cancel your appointment ${no} on ${when(a)}.${refund || (a.amount_paid ? "" : "")} Book a new time: ${base}/book` }
         : {
-          patient: `Hi ${first}, your appointment ${a.ref} on ${when(a)} is cancelled.${refund} Book again any time: ${base}/book`,
-          doctor: `Cancelled by patient: ${a.ref} ${who}, ${when(a)}, ${where.short}.${extra.refund ? ` Refund ${rupees(extra.refund.amount)} (${extra.refund.percent}%) per policy.` : ""}${extra.reason ? ` Reason: ${extra.reason}` : ""}`,
+          patient: `Hi ${first}, your appointment ${no} on ${when(a)} is cancelled.${refund} Book again any time: ${base}/book`,
+          doctor: `Cancelled by patient: ${no} ${who}, ${when(a)}, ${where.short}.${extra.refund ? ` Refund ${rupees(extra.refund.amount)} (${extra.refund.percent}%) per policy.` : ""}${extra.reason ? ` Reason: ${extra.reason}` : ""}`,
         };
     case "no_show":
-      return { patient: `Hi ${first}, we missed you at your appointment ${a.ref} on ${when(a)}. As per our policy this visit isn't refundable. Book a new time: ${base}/book` };
+      return { patient: `Hi ${first}, we missed you at your appointment ${no} on ${when(a)}. As per our policy this visit isn't refundable. Book a new time: ${base}/book` };
     case "refunded":
-      return { patient: `Hi ${first}, a refund of ${rupees(extra.amount)} for booking ${a.ref} has been issued. It reaches the original payment method in 5–7 working days.` };
+      return { patient: `Hi ${first}, a refund of ${rupees(extra.amount)} for booking ${no} has been issued. It reaches the original payment method in 5–7 working days.` };
     case "reminder":
-      return { patient: `Hi ${first}, a reminder of your appointment ${a.ref} tomorrow, ${when(a)}, ${a.clinic === "online" ? "online (video link will be shared)" : `at ${where.address}`}. Need to change it? ${manage}` };
+      return { patient: `Hi ${first}, a reminder of your appointment ${no} tomorrow, ${when(a)}, ${a.clinic === "online" ? "online (video link will be shared)" : `at ${where.address}`}. Need to change it? ${manage}` };
     default:
       throw new Error(`Unknown notification event ${event}`);
   }

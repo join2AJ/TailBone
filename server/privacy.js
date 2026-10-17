@@ -103,12 +103,87 @@ export function runRetention(db, now = new Date()) {
 }
 
 // ---------- Rights requests ----------
-export function createDataRequest(db, { type, name, phone, email, details, patientId }) {
+// Requests made from "My appointments" (identity already checked by appointment number + phone) go to the
+// dashboard. Staff can complete them at any time; if nobody has acted after AUTO_DAYS they are completed
+// automatically. Patients are told it takes up to PROMISE_DAYS.
+export const AUTO_DAYS = 3;
+export const PROMISE_DAYS = 7;
+export const SELF_SERVICE_TYPES = ["access", "correction", "erasure"];
+const DOWNLOAD_VALID_DAYS = 30;
+
+export function createDataRequest(db, { type, name, phone, email, details, patientId, changes = null, selfService = false }) {
   const ref = `DR-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
-  const due = new Date(Date.now() + REQUEST_DAYS * 86_400_000).toISOString().slice(0, 10);
-  db.prepare("INSERT INTO data_requests (ref, type, name, phone, email, details, patient_id, due_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-    .run(ref, type, name, phone || null, email || null, encrypt(details || ""), patientId ?? null, due);
+  const days = selfService ? PROMISE_DAYS : REQUEST_DAYS;
+  const due = new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
+  const autoAt = selfService ? new Date(Date.now() + AUTO_DAYS * 86_400_000).toISOString() : null;
+  db.prepare("INSERT INTO data_requests (ref, type, name, phone, email, details, patient_id, due_at, auto_at, changes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .run(ref, type, name, phone || null, email || null, encrypt(details || ""), patientId ?? null, due, autoAt, changes ? encrypt(JSON.stringify(changes)) : null);
   return { ref, due };
 }
 
-export const readDataRequest = (r) => r && { ...r, details: decrypt(r.details) };
+export const readDataRequest = (r) => r && {
+  ...r,
+  details: decrypt(r.details),
+  changes: r.changes ? JSON.parse(decrypt(r.changes) || "null") : null,
+};
+
+const httpError = (status, message) => Object.assign(new Error(message), { status });
+
+/**
+ * Carry out a request: corrections are applied, erasure removes the patient's personal data, and an
+ * access request makes "Download my data" available on the patient's page.
+ */
+export function completeDataRequest(db, row, { by = "auto", resolution = "" } = {}) {
+  const req = readDataRequest(row);
+  if (!["open", "verifying"].includes(req.status)) return req;
+  let done = resolution;
+  if (req.patient_id && req.type === "correction" && req.changes) {
+    const c = req.changes;
+    if (c.phone) {
+      const clash = db.prepare("SELECT 1 FROM patients WHERE phone = ? AND id != ?").get(c.phone, req.patient_id);
+      if (clash) throw httpError(409, "Another patient record already uses that phone number. Please check with the patient.");
+    }
+    db.prepare("UPDATE patients SET name = COALESCE(?, name), email = COALESCE(?, email), phone = COALESCE(?, phone) WHERE id = ?")
+      .run(c.name || null, c.email || null, c.phone || null, req.patient_id);
+    done ||= "Details corrected.";
+  } else if (req.patient_id && req.type === "erasure") {
+    erasePatient(db, req.patient_id); // refuses while appointments are still upcoming
+    done ||= "Personal data erased.";
+  } else if (req.type === "access") {
+    done ||= "Data ready to download.";
+  }
+  db.prepare("UPDATE data_requests SET status = 'completed', completed_by = ?, resolution = ?, closed_at = datetime('now'), auto_at = NULL WHERE id = ?")
+    .run(by, done || "Completed.", req.id);
+  return { ...req, status: "completed" };
+}
+
+/** Complete requests whose automatic date has passed. Runs from the scheduler and on the patient's next visit. */
+export function processDueRequests(db, now = new Date(), patientId = null) {
+  const rows = db.prepare(
+    `SELECT * FROM data_requests WHERE status IN ('open','verifying') AND auto_at IS NOT NULL AND auto_at <= ?
+       AND (? IS NULL OR patient_id = ?)`,
+  ).all(now.toISOString(), patientId, patientId);
+  let done = 0;
+  for (const row of rows) {
+    try {
+      completeDataRequest(db, row, { by: "auto" });
+      done++;
+    } catch (err) {
+      // Needs a person (e.g. an upcoming appointment blocks erasure): stop auto-processing and say why.
+      db.prepare("UPDATE data_requests SET auto_at = NULL, resolution = ? WHERE id = ?").run(`Needs staff: ${err.message}`, row.id);
+    }
+  }
+  return done;
+}
+
+/** What the patient sees about their own requests on "My appointments". */
+export function patientRequests(db, patientId) {
+  const rows = db.prepare("SELECT ref, type, status, due_at, created_at, closed_at, resolution FROM data_requests WHERE patient_id = ? ORDER BY id DESC LIMIT 10").all(patientId);
+  const downloadReady = !!db.prepare(
+    `SELECT 1 FROM data_requests WHERE patient_id = ? AND type = 'access' AND status = 'completed' AND closed_at >= datetime('now', ?)`,
+  ).get(patientId, `-${DOWNLOAD_VALID_DAYS} days`);
+  return {
+    downloadReady,
+    requests: rows.map((r) => ({ ref: r.ref, type: r.type, status: r.status, due: r.due_at, createdAt: r.created_at, closedAt: r.closed_at })),
+  };
+}

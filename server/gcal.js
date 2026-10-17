@@ -68,11 +68,14 @@ const shortName = (name) => {
 
 export function eventFor(a, base = config.siteUrl) {
   const where = CLINICS[a.clinic];
+  const mode = a.clinic === "online" ? "ONLINE video" : `IN CLINIC ${where.short}`;
   return {
-    summary: `${a.status === "pending" ? "(Pending) " : ""}${a.appt_no} · ${shortName(a.patient_name)} · ${where.short}`,
+    summary: `${a.status === "pending" ? "(Pending) " : ""}${mode} · ${a.appt_no} · ${a.patient_code} · ${shortName(a.patient_name)}`,
     location: a.clinic === "online" ? "Online (video call)" : where.address,
     description: [
-      `Appointment ${a.appt_no} · Patient ${a.patient_code}`,
+      `Appointment no.: ${a.appt_no}`,
+      `Patient ID: ${a.patient_code}`,
+      `Type: ${a.clinic === "online" ? "Online video consultation" : `In person at the ${where.name}`}`,
       `${a.visit_type === "followup" ? "Follow-up" : "New"} visit · status: ${a.status}`,
       base ? `Open in dashboard: ${base}/admin#/appointments` : "",
     ].filter(Boolean).join("\n"),
@@ -192,7 +195,7 @@ export function googleCalendarLink(a, base = config.siteUrl) {
     action: "TEMPLATE",
     text: `Tailbone Treatment: ${where.name}`,
     dates: `${utc(a.date, a.time)}/${utc(a.date, endTime(a.time))}`,
-    details: `Appointment ${a.appt_no} · Patient ID ${a.patient_code}\nBooking code ${a.ref}${base ? `\nManage: ${base}/manage.html?ref=${a.ref}` : ""}`,
+    details: `Appointment no. ${a.appt_no} · Patient ID ${a.patient_code}${base ? `\nManage: ${base}/manage.html?ref=${a.appt_no}` : ""}`,
     location: where.address,
     ctz: config.timezone,
   });

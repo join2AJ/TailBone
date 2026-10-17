@@ -12,7 +12,7 @@ tailbone.netlify.app
 │                         key facts, red flags and sources (Cleveland Clinic, NHS)
 ├── /treatment            How a visit works (4 steps) · why patients choose us · Instagram videos
 ├── /doctor               Dr Rajveer Singh: photo, BPT + Fellowship (Apollo, Chennai), conditions treated, stories
-├── /locations            Clinics: Bengaluru · New Delhi · Online tabs, maps, opening hours
+├── /locations            Clinics: New Delhi · Online · Lucknow (opening soon) · Bengaluru (closed) tabs, map, hours
 ├── /faq                  Frequently asked questions
 ├── /book                 Book an appointment
 │     ├── live slots → pay (Razorpay, if on) → appointment no. (TBA-YYMM-####), patient ID (TBP-#####),
@@ -26,7 +26,8 @@ tailbone.netlify.app
 ├── /manage.html          My appointments (booking reference + phone)
 │     ├── printable appointment card with QR code, IDs and Add to Google Calendar
 │     ├── reschedule / cancel (shows the refund before confirming)
-│     └── your data: download it, WhatsApp updates on/off, correct or delete
+│     └── your data: request a copy, a correction or deletion (goes to the clinic; done by staff or
+│         automatically after 3 days, promised within 7) · WhatsApp updates on/off
 ├── /checkin.html?t=…     Follow-up check-in from a WhatsApp link (pain 0–10, better/same/worse)
 ├── /policies.html        Terms, fees, cancellation & refund policy
 ├── /privacy.html         Privacy notice (DPDP / GDPR) + data-rights request form
@@ -52,7 +53,8 @@ tailbone.netlify.app
 ├── #/instagram           Choose the reels and posts shown on /treatment
 ├── #/payments            Collected · refunded · net · doctor's share / platform fee
 ├── #/privacy             Data-rights requests with 30-day deadlines
-├── #/settings            My password and 2FA · fees and refund rules · holidays · CSV export (by permission)
+├── #/settings            My password and 2FA · clinics (open / closed / soon), fees and refund rules with change history ·
+│                         holidays · CSV export (by permission)
 │                         · Calendar: Google sync status, subscription link (copy / rotate)
 │                         + commission split, backups, security log (super admin only)
 └── #/control             ★ Super admin only: switch website features on or off · add, disable or reset users · choose each admin's sections

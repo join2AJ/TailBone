@@ -13,7 +13,7 @@
   <meta property="og:image" content="https://tailbone.netlify.app/assets/img/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Tailbone Treatment Clinic: sit down again without the pain. Bengaluru, New Delhi, online.">
+  <meta property="og:image:alt" content="Tailbone Treatment Clinic: sit down again without the pain. New Delhi and online.">
   <meta property="og:site_name" content="Tailbone Treatment Clinic">
   <meta name="twitter:card" content="summary_large_image">
   <meta property="og:title" content="My Appointments | Tailbone Treatment">
@@ -36,13 +36,13 @@
       <section class="card" id="lookupCard">
         <span class="eyebrow">My appointments</span>
         <h1>Manage your booking</h1>
-        <p class="muted">Enter your booking reference and the phone number you booked with. You'll find the reference on your confirmation.</p>
+        <p class="muted">Enter your appointment number (your reference, e.g. TBA-2610-0007) and the phone number you booked with. You'll find it on your confirmation.</p>
         <div class="alert alert--warn" id="serverNotice" hidden>Online booking management is being connected. Meanwhile, to change or cancel an appointment, call or WhatsApp the clinic on +91&nbsp;98866&nbsp;88323.</div>
         <div class="alert alert--error" id="lookupErr" hidden></div>
         <form class="form" id="lookupForm" novalidate>
           <div class="field">
-            <label for="ref">Booking reference</label>
-            <input type="text" id="ref" name="ref" required placeholder="TB-XXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <label for="ref">Appointment number</label>
+            <input type="text" id="ref" name="ref" required placeholder="TBA-2610-0007" autocomplete="off" autocapitalize="characters" spellcheck="false">
           </div>
           <div class="field">
             <label for="phone">Phone number</label>
@@ -72,7 +72,7 @@
             <dl class="kv" id="cardDetails"></dl>
             <div class="appt-card__qr" id="cardQr" role="img" aria-label="QR code that opens this booking"></div>
           </div>
-          <p class="small muted appt-card__foot">+91&nbsp;98866&nbsp;88323 · contact@tailbonetreatment.com · Please arrive 10 minutes early and bring any X-ray or MRI reports.</p>
+          <p class="small muted appt-card__foot">+91&nbsp;98866&nbsp;88323 · contact@tailbonetreatment.com · Please arrive 10 minutes early.</p>
           <div class="row-gap appt-card__actions">
             <button type="button" class="btn btn--ghost btn--sm" id="printCard">Print / save as PDF</button>
             <a class="btn btn--ghost btn--sm" id="cardGcal" href="https://calendar.google.com" target="_blank" rel="noopener" hidden>Add to Google Calendar</a>
@@ -118,11 +118,26 @@
         <div class="privacy-box" style="margin-top:2rem">
           <h2 class="h3">Your data &amp; privacy</h2>
           <label class="check"><input type="checkbox" id="waToggle"> Send me appointment updates and reminders on WhatsApp</label>
-          <div class="row-gap" style="margin-top:.8rem">
-            <button class="btn btn--ghost btn--sm" id="exportBtn" type="button">Download my data</button>
-            <a class="btn btn--ghost btn--sm" href="privacy.html?request=correction#request">Correct my data</a>
-            <a class="btn btn--ghost btn--sm" href="privacy.html?request=erasure#request">Delete my data</a>
+          <div class="row-gap privacy-actions">
+            <button class="btn btn--primary btn--sm" id="exportBtn" type="button" hidden>Download my data</button>
+            <button class="btn btn--ghost btn--sm" id="accessBtn" type="button">Request a copy of my data</button>
+            <button class="btn btn--ghost btn--sm" id="correctBtn" type="button">Correct my data</button>
+            <button class="btn btn--ghost btn--sm" id="eraseBtn" type="button">Delete my data</button>
           </div>
+          <form class="form privacy-panel" id="correctPanel" hidden novalidate>
+            <p class="small">Fill in only what needs correcting.</p>
+            <div class="field"><label for="cName">Full name</label><input id="cName" name="name" autocomplete="name" maxlength="120"></div>
+            <div class="field"><label for="cEmail">Email</label><input id="cEmail" name="email" type="email" autocomplete="email" maxlength="200"></div>
+            <div class="field"><label for="cPhone">New phone number</label><input id="cPhone" name="phone" type="tel" autocomplete="tel" maxlength="20"></div>
+            <div class="field"><label for="cNote">Anything else to correct? <span class="muted">(optional)</span></label><textarea id="cNote" name="note" rows="2" maxlength="1000"></textarea></div>
+            <div class="row-gap"><button class="btn btn--primary btn--sm" type="submit">Send correction request</button><button class="btn btn--ghost btn--sm" type="button" id="closeCorrect">Close</button></div>
+          </form>
+          <div class="privacy-panel" id="erasePanel" hidden>
+            <p class="small"><strong>Delete my data:</strong> your name, contact details and health notes will be removed. Payment records are kept without your name, because tax law requires it. Upcoming appointments must be cancelled first. After deletion, this page will no longer find your booking.</p>
+            <div class="row-gap"><button class="btn btn--danger btn--sm" type="button" id="confirmErase">Send deletion request</button><button class="btn btn--ghost btn--sm" type="button" id="closeErase">Close</button></div>
+          </div>
+          <ul class="req-list" id="requestList" hidden></ul>
+          <p class="small muted">Requests go to the clinic and are completed within 7 days. You'll see the result here the next time you look up your booking.</p>
           <p class="small muted" style="margin-top:.6rem">See our <a href="privacy.html">privacy notice</a> for how we use and protect your information.</p>
         </div>
 
@@ -145,8 +160,9 @@
       </div>
       <div>
         <h2 class="footer__title">Clinics</h2>
-        <address class="footer__clinic"><strong>Bengaluru</strong>No. 213, 9th Cross, 2nd Phase, JP Nagar, Bengaluru<a href="https://www.google.com/maps/search/?api=1&amp;query=Trinity+Diagnostic+Imaging+Research+Centre+9th+Cross+2nd+Phase+JP+Nagar+Bengaluru" target="_blank" rel="noopener">Directions ↗</a></address>
         <address class="footer__clinic"><strong>New Delhi</strong>150A/09, Shanti Apartment, Kishangarh, Vasant Kunj, New Delhi 110070<a href="https://www.google.com/maps/search/?api=1&amp;query=Shanti+Apartment+Kishangarh+Vasant+Kunj+New+Delhi+110070" target="_blank" rel="noopener">Directions ↗</a></address>
+        <address class="footer__clinic"><strong>Lucknow</strong>Opening soon</address>
+        <address class="footer__clinic"><strong>Online</strong>Video consultations, anywhere</address>
       </div>
       <div>
         <h2 class="footer__title">Opening hours</h2>
@@ -155,7 +171,7 @@
           <li><span>Saturday</span><span>10:00 – 15:00</span></li>
           <li><span>Sunday</span><span>08:00 – 15:00</span></li>
         </ul>
-        <p class="footer__note">Both clinics. Video consultations by appointment.</p>
+        <p class="footer__note">New Delhi clinic. Video consultations by appointment.</p>
       </div>
       <div>
         <h2 class="footer__title">Useful links</h2>

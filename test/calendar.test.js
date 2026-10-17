@@ -62,7 +62,8 @@ test("booking gets a patient ID, appointment number, QR code and a calendar even
   assert.ok(booked.googleCalendarUrl.startsWith("https://calendar.google.com/calendar/render?action=TEMPLATE"));
   await settle();
   const [ev] = [...events.values()];
-  assert.ok(ev.summary.includes(booked.apptNo) && ev.summary.includes("Ritu M."), ev.summary);
+  assert.ok(ev.summary.includes(booked.apptNo) && ev.summary.includes(booked.patientCode) && ev.summary.includes("Ritu M.") && ev.summary.includes("IN CLINIC New Delhi"), ev.summary);
+  assert.ok(ev.description.includes(`Patient ID: ${booked.patientCode}`) && ev.description.includes("In person at the New Delhi clinic"));
   assert.ok(!JSON.stringify(ev).includes("9822000001"), "no phone numbers in calendar events");
 
   // A second booking by the same patient keeps the patient ID and gets the next appointment number.
@@ -87,10 +88,10 @@ test("the doctor's own busy time blocks that slot on the website", async () => {
   const s = slot(9, 0);
   busy = [{ start: `${s.date}T${s.time}:00+05:30`, end: `${s.date}T${s.time.slice(0, 2)}:30:00+05:30` }];
   clearBusyCache();
-  const slots = await call("GET", `/api/slots?clinic=blr&date=${s.date}`);
+  const slots = await call("GET", `/api/slots?clinic=del&date=${s.date}`);
   assert.equal(slots.body.slots[0].available, false);
   assert.equal(slots.body.slots[1].available, true);
-  const res = await call("POST", "/api/appointments", { name: "Busy Test", phone: "9822000002", clinic: "blr", ...s, consent: true });
+  const res = await call("POST", "/api/appointments", { name: "Busy Test", phone: "9822000002", clinic: "del", ...s, consent: true });
   assert.equal(res.status, 409);
   busy = [];
 });
