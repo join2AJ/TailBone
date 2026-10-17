@@ -295,9 +295,38 @@
   const prettyDay = (date, opts) => new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", opts);
   const prettyTime = (t) => { const [h, m] = t.split(":").map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
 
+  // ---- Request mode: used when the booking server isn't reachable (e.g. static hosting) ----
+  // The form keeps working with days/times from the opening hours, and sends the request on WhatsApp.
+  let offline = false;
+  const WA_GREETING = "Hi Dr Rajveer, got your details from your website. I would like to book an appointment.";
+  const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const localDays = () => {
+    const out = [];
+    const start = new Date();
+    for (let i = 0; i < 21; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const free = localSlots(isoDay(d)).filter((x) => x.available).length;
+      out.push({ date: isoDay(d), free });
+    }
+    return out;
+  };
+  const localSlots = (date) => {
+    const day = new Date(`${date}T00:00:00`).getDay();
+    const [open, close] = HOURS[day];
+    const { day: todayIdx, minutes } = istNow();
+    const isToday = date === isoDay(new Date()) && todayIdx === day;
+    const out = [];
+    for (let m = open * 60; m + 30 <= close * 60; m += 30) {
+      const t = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+      out.push({ time: t, available: !isToday || m >= minutes + 60 });
+    }
+    return out;
+  };
   const showFallback = () => {
-    form.hidden = true;
-    $("#bookingFallback").hidden = false;
+    if (offline) return;
+    offline = true;
+    $("#policyNote").hidden = true;
+    updateButton();
   };
 
   // Fees and policy come from the server so the clinic can change them from the dashboard.
@@ -306,6 +335,11 @@
   const feeFor = (clinic) => (siteCfg ? siteCfg.fees[clinic] : 0);
 
   const updateButton = () => {
+    if (offline) {
+      bookBtn.textContent = "Send booking request on WhatsApp";
+      $("#bookHint").textContent = "Your request goes straight to Dr Rajveer on WhatsApp with these details. The clinic will confirm your time.";
+      return;
+    }
     const fee = feeFor(booking.clinic);
     bookBtn.textContent = siteCfg?.payOnline && fee ? `Pay ${rupee(fee)} & confirm` : "Confirm booking";
     $("#bookHint").textContent = siteCfg?.payOnline && fee
@@ -334,6 +368,7 @@
 
   api("/api/config").then((cfg) => {
     siteCfg = cfg;
+    if (cfg.demo) showDemoBar();
     const list = $("#policyList");
     [...cfg.policy.cancellation, cfg.policy.reschedule, cfg.policy.clinic].forEach((line) => {
       const li = document.createElement("li");
@@ -353,7 +388,9 @@
     updateSummary();
     slotGrid.innerHTML = '<p class="muted small">Loading times…</p>';
     try {
-      const { slots, closed } = await api(`/api/slots?clinic=${booking.clinic}&date=${booking.date}`);
+      const { slots, closed } = offline
+        ? { slots: localSlots(booking.date), closed: false }
+        : await api(`/api/slots?clinic=${booking.clinic}&date=${booking.date}`).catch(() => { showFallback(); return { slots: localSlots(booking.date), closed: false }; });
       slotGrid.innerHTML = "";
       const open = slots.filter((s) => s.available);
       if (closed || !open.length) {
@@ -388,7 +425,9 @@
     dayStrip.innerHTML = '<span class="skeleton"></span>'.repeat(6);
     slotGrid.innerHTML = '<p class="muted small">Choose a day to see open times.</p>';
     try {
-      const { days } = await api(`/api/days?clinic=${booking.clinic}`);
+      const { days } = offline
+        ? { days: localDays() }
+        : await api(`/api/days?clinic=${booking.clinic}`).catch(() => { showFallback(); return { days: localDays() }; });
       dayStrip.innerHTML = "";
       days.forEach((d) => {
         const b = document.createElement("button");
@@ -398,7 +437,7 @@
         b.setAttribute("role", "option");
         b.setAttribute("aria-selected", "false");
         b.setAttribute("aria-label", `${prettyDay(d.date, { weekday: "long", day: "numeric", month: "long" })}, ${d.free ? `${d.free} times free` : "fully booked"}`);
-        b.innerHTML = `<small>${prettyDay(d.date, { weekday: "short" })}</small><strong>${prettyDay(d.date, { day: "numeric" })}</strong><em>${d.free ? `${d.free} free` : "Full"}</em>`;
+        b.innerHTML = `<small>${prettyDay(d.date, { weekday: "short" })}</small><strong>${prettyDay(d.date, { day: "numeric" })}</strong><em>${d.free ? (offline ? "Open" : `${d.free} free`) : (offline ? "Closed" : "Full")}</em>`;
         b.addEventListener("click", () => {
           booking.date = d.date;
           selectIn(dayStrip, b);
@@ -461,6 +500,29 @@
       return;
     }
     $("#consentErr").style.display = "none";
+    if (offline) {
+      const lines = [
+        WA_GREETING,
+        "",
+        `Name: ${String(fd.get("name")).trim()}`,
+        `Phone: ${String(fd.get("phone")).trim()}`,
+        `Clinic: ${CLINIC_NAMES[booking.clinic]}`,
+        `Preferred: ${prettyDay(booking.date, { weekday: "short", day: "numeric", month: "short" })}, ${prettyTime(booking.time)}`,
+      ];
+      if (fd.get("prefersFemale") === "on") lines.push("I'd prefer a female clinician.");
+      const reason = String(fd.get("reason") || "").trim();
+      if (reason) lines.push(`About my pain: ${reason}`);
+      const url = `https://wa.me/919886688323?text=${encodeURIComponent(lines.join("\n"))}`;
+      window.open(url, "_blank", "noopener");
+      showDone({
+        name: String(fd.get("name")).trim(),
+        when: `${prettyDay(booking.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}, ${prettyTime(booking.time)}`,
+        clinicName: CLINIC_NAMES[booking.clinic],
+        address: { blr: "No. 213, 9th Cross, 2nd Phase, JP Nagar, Bengaluru", del: "150A/09, Kishangarh, Vasant Kunj, New Delhi", online: "Video call (link shared on WhatsApp)" }[booking.clinic],
+        status: "requested",
+      }, url);
+      return;
+    }
     const payload = {
       clinic: booking.clinic, date: booking.date, time: booking.time,
       name: fd.get("name"), phone: fd.get("phone"), email: fd.get("email"),
@@ -488,6 +550,15 @@
       bookBtn.classList.remove("is-loading");
     }
   });
+
+  function showDemoBar() {
+    if ($("#demoBar")) return;
+    const bar = document.createElement("div");
+    bar.id = "demoBar";
+    bar.className = "demo-bar";
+    bar.innerHTML = '<span><strong>Demo site</strong> · sample data, resets daily · please don\'t enter real health details</span><span class="demo-bar__actions"><a href="/admin?demo=1">Try as doctor (admin)</a><a href="/manage.html?demo=1">Try as patient</a></span>';
+    document.body.prepend(bar);
+  }
 
   // ---- Razorpay Checkout ----
   let pendingPayment = null;
@@ -563,14 +634,20 @@
     form.hidden = true;
     const done = $("#bookingDone");
     done.hidden = false;
-    $("#doneRef").textContent = a.ref;
+    $("#doneRef").textContent = a.ref || "";
     const dl = $("#doneDetails");
     dl.innerHTML = "";
     const paid = a.payment?.status === "paid";
     const rows = [["Patient", a.name], ["When", a.when], ["Where", a.clinicName], ["Address", a.address]];
     if (a.feeText) rows.push(["Fee", paid ? `${a.feeText} paid ✓` : `${a.feeText} (pay at clinic)`]);
-    rows.push(["Status", a.status === "confirmed" ? "Confirmed ✓" : "Awaiting confirmation"]);
-    $("#bookingDone h3").textContent = a.status === "confirmed" ? "You're confirmed!" : "You're booked in!";
+    rows.push(["Status", a.status === "confirmed" ? "Confirmed ✓" : a.status === "requested" ? "Request sent on WhatsApp" : "Awaiting confirmation"]);
+    $("#bookingDone h3").textContent = a.status === "confirmed" ? "You're confirmed!" : a.status === "requested" ? "Request ready on WhatsApp" : "You're booked in!";
+    const requested = a.status === "requested";
+    $("#doneRef").hidden = requested;
+    $("#doneIcs").hidden = requested;
+    $("#doneManage").hidden = requested;
+    $("#bookingDone .muted").textContent = requested ? "WhatsApp opened with your details. Just press send, and the clinic will confirm your time." : "Keep this reference to manage your appointment.";
+    $("#doneWa").textContent = requested ? "Open WhatsApp again" : "Send to the clinic on WhatsApp";
     rows.forEach(([k, v]) => {
       const dt = document.createElement("dt"); dt.textContent = k;
       const dd = document.createElement("dd"); dd.textContent = v;

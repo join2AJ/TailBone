@@ -6,6 +6,7 @@ import { encrypt } from "../crypto.js";
 import { getPolicy, policySummary, refundQuote, rescheduleCheck } from "../policy.js";
 import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, verifyWebhookSignature, rupees } from "../payments.js";
 import { notify } from "../notify.js";
+import { DEMO_PATIENT } from "../demo.js";
 import { recordConsent, withdrawConsent, exportPatientData, createDataRequest, NOTICE_VERSION, CONSENT_PURPOSES } from "../privacy.js";
 import {
   HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment,
@@ -57,6 +58,7 @@ export function publicRoutes(db) {
       payOnline: paymentsEnabled() && policy.payments.mode === "online",
       policy: policySummary(policy),
       privacy: { noticeVersion: NOTICE_VERSION, purposes: CONSENT_PURPOSES },
+      demo: config.demo ? { patient: { ref: DEMO_PATIENT.ref, phone: DEMO_PATIENT.phone } } : null,
     });
   });
 

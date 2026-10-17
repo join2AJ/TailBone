@@ -24,12 +24,17 @@ function loadSecret() {
   return fs.readFileSync(file, "utf8").trim();
 }
 
+// DEMO_MODE=true runs a public demo: separate database with sample data (reset daily), one-click
+// demo logins, and no real payments or messages. Never point a demo at the real database.
+const demo = process.env.DEMO_MODE === "true";
+
 export const config = {
+  demo,
   root: ROOT,
   publicDir: path.join(ROOT, "public"),
   port: Number(process.env.PORT) || 3000,
   isProd: process.env.NODE_ENV === "production",
-  dbFile: process.env.DB_FILE || path.join(dataDir, "tailbone.db"),
+  dbFile: demo ? path.join(dataDir, "demo.db") : process.env.DB_FILE || path.join(dataDir, "tailbone.db"),
   sessionSecret: loadSecret(),
   sessionHours: 12,
   siteUrl: (process.env.SITE_URL || "").replace(/\/$/, ""),

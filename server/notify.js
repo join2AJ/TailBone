@@ -14,8 +14,9 @@ import { rupees } from "./payments.js";
 //   RESEND_API_KEY, EMAIL_FROM, DOCTOR_EMAIL      email the doctor about patient-side changes
 
 const env = (k) => process.env[k] || "";
-export const whatsappApiEnabled = () => !!(env("WHATSAPP_TOKEN") && env("WHATSAPP_PHONE_NUMBER_ID"));
-const emailEnabled = () => !!(env("RESEND_API_KEY") && env("EMAIL_FROM") && env("DOCTOR_EMAIL"));
+const isDemo = () => env("DEMO_MODE") === "true"; // never message real people from the demo
+export const whatsappApiEnabled = () => !isDemo() && !!(env("WHATSAPP_TOKEN") && env("WHATSAPP_PHONE_NUMBER_ID"));
+const emailEnabled = () => !isDemo() && !!(env("RESEND_API_KEY") && env("EMAIL_FROM") && env("DOCTOR_EMAIL"));
 
 // ---------- Channels (swappable for tests) ----------
 let senders = {

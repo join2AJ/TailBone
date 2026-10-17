@@ -87,6 +87,25 @@ Also choose the admin email and a strong password (12+ characters).
 
 ---
 
+## Optional: a public demo (one-click doctor and patient logins)
+Create a **second** Render service from the same repo (New → Web Service, or duplicate `tailbone-api`) with:
+
+| Key | Value |
+|---|---|
+| `DEMO_MODE` | `true` |
+| `NODE_ENV` | `production` |
+| `SITE_URL` | the demo address |
+| `TRUST_PROXY_HOPS` | `1` (or `2` if a Netlify site proxies to it) |
+
+No disk, Razorpay or WhatsApp keys are needed. The demo uses its own `demo.db` with fictional patients, resets every 24 hours, never sends real payments or messages, and disables password, 2FA and backup actions.
+
+- Doctor: `https://<demo-address>/admin?demo=1` (or the **Try the demo** button on the sign-in page)
+- Patient: `https://<demo-address>/manage.html?demo=1`
+
+**Never set `DEMO_MODE=true` on the real clinic service.** The demo account opens the dashboard without a password.
+
+Before the backend is connected, the Netlify site still takes bookings: the Book page sends a filled-in WhatsApp request ("Hi Dr Rajveer, got your details from your website…").
+
 ### Troubleshooting
 | Symptom | Fix |
 |---|---|

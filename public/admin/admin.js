@@ -91,6 +91,20 @@
     showLogin();
   });
 
+  // ---------- Demo mode (only when the server runs with DEMO_MODE=true) ----------
+  async function demoSignIn() {
+    const res = await fetch("/api/admin/demo-login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" } });
+    if (!res.ok) { toast((await res.json().catch(() => ({}))).error || "Demo unavailable."); return; }
+    history.replaceState(null, "", "/admin#/overview");
+    boot();
+  }
+  $("#demoLoginBtn").addEventListener("click", demoSignIn);
+  fetch("/api/config").then((r) => (r.ok ? r.json() : null)).then((cfg) => {
+    if (!cfg?.demo) return;
+    $("#demoLogin").hidden = false;
+    if (new URLSearchParams(location.search).get("demo") === "1" && !state.admin) demoSignIn();
+  }).catch(() => {});
+
   async function boot() {
     try {
       const me = await api("/me");
@@ -101,6 +115,13 @@
       $("#meAvatar").textContent = me.admin.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
       $("#loginView").hidden = true;
       $("#appView").hidden = false;
+      if (me.demo && !$("#demoBar")) {
+        const bar = document.createElement("div");
+        bar.id = "demoBar";
+        bar.className = "demo-bar";
+        bar.innerHTML = '<span><strong>Demo dashboard</strong> · sample patients · changes reset daily · no real messages or payments are sent</span><span class="demo-bar__actions"><a href="/manage.html?demo=1" target="_blank" rel="noopener">Open the patient view</a></span>';
+        $(".main").prepend(bar);
+      }
       route();
     } catch {
       showLogin();

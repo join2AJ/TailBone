@@ -212,6 +212,20 @@
   });
   const syncConsent = () => api("/api/manage/consent", creds).then(({ consents }) => { waToggle.checked = consents.includes("whatsapp_updates"); }).catch(() => {});
 
+  // ---- Demo mode: one-click sample patient (server must run with DEMO_MODE=true) ----
+  fetch("/api/config").then((r) => (r.ok ? r.json() : null)).then((cfg) => {
+    const demo = cfg?.demo?.patient;
+    if (!demo) return;
+    const bar = document.createElement("div");
+    bar.className = "demo-bar";
+    bar.innerHTML = '<span><strong>Demo site</strong> · sample booking · resets daily</span><span class="demo-bar__actions"><a href="/admin?demo=1">See the doctor\'s dashboard</a></span>';
+    document.body.prepend(bar);
+    $("#demoLogin").hidden = false;
+    const go = () => { $("#ref").value = demo.ref; $("#phone").value = demo.phone; lookup(demo.ref, demo.phone); };
+    $("#demoPatientBtn").addEventListener("click", go);
+    if (new URLSearchParams(location.search).get("demo") === "1") go();
+  }).catch(() => {});
+
   // Prefill the reference from the confirmation link.
   const ref = new URLSearchParams(location.search).get("ref");
   if (ref) {

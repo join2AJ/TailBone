@@ -1,0 +1,9 @@
+# Public pages may be indexed; private areas may not.
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /manage.html
+Disallow: /checkin.html
+
+Sitemap: https://tailbone.netlify.app/sitemap.xml

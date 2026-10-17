@@ -191,3 +191,8 @@ test("instagram highlights accept only instagram post/reel links", async () => {
   assert.equal(pub.body.media[0].url, "https://www.instagram.com/reel/Cx12345abc/");
   assert.equal(pub.body.media[0].kind, "reel");
 });
+
+test("demo sign-in does not exist outside demo mode", async () => {
+  assert.equal((await api("POST", "/api/admin/demo-login")).status, 404);
+  assert.equal((await api("GET", "/api/config")).body.demo, null);
+});

@@ -7,6 +7,7 @@ import {
 import { config } from "../config.js";
 import { exportPatientData, erasePatient, readDataRequest, recordConsent, NOTICE_VERSION } from "../privacy.js";
 import { createBackup, listBackups } from "../backup.js";
+import { DEMO_ADMIN } from "../demo.js";
 import path from "node:path";
 import fs from "node:fs";
 import { clinicNow, addDays, isDate } from "../time.js";
@@ -65,6 +66,16 @@ export function adminRoutes(db) {
     res.json({ admin: { id: admin.id, email: admin.email, name: admin.name } });
   });
 
+  // One-click demo sign-in. Exists only when DEMO_MODE=true (separate sample database).
+  r.post("/demo-login", loginLimit, (req, res) => {
+    if (!config.demo) throw new HttpError(404, "Not found.");
+    const admin = db.prepare("SELECT * FROM admins WHERE email = ?").get(DEMO_ADMIN.email);
+    if (!admin) throw new HttpError(503, "Demo data is being reset. Try again in a minute.");
+    createSessionCookie(res, admin);
+    securityLog(db, req, "demo_login", "", admin);
+    res.json({ admin: { id: admin.id, email: admin.email, name: admin.name } });
+  });
+
   r.post("/logout", (req, res) => {
     clearSessionCookie(res);
     res.json({ ok: true });
@@ -72,7 +83,15 @@ export function adminRoutes(db) {
 
   r.use(requireAdmin(db));
 
+  // In the demo, account-security actions are disabled so visitors can't lock each other out.
+  const DEMO_BLOCKED = [/^\/password$/, /^\/2fa\//, /^\/sessions\/revoke$/, /^\/backups/];
+  r.use((req, res, next) => {
+    if (config.demo && DEMO_BLOCKED.some((rx) => rx.test(req.path))) return res.status(403).json({ error: "Disabled in the demo." });
+    next();
+  });
+
   r.get("/me", (req, res) => res.json({
+    demo: config.demo,
     admin: { id: req.admin.id, email: req.admin.email, name: req.admin.name, twoFactor: !!req.admin.totp_enabled },
     clinics: Object.values(CLINICS),
     today: clinicNow().date,

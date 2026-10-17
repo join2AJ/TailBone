@@ -22,6 +22,11 @@
       <div class="field"><label for="loginPass">Password</label><input id="loginPass" type="password" autocomplete="current-password" required></div>
       <div class="field" id="codeField" hidden><label for="loginCode">6-digit code from your authenticator app</label><input id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" pattern="[0-9 ]*"></div>
       <button class="btn btn--primary btn--block btn--lg" type="submit">Sign in</button>
+      <div class="demo-login" id="demoLogin" hidden>
+        <span class="demo-login__or">or</span>
+        <button class="btn btn--ghost btn--block btn--lg" type="button" id="demoLoginBtn">▶ Try the demo as the doctor (one click)</button>
+        <p class="small muted center">Sample patients only. Data resets daily.</p>
+      </div>
       <a class="small muted center" href="/">← Back to website</a>
     </form>
   </section>

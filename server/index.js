@@ -7,8 +7,13 @@ import { clinicNow, addDays } from "./time.js";
 import { createBackup, listBackups } from "./backup.js";
 import { runRetention } from "./privacy.js";
 import path from "node:path";
+import { seedDemo } from "./demo.js";
 
 const db = openDb();
+if (config.demo) {
+  seedDemo(db);
+  console.log("DEMO MODE: sample data loaded into demo.db (resets every 24 h). No real payments or messages are sent.");
+}
 seedStories(db);
 if (seedAdmin(db)) console.log(`Created admin account for ${config.adminEmail}`);
 if (!db.prepare("SELECT COUNT(*) n FROM admins").get().n) {
@@ -19,11 +24,17 @@ const server = createApp(db).listen(config.port, () => {
   console.log(`Tailbone Treatment running on http://localhost:${config.port}`);
 });
 
+let demoSeededAt = Date.now();
+
 // Background jobs: release unpaid slot holds, and send tomorrow's reminders automatically
 // when the WhatsApp Cloud API is configured. Runs every 10 minutes; each reminder is sent once.
 const jobs = setInterval(async () => {
   try {
     releaseExpiredHolds(db);
+    if (config.demo && Date.now() - demoSeededAt > 24 * 3600_000) {
+      seedDemo(db);
+      demoSeededAt = Date.now();
+    }
     const { minutes, date } = clinicNow();
     if (minutes >= 9 * 60 && minutes < 21 * 60) await runReminderJob(db, getAppointment, addDays(date, 1));
     // Once a day (after 2 AM IST): encrypted backup, then retention clean-up.

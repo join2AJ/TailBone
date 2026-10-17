@@ -13,6 +13,7 @@ const keys = () => ({
 });
 
 export const paymentsEnabled = () => {
+  if (process.env.DEMO_MODE === "true") return false;
   const k = keys();
   return !!(k.keyId && k.keySecret);
 };
