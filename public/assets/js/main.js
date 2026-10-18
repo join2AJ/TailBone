@@ -1,6 +1,16 @@
 (() => {
   "use strict";
 
+  // Wake the booking server while the visitor reads, so booking is instant even if the server was idle.
+  // Once per browser tab; sends nothing about the visitor.
+  try {
+    if (!sessionStorage.getItem("tbWarm")) {
+      sessionStorage.setItem("tbWarm", "1");
+      const ping = () => fetch("/api/health", { cache: "no-store" }).catch(() => {});
+      ("requestIdleCallback" in window) ? requestIdleCallback(ping, { timeout: 3000 }) : setTimeout(ping, 1500);
+    }
+  } catch { /* storage unavailable */ }
+
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const WA_NUMBER = "919886688323";

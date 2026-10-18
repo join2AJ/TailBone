@@ -94,6 +94,7 @@ Newest first. Add one line per change.
 
 | Date | Change |
 |---|---|
+| 18 Oct 2026 | **No waiting for the booking server:** the moment someone opens any page (for example from an ad), the site quietly wakes the booking server in the background, so the booking form is ready by the time they reach it. |
 | 18 Oct 2026 | **Fixes after review:** after an update, browsers sometimes kept the old design for up to a day, so new sections (fact tiles, picture cards, footer) looked broken. Every page now always loads the latest design. The clinic status under the tabs is now one tidy line: a coloured Open / Opening soon / Closed label and a short note. If the privacy box isn't ticked, booking is blocked (as before); the box is now outlined in red with the message right under it. |
 | 18 Oct 2026 | **Dr Rajveer's own advice on the site:** four new articles from his videos (inward vs outward subluxation, when Kegel exercises make it worse, the risks of untrained "bone setting", amusement and water park rides), a new animated diagram of the tailbone shifting inward and outward, and "Dr Rajveer's five rules" on the Tailbone pain page. The cushion and pregnancy articles now include his advice, and the dynamic (sitting and standing) X-ray is explained consistently. |
 | 18 Oct 2026 | **Cleaner look:** blog cards now show a picture and the title (tap anywhere to open); inside an article the booking box and "Keep reading" are clearly separate; "Go deeper" is split into "Dr Rajveer explains" and "What the research shows" with picture cards; the fact tiles have icons and colours; clinic tabs are colour-coded (green open, amber opening soon, grey closed) with a one-line status; footer contact details line up properly. |
@@ -120,6 +121,8 @@ Newest first. Add one line per change.
 
 ### Before going live (owner actions)
 - [ ] **Connect the domain:** point tailbonetreatment.com to Netlify (website records only; leave email untouched). Then switch canonical links and the sitemap to the domain (`SITE_URL`) and run IndexNow.
+- [ ] **Before running ads: put the site on tailbonetreatment.com.** Point the domain to Netlify (the fast website, which never sleeps) and send ads there, not to the temporary netlify.app or onrender.com addresses. Old addresses already redirect to the new pages.
+- [ ] **Use Render's paid Starter plan (about US$7 a month) for the real clinic server, never the free plan.** The free plan goes to sleep (30–60 seconds to wake) and does not keep its data, so bookings would be lost. tailbone.onrender.com is only the demo.
 - [ ] **Connect the clinic server:** deploy it on Render, put its address in `netlify.toml` (`BACKEND_URL`), and set `ENCRYPTION_KEY` (keep a safe copy), `SITE_URL` and `PROXY_SECRET`. See the README.
 - [ ] **Razorpay:** live keys and webhook; decide online payment or pay at clinic.
 - [ ] **Google:**

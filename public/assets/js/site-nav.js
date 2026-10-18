@@ -30,4 +30,14 @@
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
   }
+
+  // Wake the booking server while the visitor reads, so booking is instant even if the server was idle.
+  // Once per browser tab; sends nothing about the visitor.
+  try {
+    if (!sessionStorage.getItem("tbWarm")) {
+      sessionStorage.setItem("tbWarm", "1");
+      const ping = () => fetch("/api/health", { cache: "no-store" }).catch(() => {});
+      ("requestIdleCallback" in window) ? requestIdleCallback(ping, { timeout: 3000 }) : setTimeout(ping, 1500);
+    }
+  } catch { /* storage unavailable */ }
 })();
