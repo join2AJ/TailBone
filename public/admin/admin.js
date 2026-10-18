@@ -457,6 +457,7 @@
       <div class="row-gap" style="margin:1rem 0">
         <a class="btn btn--ghost btn--sm" target="_blank" rel="noopener" href="${esc(a.links.chat)}">Open WhatsApp chat</a>
         <a class="btn btn--ghost btn--sm" href="#/patient/${a.patient_id}" id="toPatient">Patient profile</a>
+        ${a.amount_paid > 0 ? '<button class="btn btn--ghost btn--sm" type="button" id="receiptBtn">Receipt</button>' : ""}
         ${refundable > 0 ? '<button class="btn btn--ghost btn--sm" type="button" id="refundBtn">Issue refund</button>' : ""}
       </div>
       <form class="form" id="apptEdit">
@@ -503,6 +504,9 @@
         toast(res.refund ? `Saved. Refund ${rupees(res.refund.amount)}: ${res.refund.status}.` : "Saved.");
         route();
       } catch (ex) { toast(ex.message); }
+    });
+    $("#receiptBtn")?.addEventListener("click", async () => {
+      try { const { receipt } = await api(`/appointments/${id}/receipt`); closeModal(); window.TBReceipt.show(receipt); } catch (ex) { toast(ex.message); }
     });
     const rb = $("#refundBtn");
     if (rb) rb.addEventListener("click", async () => {

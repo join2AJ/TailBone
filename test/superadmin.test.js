@@ -213,3 +213,22 @@ test("the clinic can share documents with a patient, who downloads them from My 
   assert.equal((await api("super", "POST", `/api/admin/patients/${appt.patient_id}/erase`, { confirm: "Pooja Jain" })).status, 200);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM documents WHERE patient_id = ?").get(appt.patient_id).n, 0);
 });
+
+test("every paid booking gets a numbered receipt, for the patient and the clinic", async () => {
+  const booked = await api(null, "POST", "/api/appointments", { name: "Sanjay Gupta", phone: "9811100099", clinic: "del", ...slot(8, 4), consent: true });
+  const ref = booked.body.appointment.ref;
+  const appt = db.prepare("SELECT id, fee FROM appointments WHERE appt_no = ?").get(ref);
+  assert.equal((await api(null, "POST", "/api/manage/receipt", { ref, phone: "9811100099" })).status, 404, "nothing paid yet");
+  await api("super", "POST", `/api/admin/appointments/${appt.id}/received`, { method: "cash" });
+  const mine = await api(null, "POST", "/api/manage/receipt", { ref, phone: "9811100099" });
+  assert.equal(mine.status, 200);
+  const r = mine.body.receipt;
+  assert.match(r.receiptNo, /^TBR-\d{4}-\d{4}$/);
+  assert.equal(r.patient.name, "Sanjay Gupta");
+  assert.equal(r.paid, appt.fee);
+  assert.equal(r.method, "Cash at the clinic");
+  assert.equal(r.paymentId, "", "internal clinic-cash marker isn't shown as a payment ID");
+  const clinic = await api("super", "GET", `/api/admin/appointments/${appt.id}/receipt`);
+  assert.equal(clinic.body.receipt.receiptNo, r.receiptNo, "the number never changes");
+  assert.equal((await api(null, "POST", "/api/manage/receipt", { ref, phone: "9000000001" })).status, 404, "only with the right phone");
+});

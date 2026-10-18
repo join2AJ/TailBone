@@ -26,7 +26,7 @@ import {
   HttpError, parseBooking, createAppointment, getAppointment, rescheduleAppointment, createFollowup,
   defaultFollowupDate, cleanText, normalizePhone, validEmail, siteUrl, waLink, messages, checkinMessage, FOLLOWUP_TYPES,
   normalizeInstagramUrl, readAppt, cancelAppointment, issueRefund, logEvent, appointmentEvents, prettyDate, prettyTime,
-  calendarSync,
+  calendarSync, ensureReceiptNo, receiptFor,
 } from "../services.js";
 
 const STATUSES = ["pending", "confirmed", "completed", "cancelled", "no_show"];
@@ -537,7 +537,14 @@ export function adminRoutes(db) {
     db.prepare("UPDATE appointments SET payment_status = 'paid', amount_paid = fee, payment_id = ? WHERE id = ? AND payment_status IN ('pay_at_clinic','unpaid')")
       .run(`clinic-${req.body.method}`, appt.id);
     logEvent(db, appt.id, "clinic", req.admin.name, "paid", `${rupees(appt.fee)} received at the clinic (${method})`);
+    ensureReceiptNo(db, appt.id);
     res.json({ appointment: withLinks(getAppointment(db, appt.id), req) });
+  });
+
+  r.get("/appointments/:id/receipt", (req, res) => {
+    const receipt = receiptFor(db, getAppointment(db, id(req.params.id)));
+    if (!receipt) throw new HttpError(404, "Nothing has been paid for this appointment yet.");
+    res.json({ receipt });
   });
 
   // Manual or extra refund (e.g. goodwill, or completing a refund that failed at the bank).

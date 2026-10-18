@@ -87,6 +87,7 @@
     msg.hidden = !message;
     if (message) { msg.className = `alert alert--${kind}`; msg.textContent = message; }
     if (data.privacy) renderPrivacy(data.privacy);
+    $("#receiptBtn").hidden = !(current.payment && current.payment.paid > 0);
     renderDocuments(data.documents);
     const others = data.others || [];
     $("#othersBox").hidden = others.length === 0;
@@ -211,6 +212,9 @@
   });
 
   $("#printCard").addEventListener("click", () => window.print());
+  $("#receiptBtn").addEventListener("click", async () => {
+    try { const { receipt } = await api("/api/manage/receipt", creds); window.TBReceipt.show(receipt); } catch (e) { toast(e.message); }
+  });
 
   // ---- Documents shared by the clinic (and reports the patient added) ----
   const fmtSize = (n) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);

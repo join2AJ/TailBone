@@ -326,10 +326,54 @@ export async function markPaid(db, appt, { paymentId, amount, base }) {
        status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END, updated_at = datetime('now') WHERE id = ?`,
   ).run(paymentId, paid, appt.id);
   logEvent(db, appt.id, "patient", appt.patient_name, "paid", `${rupees(paid)} · ${paymentId}`);
+  ensureReceiptNo(db, appt.id);
   calendarSync(db, appt.id);
   const updated = getAppointment(db, appt.id);
   notify(db, "booked", updated, { base });
   return { appointment: updated };
+}
+
+// ---------- Payment receipts ----------
+// A receipt (not a tax invoice) for every fee paid, online or at the clinic. Numbers run per month in clinic time
+// (TBR-2610-0001…) and are given once, when the payment is recorded, so a receipt never changes number.
+
+export function ensureReceiptNo(db, appointmentId) {
+  const row = db.prepare("SELECT receipt_no, amount_paid FROM appointments WHERE id = ?").get(appointmentId);
+  if (!row || row.receipt_no || !(row.amount_paid > 0)) return row?.receipt_no || null;
+  const ist = new Date(Date.now() + 330 * 60_000);
+  const prefix = `TBR-${String(ist.getUTCFullYear()).slice(2)}${String(ist.getUTCMonth() + 1).padStart(2, "0")}-`;
+  const last = db.prepare("SELECT receipt_no FROM appointments WHERE receipt_no LIKE ? ORDER BY receipt_no DESC LIMIT 1").get(`${prefix}%`);
+  const no = `${prefix}${String(last ? Number(last.receipt_no.slice(prefix.length)) + 1 : 1).padStart(4, "0")}`;
+  db.prepare("UPDATE appointments SET receipt_no = ? WHERE id = ? AND receipt_no IS NULL").run(no, appointmentId);
+  return db.prepare("SELECT receipt_no FROM appointments WHERE id = ?").get(appointmentId).receipt_no;
+}
+
+/** Everything printed on a payment receipt. Null when nothing has been paid. */
+export function receiptFor(db, appt) {
+  if (!appt || !(appt.amount_paid > 0)) return null;
+  const receiptNo = ensureReceiptNo(db, appt.id);
+  const paidAt = db.prepare("SELECT created_at FROM appointment_events WHERE appointment_id = ? AND action IN ('paid','paid_late') ORDER BY id LIMIT 1").get(appt.id)?.created_at
+    || appt.updated_at || appt.created_at;
+  const method = String(appt.payment_id || "").startsWith("clinic-")
+    ? `${{ upi: "UPI", cash: "Cash", card: "Card" }[appt.payment_id.slice(7)] || "Paid"} at the clinic`
+    : "Online (Razorpay)";
+  const clinic = CLINICS[appt.clinic];
+  const service = `${appt.visit_type === "followup" ? "Follow-up consultation" : "Consultation"}${appt.clinic === "online" ? " (online video)" : `, ${clinic.short}`}`;
+  return {
+    receiptNo,
+    issuedAt: paidAt,
+    issuer: { name: "Tailbone Treatment Clinic", practitioner: "Dr Rajveer Singh", address: CLINICS.del.address, phone: "+91 98866 88323", email: "contact@tailbonetreatment.com" },
+    patient: { name: appt.patient_name, code: appt.patient_code },
+    appointment: { no: appt.appt_no || appt.ref, date: appt.date, time: appt.time, when: `${prettyDate(appt.date)}, ${prettyTime(appt.time)}`, clinic: clinic.name, status: appt.status },
+    service,
+    fee: appt.fee,
+    paid: appt.amount_paid,
+    method,
+    paymentId: String(appt.payment_id || "").startsWith("clinic-") ? "" : appt.payment_id || "",
+    refunds: db.prepare("SELECT amount, status, created_at FROM refunds WHERE appointment_id = ? AND status != 'failed' ORDER BY id").all(appt.id),
+    refunded: appt.amount_refunded,
+    net: appt.amount_paid - appt.amount_refunded,
+  };
 }
 
 // ---------- Follow-ups ----------

@@ -20,7 +20,7 @@ import {
   NOTICE_VERSION, CONSENT_PURPOSES, SELF_SERVICE_TYPES, PROMISE_DAYS,
 } from "../privacy.js";
 import {
-  HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment, isVerifiedBooking,
+  HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment, isVerifiedBooking, receiptFor,
   rescheduleAppointment, cancelAppointment, markPaid, logEvent, readAppt, APPT_SELECT,
   cleanText, requireClinic, siteUrl, waLink, prettyDate, prettyTime, normalizePhone, displayName,
 } from "../services.js";
@@ -305,6 +305,13 @@ export function publicRoutes(db) {
     db.prepare("INSERT INTO notifications (appointment_id, audience, event, channel, body, status) VALUES (?, 'doctor', 'privacy_request', 'dashboard', ?, 'sent')")
       .run(appt.id, encrypt(`Data request ${ref} (${label}) from ${appt.patient_name} ${appt.patient_code || ""}. Completes automatically in 3 days unless you act.`));
     res.status(201).json({ ref, due, privacy: privacyView(appt) });
+  });
+
+  // Payment receipt for this booking (the patient's own; shows only what My appointments already shows).
+  r.post("/manage/receipt", lookupLimit, (req, res) => {
+    const receipt = receiptFor(db, findOwn(req));
+    if (!receipt) throw new HttpError(404, "There's no payment on this booking yet. Fees paid at the clinic appear here once the clinic records them.");
+    res.json({ receipt });
   });
 
   r.post("/manage/documents/:id/download", lookupLimit, (req, res) => {

@@ -244,6 +244,7 @@ const MIGRATIONS = {
     gcal_event_id: "TEXT",                                 // Google Calendar event (when sync is on)
     gcal_status: "TEXT",                                   // synced | error message
     policy_snapshot: "TEXT",                               // cancellation/reschedule rules in force when booked
+    receipt_no: "TEXT",                                    // payment receipt number, e.g. TBR-2610-0003 (given when the fee is paid)
   },
   data_requests: {
     auto_at: "TEXT",                                       // when it is completed automatically if staff haven't acted
@@ -294,6 +295,7 @@ export function openDb(file = config.dbFile) {
   }
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_patient_code ON patients(patient_code)");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_appt_no ON appointments(appt_no)");
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_receipt_no ON appointments(receipt_no)");
   // There must always be a super admin: promote the first account if none exists (upgrades, first run).
   if (!db.prepare("SELECT 1 FROM admins WHERE role = 'superadmin' AND disabled = 0").get()) {
     db.prepare("UPDATE admins SET role = 'superadmin' WHERE id = (SELECT MIN(id) FROM admins WHERE disabled = 0)").run();
