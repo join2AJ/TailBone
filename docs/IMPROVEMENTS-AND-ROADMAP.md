@@ -23,6 +23,7 @@ This is the running record of how the new Tailbone Treatment website and clinic 
 | **Content** | 24 articles, 15 pages | All old articles and newspaper clippings brought over, plus new evidence-based articles with tables, diagrams, animations and sources (25 articles in total) |
 | **Blog tools** | WordPress categories and tags | Search box, topic filters, "On this page" contents, WhatsApp share, related articles, and admin on/off per article |
 | **Search engines and AI** | Yoast SEO, one structured-data block | Separate page per topic, rich structured data (clinic, doctor, condition, FAQ, articles, breadcrumbs), AI-assistant files (llms.txt), IndexNow, sitemap, and 301 redirects from every old address |
+| **Online consultations** | Mentioned, arranged by phone | A "Join call" button in My appointments from 15 minutes before, a 2-minute preparation guide and a camera/microphone test; the doctor starts the call or sends the link on WhatsApp from the dashboard |
 | **Documents** | None | The clinic shares treatment and exercise plans, visit summaries and reports; patients download them from My appointments. Optional patient uploads of earlier reports (switched off for now). Stored encrypted. |
 | **Privacy and law** | Privacy statement page | DPDP Act / GDPR ready: consent records, self-service data requests (copy, correct, delete) completed within 7 days, retention clean-up, encrypted clinical notes and backups, security log |
 | **Accessibility** | Not tested | Tested with automated accessibility checks (no errors), in light and dark mode, on phones and desktop |
@@ -37,7 +38,7 @@ This is the running record of how the new Tailbone Treatment website and clinic 
 - **Appointment number and patient ID** (e.g. TBA-2610-0007 and TBP-00042) on every booking, with a printable card and QR code.
 - **My appointments:** reschedule or cancel online within the clinic's rules, see refunds, and add the visit to Google Calendar.
 - **Pay online** by UPI, card or net banking, or pay at the clinic.
-- **Online video consultations** offered alongside the Delhi clinic.
+- **Online video consultations** offered alongside the Delhi clinic, with a **Join call** button in My appointments (from 15 minutes before), a short "how to get ready" guide and a camera and microphone test.
 - **Clear information:** each topic has its own short page (tailbone pain, treatment, doctor, clinics, FAQ, book), with animated explainers instead of long walls of text.
 - **Research-backed articles** with tables, diagrams, animations and sources.
 - **Blog search and topic filters**, so patients find the right article quickly.
@@ -93,6 +94,7 @@ Newest first. Add one line per change.
 
 | Date | Change |
 |---|---|
+| 18 Oct 2026 | **Join call for online consultations:** the clinic saves its usual video room (Google Meet, Zoom…) in Settings, or a different link on one appointment. Patients see a "Join call" button in My appointments from 15 minutes before (never earlier, so nobody walks into another consultation), plus a short preparation guide and a camera and microphone test. The doctor has "Start call" and "Send link on WhatsApp" in the dashboard. Online confirmations and reminders now explain how to join, and use the appointment number. |
 | 18 Oct 2026 | **Payment receipts:** every paid booking (online or at the clinic) gets a numbered receipt (e.g. TBR-2610-0001). Patients open it from My appointments, the clinic from the appointment's details; both can print it or save it as a PDF. Shows the service, the amount, how it was paid and any refunds. |
 | 18 Oct 2026 | **Documents:** on a patient's page the clinic adds PDF or photo documents (treatment and exercise plans, visit summaries, reports) and ticks "Shared"; the patient downloads them under "Your documents" in My appointments. Optional patient uploads of earlier reports are built but switched off (Control panel). Files are checked to be real PDF/JPG/PNG, stored encrypted, every view is logged, and they're included in data downloads and removed with deletion requests. The demo patient has a sample exercise plan. |
 | 17 Oct 2026 | Patient login (My appointments) checked end to end: login, reschedule, cancel, WhatsApp setting, data requests, past and cancelled bookings. The appointment number now works however it's typed (lower case, spaces, no dashes), and an empty form points to the missing field. |
@@ -127,6 +129,7 @@ Newest first. Add one line per change.
 - [ ] **Login code for patients** (item 3 below): until then, documents open only from bookings the clinic has confirmed, with the existing lockouts. Do this before switching on patient uploads widely.
 - [ ] **Patient uploads:** built but off. Switch on in Control panel → "Patients can upload earlier reports" when the clinic is ready to receive them.
 - [ ] **What to call the doctor's documents:** labels are "Treatment & exercise plan", "Visit summary", "Report" and "Other". Confirm with Dr Rajveer whether "prescription" should ever be used (he is a physiotherapist, BPT).
+- [ ] **Video room:** put the clinic's usual Google Meet or Zoom link in Settings → Online consultations. Use a room where the doctor lets each patient in (waiting room / "ask to join").
 - [ ] **GST on receipts:** receipts say "Payment receipt", not "Tax invoice". Ask the accountant whether GST applies to the clinic's services; if the clinic is registered, add its GSTIN and the wording they advise.
 - [ ] **Storage:** documents are kept in the database and its backups, which is fine for a single clinic. Move them to cloud storage if they grow past a few gigabytes.
 
@@ -138,11 +141,10 @@ Newest first. Add one line per change.
 | 3 | **Log in to My appointments with a one-time code** sent to the patient's phone | Patients lose their appointment number, and it's the strongest protection for their data | Medium (needs #2 or an SMS provider) |
 | 4 | **Clinic day view:** today's list with Arrived, Complete, notes and next visit in one place | Faster on the clinic phone during busy hours | Low |
 | 5 | **Week calendar** in the dashboard, with drag to reschedule | See gaps and clashes at a glance | Medium |
-| 6 | **Online consultation guide:** what to prepare, test your video, a one-tap "Join call" in My appointments | Smoother online visits | Low |
-| 7 | **Symptom check result sent to WhatsApp** with how long the pain has lasted and the city | More bookings from the symptom check | Low |
-| 8 | **Patient timeline and visit-notes template** (one feed of visits, notes, check-ins, messages and payments) | Quicker review before each visit | Medium |
-| 9 | **No-show and drop-off watchlist** with a one-tap re-engage message | Brings patients back for review | Low |
-| 10 | **Install as an app (PWA)** and new-booking alerts on the doctor's phone | Alerts without checking email | Medium |
+| 6 | **Symptom check result sent to WhatsApp** with how long the pain has lasted and the city | More bookings from the symptom check | Low |
+| 7 | **Patient timeline and visit-notes template** (one feed of visits, notes, check-ins, messages and payments) | Quicker review before each visit | Medium |
+| 8 | **No-show and drop-off watchlist** with a one-tap re-engage message | Brings patients back for review | Low |
+| 9 | **Install as an app (PWA)** and new-booking alerts on the doctor's phone | Alerts without checking email | Medium |
 
 ### Content (ongoing)
 - Two articles a month, reviewed and signed by Dr Rajveer. Topics are listed in [SEO-AND-AI-VISIBILITY.md](SEO-AND-AI-VISIBILITY.md).

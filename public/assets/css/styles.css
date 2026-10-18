@@ -1014,3 +1014,14 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
   body.print-receipt .receipt { box-shadow: none; width: 100%; padding: 0; }
   body.print-receipt .receipt__actions { display: none; }
 }
+/* My appointments: online consultation */
+.video-box { margin: 1.2rem 0; padding: 1.1rem 1.2rem; border: 1.5px solid color-mix(in srgb, var(--brand) 40%, var(--line)); border-radius: var(--radius); background: color-mix(in srgb, var(--brand) 6%, var(--surface)); }
+.video-box h2 { margin: 0 0 .4rem; }
+.video-box #joinBtn { margin: .3rem 0 .4rem; }
+.video-prep { margin-top: .8rem; }
+.video-prep summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+.video-prep ul { margin: .6rem 0 .8rem; padding-left: 1.2rem; display: grid; gap: .3rem; }
+.cam-test { margin-top: .8rem; display: grid; gap: .5rem; justify-items: start; }
+.cam-test video { width: min(320px, 100%); height: auto; aspect-ratio: 4 / 3; background: #000; border-radius: var(--radius-sm); transform: scaleX(-1); }
+.mic-meter { width: min(320px, 100%); height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.mic-meter span { display: block; height: 100%; width: 0; background: var(--brand); transition: width .08s linear; }

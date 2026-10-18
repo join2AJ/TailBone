@@ -11,6 +11,7 @@ import { getFeatures, isOn } from "../features.js";
 import { hiddenPosts } from "../blog.js";
 import { addDocument, listDocuments, getDocument, readFile, sendFile, MAX_BYTES, PATIENT_KINDS } from "../documents.js";
 import express from "express";
+import { videoForPatient } from "../video.js";
 import QRCode from "qrcode";
 import crypto from "node:crypto";
 import { ensureBusy, isBusy, googleCalendarLink, calendarFeed } from "../gcal.js";
@@ -55,6 +56,9 @@ export function publicRoutes(db) {
       cancelQuote: open && a.amount_paid ? refundQuote(a, policy) : null,
       reschedule: open ? rescheduleCheck(a, policy) : { allowed: false },
       manageUrl: `${siteUrl(req)}/manage.html?ref=${no}`,
+      // Online consultations: the Join button. The link itself is given only from 15 minutes before a confirmed,
+      // paid-or-pay-later booking's own slot, so it never reveals anything about other patients.
+      video: videoForPatient(db, a),
       apptNo: a.appt_no,
       patientCode: a.patient_code,
       googleCalendarUrl: open ? googleCalendarLink(a, siteUrl(req)) : null,

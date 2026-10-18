@@ -87,6 +87,7 @@
     msg.hidden = !message;
     if (message) { msg.className = `alert alert--${kind}`; msg.textContent = message; }
     if (data.privacy) renderPrivacy(data.privacy);
+    renderVideo(current.video);
     $("#receiptBtn").hidden = !(current.payment && current.payment.paid > 0);
     renderDocuments(data.documents);
     const others = data.others || [];
@@ -215,6 +216,67 @@
   $("#receiptBtn").addEventListener("click", async () => {
     try { const { receipt } = await api("/api/manage/receipt", creds); window.TBReceipt.show(receipt); } catch (e) { toast(e.message); }
   });
+
+  // ---- Online consultation: Join button, preparation and a camera/microphone check ----
+  let videoTimer;
+  function renderVideo(v) {
+    clearTimeout(videoTimer);
+    const box = $("#videoBox");
+    box.hidden = !v;
+    if (!v) return;
+    const join = $("#joinBtn");
+    const startLocal = new Date(v.startsAt).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+    const text = {
+      pending: `Your consultation on ${startLocal} is waiting for the clinic to confirm. The Join button appears here once it's confirmed, ${v.joinBeforeMinutes} minutes before the start.`,
+      inactive: "This consultation is no longer active.",
+      early: `Your consultation is on ${startLocal} (India time). The Join button appears here ${v.joinBeforeMinutes} minutes before. Keep this page bookmarked.`,
+      open: v.url ? "You can join now. Dr Rajveer will let you in at your appointment time." : "It's almost time. The clinic will send you the video link on WhatsApp in a moment.",
+      over: "This consultation time has passed. If you missed it, please call or WhatsApp us to rebook.",
+    }[v.state];
+    $("#videoStatus").textContent = text || "";
+    join.hidden = !(v.state === "open" && v.url);
+    $("#joinHint").hidden = join.hidden;
+    if (!join.hidden) join.href = v.url;
+    // Refresh at the moment the Join button should appear (if that's within the next 12 hours).
+    const wait = Date.parse(v.opensAt) - Date.now();
+    if (v.state === "early" && wait < 12 * 3600_000) videoTimer = setTimeout(() => creds && lookup(creds.ref, creds.phone), Math.max(1000, wait + 1000));
+  }
+  let camStream = null;
+  let meterFrame = 0;
+  function stopCam() {
+    cancelAnimationFrame(meterFrame);
+    camStream?.getTracks().forEach((t) => t.stop());
+    camStream = null;
+    $("#camTest").hidden = true;
+    $("#camTestBtn").hidden = false;
+  }
+  $("#camTestBtn").addEventListener("click", async () => {
+    $("#camTest").hidden = false;
+    $("#camTestBtn").hidden = true;
+    const msg = $("#camMsg");
+    if (!navigator.mediaDevices?.getUserMedia) { msg.textContent = "This browser can't test the camera. Try Chrome or Safari."; return; }
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      $("#camPreview").srcObject = camStream;
+      msg.textContent = "If you can see yourself and the bar moves when you speak, you're ready.";
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = ctx.createAnalyser();
+      ctx.createMediaStreamSource(camStream).connect(analyser);
+      const buf = new Uint8Array(analyser.fftSize);
+      const draw = () => {
+        analyser.getByteTimeDomainData(buf);
+        const peak = buf.reduce((m, x) => Math.max(m, Math.abs(x - 128)), 0) / 128;
+        $("#micLevel").style.width = `${Math.min(100, Math.round(peak * 160))}%`;
+        if (camStream) meterFrame = requestAnimationFrame(draw); else ctx.close();
+      };
+      draw();
+    } catch (e) {
+      msg.textContent = e.name === "NotAllowedError"
+        ? "The browser blocked the camera or microphone. Allow them in the browser's settings (the camera icon near the address bar), then try again."
+        : "No camera or microphone was found. You can still join with audio from your phone.";
+    }
+  });
+  $("#camStopBtn").addEventListener("click", stopCam);
 
   // ---- Documents shared by the clinic (and reports the patient added) ----
   const fmtSize = (n) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);

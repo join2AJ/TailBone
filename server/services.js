@@ -407,15 +407,19 @@ export function waLink(phone, text) {
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
-export function messages(appt, base) {
+export function messages(appt, base, videoUrl = "") {
   const first = appt.patient_name.split(" ")[0];
   const when = `${prettyDate(appt.date)} at ${prettyTime(appt.time)}`;
   const where = CLINICS[appt.clinic];
-  const manage = `${base}/manage.html?ref=${appt.ref}`;
+  const no = appt.appt_no || appt.ref; // the appointment number is the patient's reference
+  const manage = `${base}/manage.html?ref=${no}`;
+  const online = appt.clinic === "online";
+  const joinHow = `Join the video call from My appointments (the button appears 15 minutes before): ${manage}`;
   return {
-    confirm: `Hi ${first}, your appointment at Tailbone Treatment Clinic is confirmed for ${when} (${where.short}).\n${where.address}\nRef: ${appt.ref}\nManage or reschedule: ${manage}`,
-    reminder: `Hi ${first}, a reminder of your appointment tomorrow, ${when}, at our ${where.short} ${appt.clinic === "online" ? "consultation (we'll send the video link shortly)" : "clinic"}. Ref: ${appt.ref}. Reply here if you need to reschedule.`,
-    cancelled: `Hi ${first}, your appointment on ${when} (Ref ${appt.ref}) has been cancelled. To book a new time, visit ${base}/book or reply to this message.`,
+    confirm: `Hi ${first}, your appointment at Tailbone Treatment Clinic is confirmed for ${when} (${where.short}).\n${online ? joinHow : where.address}\nAppointment no.: ${no}${online ? "" : `\nManage or reschedule: ${manage}`}`,
+    reminder: `Hi ${first}, a reminder of your appointment tomorrow, ${when}, ${online ? `online. ${joinHow}` : `at our ${where.short} clinic.`} Appointment no.: ${no}. Reply here if you need to reschedule.`,
+    cancelled: `Hi ${first}, your appointment on ${when} (appointment no. ${no}) has been cancelled. To book a new time, visit ${base}/book or reply to this message.`,
+    video: online ? `Hi ${first}, here is the link for your online consultation with Dr Rajveer Singh on ${when}: ${videoUrl || manage}\nPlease join from a quiet, well-lit place. You can also join from My appointments: ${manage}` : "",
   };
 }
 

@@ -266,6 +266,9 @@
     if (a.fee && ["pay_at_clinic", "unpaid"].includes(a.payment_status) && ["pending", "confirmed", "completed"].includes(a.status)) {
       btns.push(`<button class="btn btn--ghost btn--sm" data-act="received" data-id="${a.id}" data-fee="${a.fee}">Received ${rupees(a.fee)}</button>`);
     }
+    if (a.clinic === "online" && a.links?.video && ["pending", "confirmed"].includes(a.status) && a.date === state.today) {
+      btns.unshift(`<a class="btn btn--primary btn--sm" href="${esc(a.links.video)}" target="_blank" rel="noopener">Start call</a>`);
+    }
     btns.push(`<button class="btn btn--ghost btn--sm" data-act="open" data-id="${a.id}">Details</button>`);
     return btns.join("");
   }
@@ -457,11 +460,14 @@
       <div class="row-gap" style="margin:1rem 0">
         <a class="btn btn--ghost btn--sm" target="_blank" rel="noopener" href="${esc(a.links.chat)}">Open WhatsApp chat</a>
         <a class="btn btn--ghost btn--sm" href="#/patient/${a.patient_id}" id="toPatient">Patient profile</a>
+        ${a.clinic === "online" && a.links.video ? `<a class="btn btn--primary btn--sm" target="_blank" rel="noopener" href="${esc(a.links.video)}">Start call</a>
+          <a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(a.links.sendVideo)}">Send link on WhatsApp</a>` : ""}
         ${a.amount_paid > 0 ? '<button class="btn btn--ghost btn--sm" type="button" id="receiptBtn">Receipt</button>' : ""}
         ${refundable > 0 ? '<button class="btn btn--ghost btn--sm" type="button" id="refundBtn">Issue refund</button>' : ""}
       </div>
       <form class="form" id="apptEdit">
         <div class="field"><label>Clinical notes (private, encrypted)</label><textarea name="notes" rows="4">${esc(a.notes)}</textarea></div>
+        ${a.clinic === "online" ? `<div class="field"><label>Video link for this appointment (optional)</label><input name="videoUrl" type="url" inputmode="url" maxlength="300" placeholder="Leave empty to use the clinic's usual video room (Settings)" value="${esc(a.video_url || "")}"></div>` : ""}
         ${open ? `<div class="field-row">
           <div class="field"><label>Date</label><input type="date" name="date" value="${esc(a.date)}"></div>
           <div class="field"><label>Time</label><input type="time" name="time" step="900" value="${esc(a.time)}"></div>
@@ -495,6 +501,7 @@
       e.preventDefault();
       const fd = new FormData(form);
       const body = { notes: fd.get("notes"), status: fd.get("status"), reason: fd.get("reason") || "", silent: fd.get("silent") === "on" };
+      if (fd.has("videoUrl") && fd.get("videoUrl").trim() !== (a.video_url || "")) body.videoUrl = fd.get("videoUrl").trim();
       if (open && (fd.get("date") !== a.date || fd.get("time") !== a.time)) { body.date = fd.get("date"); body.time = fd.get("time"); }
       if (body.status === "completed" && a.status !== "completed") { closeModal(); return completeDialog(id, body.notes); }
       if (body.status === "cancelled" && a.status !== "cancelled" && !confirm("Cancel this appointment and notify the patient?")) return;
@@ -1084,6 +1091,7 @@
     const isSuper = state.admin.role === "superadmin";
     const blocked = can("settings") ? (await api("/blocked")).blocked : [];
     const pol = can("settings") ? await api("/settings/policy") : null;
+    const video = can("settings") ? await api("/settings/video") : null;
     const P = pol?.policy;
     const C = P?.commission; // only present for the super admin
 
@@ -1166,6 +1174,14 @@
       </section>`;
     content.innerHTML = `
       ${policyCard}
+      ${video ? `<section class="panel-card">
+        <h2>Online consultations</h2>
+        <p class="muted small">The clinic's usual video room: a Google Meet, Zoom or similar link. Patients get a <strong>Join call</strong> button in My appointments from 15 minutes before their time, and the link is never shown earlier. Choose a room where you let each patient in (Google Meet and Zoom do this), so nobody joins during another consultation. You can set a different link on any single appointment.</p>
+        <form class="toolbar" id="videoForm">
+          <div class="field" style="flex:1"><label>Usual video room link</label><input name="defaultUrl" type="url" inputmode="url" maxlength="300" placeholder="https://meet.google.com/abc-defg-hij" value="${esc(video.defaultUrl || "")}"></div>
+          <button class="btn btn--primary btn--sm">Save</button>
+        </form>
+      </section>` : ""}
       ${calendarCard}
       <div class="grid-2">
         <div class="stack">
@@ -1278,6 +1294,11 @@
     on("#pwForm", "submit", async (e) => {
       e.preventDefault();
       try { await api("/password", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); e.target.reset(); toast("Password updated."); } catch (ex) { toast(ex.message); }
+    });
+
+    on("#videoForm", "submit", async (e) => {
+      e.preventDefault();
+      try { await api("/settings/video", { method: "PUT", body: { defaultUrl: e.target.defaultUrl.value } }); toast("Video room saved."); } catch (ex) { toast(ex.message); }
     });
 
     // ---- Fees & policies ----

@@ -232,3 +232,35 @@ test("every paid booking gets a numbered receipt, for the patient and the clinic
   assert.equal(clinic.body.receipt.receiptNo, r.receiptNo, "the number never changes");
   assert.equal((await api(null, "POST", "/api/manage/receipt", { ref, phone: "9000000001" })).status, 404, "only with the right phone");
 });
+
+test("online consultations: Join call opens 15 minutes before, with the clinic's video room", async () => {
+  const { videoForPatient } = await import("../server/video.js");
+  assert.equal((await api("super", "PUT", "/api/admin/settings/video", { defaultUrl: "not a link" })).status, 400);
+  assert.equal((await api("super", "PUT", "/api/admin/settings/video", { defaultUrl: "https://meet.google.com/abc-defg-hij" })).status, 200);
+  const booked = await api(null, "POST", "/api/appointments", { name: "Farah Ali", phone: "9811100111", clinic: "online", ...slot(9, 1), consent: true });
+  const ref = booked.body.appointment.ref;
+  let a = db.prepare("SELECT * FROM appointments WHERE appt_no = ?").get(ref);
+  const start = Date.parse(`${a.date}T${a.time}:00+05:30`);
+  // Waiting for the clinic to confirm: no link.
+  let look = await api(null, "POST", "/api/manage/lookup", { ref, phone: "9811100111" });
+  assert.equal(look.body.appointment.video.state, "pending");
+  assert.equal(look.body.appointment.video.url, "");
+  await api("super", "PATCH", `/api/admin/appointments/${a.id}`, { status: "confirmed", silent: true });
+  a = db.prepare("SELECT * FROM appointments WHERE id = ?").get(a.id);
+  look = await api(null, "POST", "/api/manage/lookup", { ref, phone: "9811100111" });
+  assert.equal(look.body.appointment.video.state, "early");
+  assert.equal(look.body.appointment.video.url, "", "the link isn't handed out early");
+  assert.equal(videoForPatient(db, a, start - 20 * 60_000).state, "early");
+  const open = videoForPatient(db, a, start - 10 * 60_000);
+  assert.deepEqual([open.state, open.url], ["open", "https://meet.google.com/abc-defg-hij"]);
+  assert.equal(videoForPatient(db, a, start + 61 * 60_000).state, "over");
+  // A link for this appointment only, and the dashboard's Start call / send-on-WhatsApp links.
+  assert.equal((await api("super", "PATCH", `/api/admin/appointments/${a.id}`, { videoUrl: "javascript:alert(1)" })).status, 400);
+  assert.equal((await api("super", "PATCH", `/api/admin/appointments/${a.id}`, { videoUrl: "https://zoom.us/j/123456789" })).status, 200);
+  const detail = (await api("super", "GET", `/api/admin/appointments/${a.id}`)).body.appointment;
+  assert.equal(detail.links.video, "https://zoom.us/j/123456789");
+  assert.match(decodeURIComponent(detail.links.sendVideo), /zoom\.us\/j\/123456789/);
+  assert.equal(videoForPatient(db, db.prepare("SELECT * FROM appointments WHERE id = ?").get(a.id), start).url, "https://zoom.us/j/123456789");
+  // In-clinic appointments have no video panel.
+  assert.equal(videoForPatient(db, { ...a, clinic: "del" }), null);
+});

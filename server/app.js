@@ -60,7 +60,7 @@ export function createApp(db) {
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "strict-origin-when-cross-origin",
       "X-Frame-Options": "SAMEORIGIN",
-      "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(self \"https://checkout.razorpay.com\" \"https://api.razorpay.com\")",
+      "Permissions-Policy": "camera=(self), microphone=(self), geolocation=(), payment=(self \"https://checkout.razorpay.com\" \"https://api.razorpay.com\")",
       "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
     });
     if (config.isProd) res.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");

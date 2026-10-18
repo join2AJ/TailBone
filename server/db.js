@@ -244,6 +244,7 @@ const MIGRATIONS = {
     gcal_event_id: "TEXT",                                 // Google Calendar event (when sync is on)
     gcal_status: "TEXT",                                   // synced | error message
     policy_snapshot: "TEXT",                               // cancellation/reschedule rules in force when booked
+    video_url: "TEXT",                                     // video link for this online consultation (else the clinic's usual room)
     receipt_no: "TEXT",                                    // payment receipt number, e.g. TBR-2610-0003 (given when the fee is paid)
   },
   data_requests: {

@@ -85,6 +85,29 @@
         <span class="eyebrow">Your appointment</span>
         <h1 id="hello">Your appointment</h1>
         <div id="apptBox"></div>
+        <section class="video-box" id="videoBox" hidden aria-labelledby="videoTitle">
+          <h2 class="h3" id="videoTitle">Your video consultation</h2>
+          <p id="videoStatus" aria-live="polite"></p>
+          <a class="btn btn--primary btn--lg" id="joinBtn" href="#" target="_blank" rel="noopener" hidden>Join call</a>
+          <p class="small muted" id="joinHint" hidden>Opens the video call in a new tab or in the app. Dr Rajveer will let you in.</p>
+          <details class="video-prep">
+            <summary>How to get ready (2 minutes)</summary>
+            <ul>
+              <li>Find a quiet, private room with the light in front of you, not behind.</li>
+              <li>Charge your phone or laptop, and use Wi-Fi if you can. Earphones help.</li>
+              <li>Prop the phone up so your hands are free; you may be asked to show how you sit and move.</li>
+              <li>Wear loose, comfortable clothes.</li>
+              <li>Write down your questions. If you already have earlier reports, keep them handy; you don't need any new tests.</li>
+            </ul>
+            <button type="button" class="btn btn--ghost btn--sm" id="camTestBtn">Test my camera and microphone</button>
+            <div class="cam-test" id="camTest" hidden>
+              <video id="camPreview" autoplay muted playsinline width="320" height="240"></video>
+              <div class="mic-meter" aria-hidden="true"><span id="micLevel"></span></div>
+              <p class="small" id="camMsg" aria-live="polite"></p>
+              <button type="button" class="btn btn--ghost btn--sm" id="camStopBtn">Stop test</button>
+            </div>
+          </details>
+        </section>
         <section class="appt-card" id="apptCard" hidden aria-labelledby="cardTitle">
           <div class="appt-card__head">
             <img src="/assets/img/logo.svg" alt="" width="34" height="34">

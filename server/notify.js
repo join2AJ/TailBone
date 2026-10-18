@@ -82,7 +82,7 @@ export function compose(event, a, base, extra = {}) {
         doctor: `New booking ${no}: ${who}, ${when(a)}, ${where.short}. ${a.visit_type === "followup" ? "Follow-up visit. " : ""}${paymentLine(a)}`,
       };
     case "confirmed":
-      return { patient: `Hi ${first}, your appointment ${no} is confirmed for ${when(a)} at our ${where.short} ${a.clinic === "online" ? "consultation (video link will be shared)" : `clinic, ${where.address}`}. Manage: ${manage}` };
+      return { patient: `Hi ${first}, your appointment ${no} is confirmed for ${when(a)} at our ${where.short} ${a.clinic === "online" ? "online consultation. Join the video call from My appointments (the button appears 15 minutes before)" : `clinic, ${where.address}`}. Manage: ${manage}` };
     case "rescheduled":
       return extra.actor === "clinic"
         ? { patient: `Hi ${first}, the clinic has moved your appointment ${no} from ${extra.from} to ${when(a)} (${where.short}). If this doesn't suit you, reschedule or cancel free of charge: ${manage}` }
@@ -102,7 +102,7 @@ export function compose(event, a, base, extra = {}) {
     case "refunded":
       return { patient: `Hi ${first}, a refund of ${rupees(extra.amount)} for booking ${no} has been issued. It reaches the original payment method in 5–7 working days.` };
     case "reminder":
-      return { patient: `Hi ${first}, a reminder of your appointment ${no} tomorrow, ${when(a)}, ${a.clinic === "online" ? "online (video link will be shared)" : `at ${where.address}`}. Need to change it? ${manage}` };
+      return { patient: `Hi ${first}, a reminder of your appointment ${no} tomorrow, ${when(a)}, ${a.clinic === "online" ? "online. Join the video call from My appointments, 15 minutes before" : `at ${where.address}`}. Need to change it? ${manage}` };
     default:
       throw new Error(`Unknown notification event ${event}`);
   }

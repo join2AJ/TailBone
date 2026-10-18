@@ -7,6 +7,7 @@ import { NOTICE_VERSION } from "./privacy.js";
 import { patientCode, nextApptNo } from "./db.js";
 import { config } from "./config.js";
 import { addDocument } from "./documents.js";
+import { saveVideoSettings } from "./video.js";
 
 /** A one-page PDF of plain text lines (for the demo's sample documents). */
 function samplePdf(lines) {
@@ -87,7 +88,9 @@ export function seedDemo(db) {
     checkin(asha, f1, 4, "better", 14, "Much easier to sit at work", 45);
     const f2 = followup(asha, ashaPast, addDays(today, -7), "done");
     checkin(asha, f2, 2, "better", 7, "", 90);
-    appt(asha, DEMO_PATIENT.ref, "del", addDays(today, 3), 3, "confirmed", { reason: "Review visit", paid: 50000, platform: 10000, visit: "followup" });
+    // Her review is an online consultation, so the demo shows the Join call panel.
+    appt(asha, DEMO_PATIENT.ref, "online", addDays(today, 3), 3, "confirmed", { reason: "Review visit", paid: 50000, platform: 10000, visit: "followup" });
+    saveVideoSettings(db, { defaultUrl: "https://meet.google.com/" });
     addDocument(db, {
       patientId: asha, appointmentId: ashaPast, kind: "plan", title: "Exercise plan after first visit", uploadedBy: "clinic", uploaderName: "Dr Rajveer Singh", shared: true,
       data: samplePdf([

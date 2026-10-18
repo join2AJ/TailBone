@@ -22,6 +22,7 @@ import { notify, readNotification, whatsappApiEnabled } from "../notify.js";
 import { listPosts, setEnabled } from "../blog.js";
 import { addDocument, listDocuments, getDocument, readFile, sendFile, KINDS, MAX_BYTES } from "../documents.js";
 import express from "express";
+import { getVideoSettings, saveVideoSettings, cleanVideoUrl, videoUrlFor } from "../video.js";
 import {
   HttpError, parseBooking, createAppointment, getAppointment, rescheduleAppointment, createFollowup,
   defaultFollowupDate, cleanText, normalizePhone, validEmail, siteUrl, waLink, messages, checkinMessage, FOLLOWUP_TYPES,
@@ -134,7 +135,7 @@ export function adminRoutes(db) {
     [/^\/appointments/, "appointments"], [/^\/followups/, "followups"], [/^\/patients/, "patients"],
     [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"], [/^\/blog/, "blog"], [/^\/documents/, "patients"],
     [/^\/payments/, "payments"], [/^\/privacy/, "privacy"],
-    [/^\/settings\/policy$/, "settings", "PUT"], [/^\/blocked/, "settings"], [/^\/calendar/, "settings"],
+    [/^\/settings\/policy$/, "settings", "PUT"], [/^\/settings\/video$/, "settings", "PUT"], [/^\/blocked/, "settings"], [/^\/calendar/, "settings"],
     [/^\/export/, "export"],
   ];
   r.use((req, res, next) => {
@@ -358,10 +359,13 @@ export function adminRoutes(db) {
   const withLinks = (a, req) => {
     if (!a) return a;
     const base = siteUrl(req);
-    const m = messages(a, base);
+    const video = videoUrlFor(db, a);
+    const m = messages(a, base, video);
     return {
       ...a,
       links: {
+        video: video || null,
+        sendVideo: a.clinic === "online" ? waLink(a.patient_phone, m.video) : null,
         confirm: waLink(a.patient_phone, m.confirm),
         reminder: waLink(a.patient_phone, m.reminder),
         cancelled: waLink(a.patient_phone, m.cancelled),
@@ -478,6 +482,10 @@ export function adminRoutes(db) {
     const who = req.admin.name;
     const silent = !!req.body.silent; // e.g. fixing a typo in the time without messaging the patient
 
+    if (req.body.videoUrl !== undefined) {
+      db.prepare("UPDATE appointments SET video_url = ?, updated_at = datetime('now') WHERE id = ?").run(cleanVideoUrl(req.body.videoUrl) || null, appt.id);
+      calendarSync(db, appt.id);
+    }
     if (req.body.notes !== undefined) {
       db.prepare("UPDATE appointments SET notes = ?, updated_at = datetime('now') WHERE id = ?").run(encrypt(cleanText(req.body.notes, 4000)), appt.id);
     }
@@ -611,6 +619,13 @@ export function adminRoutes(db) {
   });
 
   // ---------- Fees & policies ----------
+  r.get("/settings/video", (req, res) => res.json(getVideoSettings(db)));
+  r.put("/settings/video", (req, res) => {
+    const saved = saveVideoSettings(db, req.body || {});
+    securityLog(db, req, "video_settings_changed", saved.defaultUrl ? "default link set" : "default link cleared");
+    res.json(saved);
+  });
+
   r.get("/settings/policy", (req, res) => {
     const policy = getPolicy(db);
     if (req.admin.role !== "superadmin") delete policy.commission;

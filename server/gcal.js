@@ -71,11 +71,12 @@ export function eventFor(a, base = config.siteUrl) {
   const mode = a.clinic === "online" ? "ONLINE video" : `IN CLINIC ${where.short}`;
   return {
     summary: `${a.status === "pending" ? "(Pending) " : ""}${mode} · ${a.appt_no} · ${a.patient_code} · ${shortName(a.patient_name)}`,
-    location: a.clinic === "online" ? "Online (video call)" : where.address,
+    location: a.clinic === "online" ? a.video_url || "Online (video call)" : where.address,
     description: [
       `Appointment no.: ${a.appt_no}`,
       `Patient ID: ${a.patient_code}`,
       `Type: ${a.clinic === "online" ? "Online video consultation" : `In person at the ${where.name}`}`,
+      a.clinic === "online" && a.video_url ? `Video link: ${a.video_url}` : "",
       `${a.visit_type === "followup" ? "Follow-up" : "New"} visit · status: ${a.status}`,
       base ? `Open in dashboard: ${base}/admin#/appointments` : "",
     ].filter(Boolean).join("\n"),
