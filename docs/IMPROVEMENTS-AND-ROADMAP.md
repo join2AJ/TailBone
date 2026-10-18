@@ -13,7 +13,7 @@ This is the running record of how the new Tailbone Treatment website and clinic 
 | **Platform** | WordPress 6.8 with plugins (Yoast SEO, Contact Form 7, Site Kit), hosted on the domain | Purpose-built, fast static website (Netlify) plus a clinic server (Render). No plugins to keep patching. |
 | **Booking** | "Call to book" phone number and a contact form; staff had to call back | Live online booking: pick clinic, day and time slot in under a minute, with instant confirmation, an appointment number and a QR code |
 | **After booking** | Nothing: changes by phone only | **My appointments** page: view, reschedule, cancel (within the clinic's rules), print the appointment card, add to Google Calendar |
-| **Payments** | None online | Razorpay (UPI, cards, net banking), automatic refunds by the cancellation rules, optional commission split, and fees taken at the desk recorded as UPI, cash or card |
+| **Payments** | None online | Razorpay (UPI, cards, net banking), automatic refunds by the cancellation rules, optional commission split, fees taken at the desk recorded as UPI, cash or card, and a numbered payment receipt for every paid visit |
 | **Clinic dashboard** | None (WordPress admin only) | Full dashboard: today's patients, confirmations, follow-ups, patient records with notes, inbox, payments, privacy requests, stories, blog control, settings, staff accounts and permissions |
 | **Follow-up care** | None | Automatic follow-ups after a visit, pain-score check-in links, alerts when a patient reports feeling worse |
 | **Messages** | Phone calls | Ready-to-send WhatsApp messages (confirmations, reminders, check-ins) with the clinic's greeting, plus email to the doctor. Fully automatic once the WhatsApp Business API is connected. |
