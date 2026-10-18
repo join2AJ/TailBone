@@ -279,7 +279,12 @@
       if (active) loadMap(panel);
     });
     const note = $("#tabNote");
-    if (note) { note.textContent = tab.dataset.note || ""; note.dataset.status = [...tab.classList].find((c) => c.startsWith("tab--"))?.slice(5) || ""; }
+    if (note) {
+      const status = [...tab.classList].find((c) => c.startsWith("tab--"))?.slice(5) || "open";
+      note.dataset.status = status;
+      $(".tab-note__status", note).textContent = { open: "Open", soon: "Opening soon", closed: "Closed" }[status];
+      $(".tab-note__text", note).textContent = tab.dataset.note || "";
+    }
   };
   tabs.forEach((t, i) => {
     t.addEventListener("click", () => activateTab(t));
@@ -560,6 +565,11 @@
     return ok;
   };
   $$("input[required]:not([type=checkbox]), input[type=email]", form).forEach((i) => i.addEventListener("blur", () => validate(i)));
+  form.consent.addEventListener("change", () => {
+    if (!form.consent.checked) return;
+    $("#consentErr").style.display = "none";
+    form.consent.closest(".check").classList.remove("check--error");
+  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -570,6 +580,7 @@
     const consentOk = form.consent.checked;
     $("#slotErr").style.display = slotOk ? "none" : "block";
     $("#consentErr").style.display = consentOk ? "none" : "block";
+    form.consent.closest(".check").classList.toggle("check--error", !consentOk);
     if (!slotOk || results.includes(false) || !consentOk) {
       const missing = [!slotOk && "a day and time", results.includes(false) && "your details", !consentOk && "agreement to the privacy notice"].filter(Boolean);
       if (!slotOk) slotGrid.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });

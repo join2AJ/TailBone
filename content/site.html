@@ -706,13 +706,12 @@
           <h2>New Delhi, online, and soon Lucknow.</h2>
         </div>
         <div class="tabs reveal" role="tablist" aria-label="Clinic locations">
-          <button type="button" class="tab tab--open is-active" role="tab" aria-selected="true" aria-controls="loc-del" id="tab-del" data-tab="del" data-note="Open by appointment, 7 days a week: Mon–Fri 10–5, Sat 10–3, Sun 8–3."><span class="tab__dot" aria-hidden="true"></span>New Delhi</button>
-          <button type="button" class="tab tab--open" role="tab" aria-selected="false" aria-controls="loc-onl" id="tab-onl" data-tab="onl" data-note="Video consultations from anywhere in India or abroad, by appointment."><span class="tab__dot" aria-hidden="true"></span>Online</button>
-          <button type="button" class="tab tab--soon" role="tab" aria-selected="false" aria-controls="loc-lko" id="tab-lko" data-tab="lko" data-note="Opening soon. Meanwhile, book an online consultation or visit New Delhi."><span class="tab__dot" aria-hidden="true"></span>Lucknow <small>soon</small></button>
-          <button type="button" class="tab tab--closed" role="tab" aria-selected="false" aria-controls="loc-blr" id="tab-blr" data-tab="blr" data-note="This clinic has closed. Please book New Delhi or an online consultation."><span class="tab__dot" aria-hidden="true"></span>Bengaluru <small>closed</small></button>
+          <button type="button" class="tab tab--open is-active" role="tab" aria-selected="true" aria-controls="loc-del" id="tab-del" data-tab="del" data-note="By appointment, 7 days a week · Mon–Fri 10–5, Sat 10–3, Sun 8–3"><span class="tab__dot" aria-hidden="true"></span>New Delhi</button>
+          <button type="button" class="tab tab--open" role="tab" aria-selected="false" aria-controls="loc-onl" id="tab-onl" data-tab="onl" data-note="Video consultations from anywhere in India or abroad, by appointment"><span class="tab__dot" aria-hidden="true"></span>Online</button>
+          <button type="button" class="tab tab--soon" role="tab" aria-selected="false" aria-controls="loc-lko" id="tab-lko" data-tab="lko" data-note="Meanwhile, book an online consultation or visit New Delhi"><span class="tab__dot" aria-hidden="true"></span>Lucknow <small>soon</small></button>
+          <button type="button" class="tab tab--closed" role="tab" aria-selected="false" aria-controls="loc-blr" id="tab-blr" data-tab="blr" data-note="Please book New Delhi or an online consultation instead"><span class="tab__dot" aria-hidden="true"></span>Bengaluru <small>closed</small></button>
         </div>
-        <p class="tab-note" id="tabNote" aria-live="polite">Open by appointment, 7 days a week: Mon–Fri 10–5, Sat 10–3, Sun 8–3.</p>
-        <p class="tab-legend" aria-hidden="true"><span class="tab-legend__open">Open</span><span class="tab-legend__soon">Opening soon</span><span class="tab-legend__closed">Closed</span></p>
+        <p class="tab-note" id="tabNote" data-status="open" aria-live="polite"><strong class="tab-note__status">Open</strong><span class="tab-note__text">By appointment, 7 days a week · Mon–Fri 10–5, Sat 10–3, Sun 8–3</span></p>
 
         <div class="panel is-active" id="loc-del" role="tabpanel" aria-labelledby="tab-del">
           <div class="loc">
@@ -857,9 +856,9 @@
                 </div>
                 <label class="check"><input type="checkbox" name="prefersFemale"> I'd prefer to see a female clinician</label>
                 <div class="consent">
-                  <label class="check check--top"><input type="checkbox" name="consent" required> <span>I agree that Tailbone Treatment Clinic may use my details, including health information I share, to book, provide and follow up my treatment, as described in the <a href="/privacy.html" target="_blank" rel="noopener">privacy notice</a>.</span></label>
+                  <label class="check check--top"><input type="checkbox" name="consent" required aria-describedby="consentErr"> <span>I agree that Tailbone Treatment Clinic may use my details, including health information I share, to book, provide and follow up my treatment, as described in the <a href="/privacy.html" target="_blank" rel="noopener">privacy notice</a>.</span></label>
+                  <span class="err" id="consentErr" role="alert">Tick this box to agree to the privacy notice. We can't book without it.</span>
                   <label class="check check--top"><input type="checkbox" name="whatsappConsent" checked> <span>Send me appointment updates, reminders and follow-up check-ins on WhatsApp. <span class="muted">(Optional. You can stop them any time.)</span></span></label>
-                  <span class="err" id="consentErr">Please agree to the privacy notice to book.</span>
                 </div>
                 <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
               </div>

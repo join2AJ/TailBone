@@ -3,6 +3,7 @@
 // and the plain-text summaries for AI assistants (llms.txt).
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { root, SITE, siteFooter, siteHeader } from "./partials.js";
 import { buildPages } from "./build-pages.js";
 import { build as buildBlog, page as blogPage } from "./build-blog.js";
@@ -89,6 +90,30 @@ ${lines.join("\n")}
 `);
 }
 
+/** Adds ?v=<content hash> to our own stylesheets and scripts in every page, so a browser never pairs a new page
+ * with an old cached stylesheet (which made new sections look broken until the cache expired). */
+export function versionAssets() {
+  const hashes = new Map();
+  const hash = (url) => {
+    if (!hashes.has(url)) {
+      const file = path.join(root, "public", url);
+      hashes.set(url, fs.existsSync(file) ? crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex").slice(0, 10) : null);
+    }
+    return hashes.get(url);
+  };
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith(".html") ? [path.join(dir, e.name)] : []);
+  for (const file of walk(path.join(root, "public"))) {
+    const html = fs.readFileSync(file, "utf8");
+    const out = html.replace(/((?:href|src)=")(\/?(?:assets|admin)\/[^"?#]+\.(?:css|js))(?:\?v=\w*)?"/g, (m, attr, url) => {
+      // Relative links (standalone pages at the site root) resolve from the root too.
+      const h = hash(url.replace(/^\//, ""));
+      return h ? `${attr}${url}?v=${h}"` : m;
+    });
+    if (out !== html) fs.writeFileSync(file, out);
+  }
+}
+
 export function buildSite() {
   const pages = buildPages();
   buildPress();
@@ -99,6 +124,7 @@ export function buildSite() {
   write404();
   writeRobots();
   writeLlms(pages, posts);
+  versionAssets();
   return { pages, posts };
 }
 

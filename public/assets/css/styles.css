@@ -1088,17 +1088,27 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .tab.tab--closed.is-active { background: #6b7280; }
 .tab.is-active .tab__dot { background: #fff; box-shadow: none; }
 [data-theme="dark"] .tab--soon:not(.is-active) small { color: #fbbf24; }
-.tab-note { text-align: center; margin: -.8rem auto .4rem; max-width: 640px; font-weight: 600; color: #15803d; }
-.tab-note[data-status="soon"] { color: #b45309; }
-.tab-note[data-status="closed"] { color: var(--danger-ink); }
-[data-theme="dark"] .tab-note { color: #86efac; }
-[data-theme="dark"] .tab-note[data-status="soon"] { color: #fbbf24; }
-.tab-legend { display: flex; justify-content: center; gap: 1rem; margin: 0 auto var(--space-5); font-size: .78rem; color: var(--muted); }
-.tab-legend span::before { content: ""; display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; margin-right: .35rem; vertical-align: .05em; }
-.tab-legend__open::before { background: #16a34a; }
-.tab-legend__soon::before { background: #d97706; }
-.tab-legend__closed::before { background: #dc2626; }
+/* One status line under the clinic tabs: a coloured status chip, then a short note. */
+.tab-note { --c: #15803d; --bg: #ecfdf3; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .35rem .6rem;
+  width: fit-content; max-width: min(640px, 100%); margin: -.8rem auto var(--space-5); padding: .45rem .9rem .45rem .5rem;
+  border-radius: 999px; background: var(--bg); color: var(--text); font-size: .92rem; text-align: center; }
+.tab-note[data-status="soon"] { --c: #b45309; --bg: #fff7ed; }
+.tab-note[data-status="closed"] { --c: var(--danger-ink); --bg: #f1f5f9; }
+.tab-note__status { display: inline-flex; align-items: center; gap: .4rem; padding: .15rem .6rem; border-radius: 999px;
+  background: #fff; color: var(--c); font-size: .8rem; font-weight: 700; white-space: nowrap; }
+.tab-note__status::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
+[data-theme="dark"] .tab-note { --bg: rgba(255,255,255,.06); }
+[data-theme="dark"] .tab-note__status { background: rgba(255,255,255,.08); }
+[data-theme="dark"] .tab-note[data-status="open"] { --c: #86efac; }
+[data-theme="dark"] .tab-note[data-status="soon"] { --c: #fbbf24; }
+[data-theme="dark"] .tab-note[data-status="closed"] { --c: #fca5a5; }
+@media (max-width: 560px) { .tab-note { border-radius: 14px; padding: .55rem .8rem; } }
 @media (max-width: 560px) { .tab { justify-content: center; } }
 .mini-grid li a.mini-card, .mini-grid li a.mini-card:hover { text-decoration: none; }
 .footer .linkish { padding: .25rem 0; }
 .post-related { margin-left: auto; margin-right: auto; }
+
+/* Privacy tick missed: outline the box that needs ticking. */
+.check--error { outline: 2px solid var(--danger-ink); outline-offset: 4px; border-radius: 8px; }
+.check--error input { accent-color: var(--danger-ink); }
+#consentErr { margin: -.25rem 0 .25rem 1.9rem; }
