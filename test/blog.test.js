@@ -43,7 +43,9 @@ test("every short page is its own file with a unique title, canonical link, head
   const titles = new Set();
   for (const p of PAGES) {
     const html = fs.readFileSync(`public/${p.file}`, "utf8");
-    assert.equal(html.replace(/"dateModified":"[^"]*"/, ""), renderPage(template, p).replace(/"dateModified":"[^"]*"/, ""), `${p.file} is stale: run npm run build`);
+    // The build adds ?v=<hash> to stylesheet and script links afterwards (versionAssets), so compare without it.
+    const plain = (h) => h.replace(/"dateModified":"[^"]*"/, "").replace(/(\.(?:css|js))\?v=\w+"/g, '$1"');
+    assert.equal(plain(html), plain(renderPage(template, p)), `${p.file} is stale: run npm run build`);
     const title = /<title>(.*?)<\/title>/.exec(html)[1];
     assert.ok(!titles.has(title), `duplicate title ${title}`); titles.add(title);
     assert.ok(html.includes(`<link rel="canonical" href="https://tailbone.netlify.app${p.slug}">`), p.file);
@@ -120,4 +122,13 @@ test("every article has a unique number and tags from the agreed list; the searc
   assert.ok(index.every((p) => p.text.length > 200 && !p.text.includes("::anim")));
   const blogIndex = fs.readFileSync("public/blog/index.html", "utf8");
   assert.ok(blogIndex.includes('id="blogQ"') && blogIndex.includes('data-tag="Pregnancy"'));
+});
+
+test("every page links our stylesheets and scripts with a content version, so browsers never mix new pages with old styles", () => {
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith(".html") ? [`${dir}/${e.name}`] : []);
+  for (const file of walk("public")) {
+    const bare = fs.readFileSync(file, "utf8").match(/(?:href|src)="\/?(?:assets|admin)\/[^"?]+\.(?:css|js)"/g);
+    assert.equal(bare, null, `${file} has unversioned asset links: run npm run build`);
+  }
 });
