@@ -1086,7 +1086,7 @@
 
   // ---------- Settings ----------
   // ---------- Settings (each part shown only to those allowed to use it) ----------
-  async function renderSettings() {
+  async function renderSettings(pane) {
     const can = (p) => state.admin.permissions.includes(p);
     const isSuper = state.admin.role === "superadmin";
     const blocked = can("settings") ? (await api("/blocked")).blocked : [];
@@ -1136,9 +1136,9 @@
           </div>
           <div class="field"><label>Doctor's linked account id</label><input name="commission.doctorAccountId" placeholder="acc_XXXXXXXXXXXX" value="${esc(C.doctorAccountId)}"></div>
           <p class="small" id="splitPreview"></p>` : ""}
-          <button class="btn btn--primary">Save fees & policies</button>
+          <div class="form-actions"><button class="btn btn--primary">Save fees & policies</button></div>
         </form>
-        <h3>Change history</h3>
+        <h3 class="settings-subhead">Change history</h3>
         <p class="muted small">Every change is recorded with the date, time and who made it. Bookings keep the cancellation and reschedule rules that applied when they were made.</p>
         <div class="list">${(pol.history || []).map((h) => `<div class="item"><div class="item__time">${esc(new Date(h.changedAt).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }))}</div>
           <div class="item__main"><strong>${esc(h.by)}</strong><small>${h.changes.map(esc).join("<br>")}</small></div></div>`).join("") || '<div class="empty">No changes yet.</div>'}</div>
@@ -1172,56 +1172,61 @@
           <button class="btn btn--ghost btn--sm" type="button" id="rotateFeed">Change link</button></div>
         <p class="muted small">Keep this link private: anyone with it can see appointment times and first names. "Change link" stops the old one working.</p>
       </section>`;
-    content.innerHTML = `
-      ${policyCard}
-      ${video ? `<section class="panel-card">
+    // Settings are grouped into tabs (each has its own address, e.g. #/settings/account) instead of one long page.
+    const videoCard = video ? `<section class="panel-card">
         <h2>Online consultations</h2>
         <p class="muted small">The clinic's usual video room: a Google Meet, Zoom or similar link. Patients get a <strong>Join call</strong> button in My appointments from 15 minutes before their time, and the link is never shown earlier. Choose a room where you let each patient in (Google Meet and Zoom do this), so nobody joins during another consultation. You can set a different link on any single appointment.</p>
         <form class="toolbar" id="videoForm">
           <div class="field" style="flex:1"><label>Usual video room link</label><input name="defaultUrl" type="url" inputmode="url" maxlength="300" placeholder="https://meet.google.com/abc-defg-hij" value="${esc(video.defaultUrl || "")}"></div>
           <button class="btn btn--primary btn--sm">Save</button>
         </form>
-      </section>` : ""}
-      ${calendarCard}
-      <div class="grid-2">
-        <div class="stack">
-          ${holidaysCard}
-          <section class="panel-card" id="securityPanel">
-            <h2>My account security</h2>
-            <p class="small">${state.admin.twoFactor ? '<span class="badge badge--confirmed">Two-factor sign-in on</span>' : '<span class="badge badge--cancelled">Two-factor sign-in off</span> Turn it on to protect patient data.'}</p>
-            <div id="twofa"></div>
-            <div class="row-gap" style="margin-top:.6rem">
-              ${state.admin.twoFactor ? '<button class="btn btn--ghost btn--sm" id="tfaOff" type="button">Turn off two-factor</button>' : '<button class="btn btn--primary btn--sm" id="tfaSetup" type="button">Set up two-factor sign-in</button>'}
-              <button class="btn btn--ghost btn--sm" id="revokeBtn" type="button">Sign out all other devices</button>
-            </div>
-          </section>
-        </div>
-        <div class="stack">
-          ${can("export") ? `<section class="panel-card">
-            <h2>Export</h2>
-            <p class="muted small">Download every appointment as a spreadsheet (CSV opens in Excel and Google Sheets).</p>
-            <a class="btn btn--ghost" href="/api/admin/export/appointments.csv">Download appointments.csv</a>
-          </section>` : ""}
-          ${isSuper ? `<section class="panel-card">
-            <div class="panel-card__head"><h2>Backups</h2><button class="btn btn--ghost btn--sm" id="backupNow" type="button">Back up now</button></div>
-            <p class="muted small">Encrypted backups run daily; the last 14 are kept. Download one each week and store it somewhere else, such as an encrypted drive.</p>
-            <div class="list" id="backupList"><div class="empty">Loading…</div></div>
-          </section>` : ""}
-          <section class="panel-card">
-            <h2>Change my password</h2>
-            <form class="form" id="pwForm">
-              <div class="field"><label>Current password</label><input type="password" name="current" autocomplete="current-password" required></div>
-              <div class="field"><label>New password (10+ characters)</label><input type="password" name="next" autocomplete="new-password" minlength="10" required></div>
-              <button class="btn btn--primary btn--sm">Update password</button>
-            </form>
-          </section>
-        </div>
-      </div>
-      ${isSuper ? `<section class="panel-card">
-        <div class="panel-card__head"><h2>Security log</h2><button class="btn btn--ghost btn--sm" id="logBtn" type="button">Show</button></div>
-        <p class="muted small" style="margin:0">Sign-ins, failed attempts, lockouts, patient record views, exports, erasures, feature and user changes. Kept for 2 years.</p>
-        <div id="secLog"></div>
-      </section>` : ""}`;
+      </section>` : "";
+    const accountCard = `<div class="grid-2 grid-2--even">
+        <section class="panel-card" id="securityPanel">
+          <h2>Two-factor sign-in</h2>
+          <p class="small">${state.admin.twoFactor ? '<span class="badge badge--confirmed">On</span> A code from your phone is needed at each sign-in.' : '<span class="badge badge--cancelled">Off</span> Turn it on to protect patient data.'}</p>
+          <div id="twofa"></div>
+          <div class="row-gap" style="margin-top:.6rem">
+            ${state.admin.twoFactor ? '<button class="btn btn--ghost btn--sm" id="tfaOff" type="button">Turn off two-factor</button>' : '<button class="btn btn--primary btn--sm" id="tfaSetup" type="button">Set up two-factor sign-in</button>'}
+            <button class="btn btn--ghost btn--sm" id="revokeBtn" type="button">Sign out all other devices</button>
+          </div>
+        </section>
+        <section class="panel-card">
+          <h2>Change my password</h2>
+          <form class="form" id="pwForm">
+            <div class="field"><label>Current password</label><input type="password" name="current" autocomplete="current-password" required></div>
+            <div class="field"><label>New password (10+ characters)</label><input type="password" name="next" autocomplete="new-password" minlength="10" required></div>
+            <div class="form-actions"><button class="btn btn--primary btn--sm">Update password</button></div>
+          </form>
+        </section>
+      </div>`;
+    const dataCard = `${can("export") ? `<section class="panel-card">
+          <h2>Export</h2>
+          <p class="muted small">Download every appointment as a spreadsheet (CSV opens in Excel and Google Sheets). Payments have their own download on the Payments page.</p>
+          <a class="btn btn--ghost btn--sm" href="/api/admin/export/appointments.csv">Download appointments.csv</a>
+        </section>` : ""}
+        ${isSuper ? `<section class="panel-card">
+          <div class="panel-card__head"><h2>Backups</h2><button class="btn btn--ghost btn--sm" id="backupNow" type="button">Back up now</button></div>
+          <p class="muted small">Encrypted backups run daily; the last 14 are kept. Download one each week and store it somewhere else, such as an encrypted drive.</p>
+          <div class="list" id="backupList"><div class="empty">Loading…</div></div>
+        </section>
+        <section class="panel-card">
+          <div class="panel-card__head"><h2>Security log</h2><button class="btn btn--ghost btn--sm" id="logBtn" type="button">Show</button></div>
+          <p class="muted small" style="margin:0">Sign-ins, failed attempts, lockouts, patient record views, exports, erasures, feature and user changes. Kept for 2 years.</p>
+          <div id="secLog"></div>
+        </section>` : ""}`;
+    const panes = [
+      ["fees", "Fees & policies", policyCard],
+      ["holidays", "Holidays", holidaysCard],
+      ["video", "Online consultations", videoCard],
+      ["calendar", "Calendar", calendarCard],
+      ["account", "My account", accountCard],
+      ["data", "Data & backups", dataCard.trim()],
+    ].filter(([, , html]) => html);
+    const current = panes.find(([k]) => k === pane)?.[0] || panes[0][0];
+    content.innerHTML = `
+      <nav class="chips settings-tabs" aria-label="Settings sections">${panes.map(([k, label]) => `<a class="chip ${k === current ? "is-active" : ""}" href="#/settings/${k}"${k === current ? ' aria-current="page"' : ""}>${label}</a>`).join("")}</nav>
+      ${panes.map(([k, , html]) => `<div class="settings-pane stack" data-pane="${k}"${k === current ? "" : " hidden"}>${html}</div>`).join("")}`;
 
     const on = (sel, ev, fn) => { const el = $(sel); if (el) el.addEventListener(ev, fn); };
 
