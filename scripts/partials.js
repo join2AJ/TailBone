@@ -22,6 +22,7 @@ export const ANIMS = {
   "pelvic-floor": { caption: "Pelvic-floor findings in women with pelvic pain, with and without coccydynia (Neville et al., 2022, n = 127).", still: 5 },
   "treatment-ladder": { caption: "Coccydynia is treated step by step. About 9 in 10 people improve with the first, non-surgical steps (Lirette 2014; MSD Manual).", still: 8 },
   "history-timeline": { caption: "Milestones in understanding tailbone pain, from the 16th century to today.", still: 7 },
+  subluxation: { caption: "A displaced (subluxed) coccyx can shift inward, into the pelvis, or outward. The direction decides the treatment, so it is checked first.", still: 10.5 },
   "bike-vibration": { caption: "On a two-wheeler, each bump is passed up through the seat to the base of the spine.", still: 0.5 },
   "visit-steps": { caption: "Your visit in four steps: listen and assess, pinpoint the cause, hands-on treatment, recover and prevent.", still: 9 },
 };

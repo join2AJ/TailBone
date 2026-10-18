@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 340" width="600" height="340" role="img" aria-label="">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0e7490"/><stop offset="1" stop-color="#0e7490" stop-opacity=".72"/></linearGradient></defs>
+  <rect width="600" height="340" fill="url(#g)"/>
+  <circle cx="543" cy="287" r="150" fill="#fff" opacity=".08"/>
+  <circle cx="63" cy="33" r="90" fill="#fff" opacity=".06"/>
+  <circle cx="420" cy="80" r="5" fill="#fff" opacity=".2"/><circle cx="466" cy="80" r="6" fill="#fff" opacity=".3"/><circle cx="512" cy="80" r="7" fill="#fff" opacity=".4"/><circle cx="420" cy="126" r="4" fill="#fff" opacity=".2"/><circle cx="466" cy="126" r="5" fill="#fff" opacity=".3"/><circle cx="512" cy="126" r="6" fill="#fff" opacity=".4"/><circle cx="420" cy="172" r="7" fill="#fff" opacity=".2"/><circle cx="466" cy="172" r="4" fill="#fff" opacity=".3"/><circle cx="512" cy="172" r="5" fill="#fff" opacity=".4"/>
+  <path d="M150 300c40-60 40-120 10-200" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round" opacity=".35"/>
+  <circle cx="200" cy="170" r="92" fill="#fff" opacity=".95"/>
+  <g transform="translate(140 110) scale(5)" fill="none" stroke="#0e7490" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v9h10V3M5 12h14l-1 4H6zM8 16v5M16 16v5"/></g>
+</svg>

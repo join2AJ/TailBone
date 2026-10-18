@@ -19,6 +19,72 @@ export const TAGS = [
   "Work and lifestyle", "Chronic pain", "Mental health", "Red flags", "Related conditions", "Anatomy", "Research", "History", "Your visit",
 ];
 
+// Article pictures: the cover photo if the article has one, otherwise an illustration in the colour and icon of its
+// main topic (the first tag other than "Research"). Written to public/blog/art/ by the build.
+const TAG_ART = {
+  Causes: ["#c2410c", '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>'],
+  Symptoms: ["#be123c", '<path d="M2 12h4l3-7 4 14 3-7h6"/>'],
+  Diagnosis: ["#4338ca", '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>'],
+  Treatment: ["#15803d", '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/>'],
+  "Self-care": ["#0f766e", '<path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/>'],
+  Sitting: ["#0e7490", '<path d="M7 3v9h10V3M5 12h14l-1 4H6zM8 16v5M16 16v5"/>'],
+  Pregnancy: ["#b5477a", '<circle cx="9" cy="6" r="3"/><path d="M4 21c0-5 2-9 5-9s4 2 4 4"/><circle cx="16" cy="15" r="3"/>'],
+  "Women's health": ["#9333ea", '<circle cx="12" cy="9" r="5"/><path d="M12 14v8M9 19h6"/>'],
+  Injury: ["#b91c1c", '<path d="M4 15 15 4a3 3 0 0 1 4 4L8 19a3 3 0 0 1-4-4z"/><path d="m10 10 4 4"/>'],
+  "Work and lifestyle": ["#0369a1", '<path d="M4 5h16v11H4zM2 19h20"/>'],
+  "Chronic pain": ["#a16207", '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
+  "Mental health": ["#6d28d9", '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 3 5h2zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-3 5h-2z"/>'],
+  "Red flags": ["#b91c1c", '<path d="M12 3 22 21H2z"/><path d="M12 10v5M12 18v.01"/>'],
+  "Related conditions": ["#0e7490", '<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="8" r="2.5"/><circle cx="10" cy="18" r="2.5"/><path d="M8 7l7.5 1M7 8l2 8M16 10l-4.5 6"/>'],
+  Anatomy: ["#1d4ed8", '<path d="M10 2h4v3h-4zM9 7h6v3H9zM9.5 12h5v3h-5zM10.5 17h3L12 22z"/>'],
+  Research: ["#1e6091", '<path d="M4 20V11M10 20V4M16 20v-7M2 20h20"/>'],
+  History: ["#92400e", '<path d="M6 3h12M6 21h12M7 3c0 5 10 7 10 9s-10 4-10 9M17 3c0 5-10 7-10 9s10 4 10 9"/>'],
+  "Your visit": ["#047857", '<path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/>'],
+};
+// Articles whose topic deserves its own picture rather than their tag's.
+const SLUG_ART = {
+  "coccydynia-facts-and-figures": ["#1e6091", '<path d="M4 20V11M10 20V4M16 20v-7M2 20h20"/>'],
+  "body-weight-and-tailbone-pain": ["#0f766e", '<path d="M5 6h14l-2 14H7z"/><path d="M9 6a3 3 0 0 1 6 0M12 11v3"/>'],
+  "two-wheeler-riding-and-tailbone-pain": ["#c2410c", '<circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5 9 9h5l4.5 7.5M9 9 7.5 6H5M14 9l1.5-3H18"/>'],
+  "amusement-park-rides-and-tailbone-injury": ["#db2777", '<path d="M2 20c3-12 6-12 8-6s5 6 7-2 4-6 5-4"/><path d="M2 20h20"/>'],
+  "kegel-exercises-and-tailbone-pain": ["#9333ea", '<circle cx="12" cy="12" r="3"/><path d="M3 12h4M21 12h-4M12 3v4M12 21v-4M5 5l3 3M19 19l-3-3M19 5l-3 3M5 19l3-3"/>'],
+  "tailbone-bone-setting-risks": ["#b91c1c", '<path d="M8 13V5a1.5 1.5 0 0 1 3 0v6M11 11V3.5a1.5 1.5 0 0 1 3 0V11M14 11V5a1.5 1.5 0 0 1 3 0v8a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 3 13.5V11a1.5 1.5 0 0 1 3 0v3"/>'],
+  "coccydynia-treatment-ladder": ["#15803d", '<path d="M3 21h4v-4h4v-4h4V9h4V5h2"/>'],
+  "tailbone-subluxation-inward-or-outward": ["#1d4ed8", '<path d="M10 2h4v3h-4zM9 7h6v3H9zM9.5 12h5v3h-5z"/><path d="M12 17c0 2-1 3-3 4M15 19l3 1"/>'],
+  "coccyx-shapes-and-movement": ["#4338ca", '<path d="M10 2h4v3h-4zM9 7h6v3H9zM9.5 12h5v3h-5zM10.5 17h3L12 22z"/>'],
+};
+const mainTag = (meta) => meta.tags.find((t) => t !== "Research" && TAG_ART[t]) || meta.tags[0] || "Treatment";
+
+function artSvg(meta) {
+  const [color, icon] = SLUG_ART[meta.slug] || TAG_ART[mainTag(meta)] || TAG_ART.Treatment;
+  const seed = [...meta.slug].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 997, 7);
+  const dots = Array.from({ length: 9 }, (_, i) => `<circle cx="${420 + (i % 3) * 46 + (seed % 17)}" cy="${70 + Math.floor(i / 3) * 46 + (seed % 11)}" r="${4 + ((seed + i) % 4)}" fill="#fff" opacity=".${2 + ((seed + i) % 3)}"/>`).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 340" width="600" height="340" role="img" aria-label="">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${color}"/><stop offset="1" stop-color="${color}" stop-opacity=".72"/></linearGradient></defs>
+  <rect width="600" height="340" fill="url(#g)"/>
+  <circle cx="${510 + (seed % 40)}" cy="${290 - (seed % 30)}" r="150" fill="#fff" opacity=".08"/>
+  <circle cx="${60 + (seed % 50)}" cy="${30 + (seed % 25)}" r="90" fill="#fff" opacity=".06"/>
+  ${dots}
+  <path d="M150 300c40-60 40-120 10-200" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round" opacity=".35"/>
+  <circle cx="200" cy="170" r="92" fill="#fff" opacity=".95"/>
+  <g transform="translate(140 110) scale(5)" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${icon}</g>
+</svg>
+`;
+}
+
+/**
+ * The picture shown for an article on cards: { src, width, height }. Always the topic illustration, so cards look
+ * consistent (the old site's cover photos are banners with text baked in, which cropping cuts off); covers still
+ * appear at the top of their articles.
+ */
+export const postArt = (meta) => ({ src: `/blog/art/${meta.slug}.svg`, width: 600, height: 340 });
+
+/** A small linked card (picture + title), used for "Keep reading" and the Tailbone pain page's "Go deeper". */
+export function miniCard(meta) {
+  const art = postArt(meta);
+  return `<li><a class="mini-card" href="/blog/${meta.slug}.html"><img src="${esc(art.src)}" alt="" width="${art.width}" height="${art.height}" loading="lazy" decoding="async"><span class="mini-card__body"><small>${esc(mainTag(meta))}</small><strong>${esc(meta.title)}</strong></span></a></li>`;
+}
+
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export function parseFrontMatter(src) {
@@ -190,10 +256,10 @@ const tagUrl = (t) => `/blog/?tag=${encodeURIComponent(t)}`;
 const tagsHtml = (tags, link = false) => (tags.length
   ? `<ul class="post-tags">${tags.map((t) => `<li>${link ? `<a href="${esc(tagUrl(t))}">${esc(t)}</a>` : esc(t)}</li>`).join("")}</ul>` : "");
 
-/** The two other articles sharing the most tags with this one (newest first on ties). */
-function related(post, others) {
+/** The other articles sharing the most tags with this one (newest first on ties). */
+function related(post, others, n = 3) {
   const shared = (o) => o.meta.tags.filter((t) => post.meta.tags.includes(t)).length;
-  return [...others].sort((a, b) => shared(b) - shared(a) || b.meta.date.localeCompare(a.meta.date)).slice(0, 2);
+  return [...others].sort((a, b) => shared(b) - shared(a) || b.meta.date.localeCompare(a.meta.date)).slice(0, n);
 }
 
 /** Plain text of an article for the search box (no Markdown, figures or reference list). */
@@ -220,7 +286,7 @@ function articlePage(post, others) {
           <button type="button" class="post-share__btn" data-share="${esc(url)}" data-title="${esc(meta.title)}">Copy link</button>
         </div>`;
   const cover = meta.image ? imageSize(meta.image) : null;
-  const more = related(post, others).map((o) => `<li><a href="/blog/${o.meta.slug}.html">${esc(o.meta.title)}</a></li>`).join("");
+  const more = related(post, others, 3).map((o) => miniCard(o.meta)).join("");
   const body = `      <article class="post narrow" data-post-id="${meta.id}">
         <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a></nav>
         ${tagsHtml(meta.tags, true)}
@@ -246,8 +312,11 @@ ${post.html}
             <a href="${WA}" class="btn btn--wa" target="_blank" rel="noopener">WhatsApp us</a>
           </div>
         </div>
-        ${more ? `<h2 class="subhead">Keep reading</h2><ul class="post-more">${more}</ul>` : ""}
-      </article>`;
+      </article>
+      ${more ? `<section class="post-related narrow" aria-labelledby="moreTitle">
+        <h2 class="subhead" id="moreTitle">Keep reading</h2>
+        <ul class="mini-grid">${more}</ul>
+      </section>` : ""}`;
   return page({
     title: `${meta.title} | Tailbone Treatment`.length <= 70 ? `${meta.title} | Tailbone Treatment` : meta.title,
     description: meta.summary,
@@ -283,12 +352,17 @@ ${post.html}
 }
 
 function indexPage(posts) {
-  const cards = posts.map(({ meta }) => `        <li class="post-card" data-post-id="${meta.id}" data-tags="${esc(meta.tags.join("|"))}">
-          ${tagsHtml(meta.tags)}
-          <h2><a href="/blog/${meta.slug}.html">${esc(meta.title)}</a></h2>
-          <p>${esc(meta.summary)}</p>
-          <p class="muted small">${metaLine(meta)}</p>
-        </li>`).join("\n");
+  const cards = posts.map(({ meta }) => {
+    const art = postArt(meta);
+    return `        <li class="post-card" data-post-id="${meta.id}" data-tags="${esc(meta.tags.join("|"))}">
+          <img class="post-card__img" src="${esc(art.src)}" alt="" width="${art.width}" height="${art.height}" loading="lazy" decoding="async">
+          <div class="post-card__body">
+            ${tagsHtml(meta.tags.slice(0, 2))}
+            <h2><a href="/blog/${meta.slug}.html">${esc(meta.title)}</a></h2>
+            <p class="muted small">${metaLine(meta)}</p>
+          </div>
+        </li>`;
+  }).join("\n");
   const body = `      <div class="section__head">
         <span class="eyebrow">Blog</span>
         <h1>Tailbone pain, explained</h1>
@@ -355,7 +429,11 @@ export function build() {
   const posts = checkIds(loadPosts());
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.mkdirSync(OUT, { recursive: true });
-  for (const p of posts) fs.writeFileSync(path.join(OUT, `${p.meta.slug}.html`), articlePage(p, posts.filter((o) => o !== p)));
+  fs.mkdirSync(path.join(OUT, "art"), { recursive: true });
+  for (const p of posts) {
+    fs.writeFileSync(path.join(OUT, `${p.meta.slug}.html`), articlePage(p, posts.filter((o) => o !== p)));
+    fs.writeFileSync(path.join(OUT, "art", `${p.meta.slug}.svg`), artSvg(p.meta));
+  }
   fs.writeFileSync(path.join(OUT, "index.html"), indexPage(posts));
   // Search index for the blog's search box; the server also reads it to list articles in the dashboard.
   fs.writeFileSync(path.join(OUT, "search.json"), JSON.stringify(posts.map(({ meta, body }) => ({

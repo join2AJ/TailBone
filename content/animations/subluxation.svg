@@ -1,0 +1,23 @@
+<svg class="anim__svg" viewBox="0 0 640 330" aria-hidden="true" focusable="false">
+  <text x="16" y="26" class="a-t3">← Front of body</text><text x="624" y="26" text-anchor="end" class="a-t3">Back →</text>
+  <g transform="translate(0 30)">
+    <g transform="translate(4 0)">
+      <rect x="6" y="0" width="196" height="290" rx="14" class="a-row"><animate attributeName="opacity" values="1;1;.35;.35;1;1" keyTimes="0;.23;.25;.73;.75;1" dur="12s" repeatCount="indefinite"/></rect>
+      <g transform="translate(14 0)"><path d="M78 14 C102 18 112 70 98 118 L86 116 C96 72 90 34 70 26 Z" class="a-bone"/><circle cx="90" cy="130" r="7" class="a-coccyx a-coccyx--ok"/><circle cx="87" cy="144" r="6" class="a-coccyx a-coccyx--ok"/><circle cx="82" cy="157" r="5" class="a-coccyx a-coccyx--ok"/><circle cx="76" cy="168" r="4" class="a-coccyx a-coccyx--ok"/></g>
+      <text x="104" y="214" text-anchor="middle" class="a-t1">Normal</text>
+      <text x="104" y="240" text-anchor="middle" class="a-t3">Coccyx sits in</text><text x="104" y="258" text-anchor="middle" class="a-t3">line with the spine</text>
+    </g>
+    <g transform="translate(216 0)">
+      <rect x="6" y="0" width="196" height="290" rx="14" class="a-row" opacity=".35"><animate attributeName="opacity" values=".35;.35;1;1;.35;.35;1;1" keyTimes="0;0.23;0.25;0.48;0.50;.73;.75;1" dur="12s" repeatCount="indefinite"/></rect>
+      <g transform="translate(14 0)"><path d="M78 14 C102 18 112 70 98 118 L86 116 C96 72 90 34 70 26 Z" class="a-bone"/><circle cx="88" cy="130" r="7" class="a-coccyx"/><circle cx="78" cy="142" r="6" class="a-coccyx"/><circle cx="66" cy="148" r="5" class="a-coccyx"/><circle cx="54" cy="151" r="4" class="a-coccyx"/><path d="M66 176 L34 176" class="a-arrow a-arrow--red"/><path d="M44 167 L33 176 L44 185" class="a-arrow a-arrow--red"/></g>
+      <text x="104" y="214" text-anchor="middle" class="a-t1">Inward shift</text>
+      <text x="104" y="240" text-anchor="middle" class="a-t3">Anterior: tip pushed</text><text x="104" y="258" text-anchor="middle" class="a-t3">into the pelvis</text>
+    </g>
+    <g transform="translate(428 0)">
+      <rect x="6" y="0" width="196" height="290" rx="14" class="a-row" opacity=".35"><animate attributeName="opacity" values=".35;.35;1;1" keyTimes="0;.48;.5;1" dur="12s" repeatCount="indefinite"/></rect>
+      <g transform="translate(14 0)"><path d="M78 14 C102 18 112 70 98 118 L86 116 C96 72 90 34 70 26 Z" class="a-bone"/><circle cx="94" cy="130" r="7" class="a-coccyx"/><circle cx="105" cy="140" r="6" class="a-coccyx"/><circle cx="117" cy="146" r="5" class="a-coccyx"/><circle cx="129" cy="149" r="4" class="a-coccyx"/><path d="M118 172 L150 172" class="a-arrow"/><path d="M140 163 L151 172 L140 181" class="a-arrow"/></g>
+      <text x="104" y="214" text-anchor="middle" class="a-t1">Outward shift</text>
+      <text x="104" y="240" text-anchor="middle" class="a-t3">Posterior: tip pushed</text><text x="104" y="258" text-anchor="middle" class="a-t3">back, hurts to sit</text>
+    </g>
+  </g>
+</svg>

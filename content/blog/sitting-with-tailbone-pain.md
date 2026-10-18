@@ -23,6 +23,15 @@ Tilting your upper body a little forward shifts your weight onto your thigh bone
 
 A wedge or U-shaped cushion with a gap at the back lets the tailbone hang free instead of pressing on the seat. Round "doughnut" rings help some people but can still press on the coccyx, so a cushion with an open back is usually better. Take it with you: to the office, the car and restaurants.
 
+What Dr Rajveer Singh looks for in a tailbone cushion:
+
+| Feature | Why it matters |
+|---|---|
+| A cut-out or notch at the back | The tailbone doesn't touch the seat at all |
+| Thicker at the back, thinner at the front | Lifts the pelvis and tips your weight forward onto the thighs |
+| Firm foam, not soft memory foam | You don't sink down until the coccyx touches the chair again |
+Table: Choosing a tailbone cushion. An ordinary soft pillow doesn't take the pressure off.
+
 ::anim cushion
 
 

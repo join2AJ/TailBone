@@ -278,6 +278,8 @@
       panel.classList.toggle("is-active", active);
       if (active) loadMap(panel);
     });
+    const note = $("#tabNote");
+    if (note) { note.textContent = tab.dataset.note || ""; note.dataset.status = [...tab.classList].find((c) => c.startsWith("tab--"))?.slice(5) || ""; }
   };
   tabs.forEach((t, i) => {
     t.addEventListener("click", () => activateTab(t));

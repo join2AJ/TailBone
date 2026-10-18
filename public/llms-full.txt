@@ -217,7 +217,7 @@ Tailbone pain is common. Women are affected around five times as often as men, p
 
 ### How it is diagnosed
 
-Mainly through your history and a careful examination of the coccyx and surrounding muscles. Imaging is used when needed: X-rays (sometimes taken sitting and standing) for fractures or an unstable coccyx, and MRI to look for inflammation or other causes.
+Through your history and a careful examination of the coccyx and surrounding muscles. Before any hands-on treatment of a displaced coccyx, a dynamic X-ray (taken sitting and standing) shows which way it has shifted. MRI is used when needed to look for inflammation or other causes.
 
 ### Treatment options
 
@@ -233,6 +233,20 @@ Mainly through your history and a careful examination of the coccyx and surround
 
 Most people improve within weeks with the right care. Pain that lasts more than a few weeks, or keeps coming back, deserves a specialist assessment rather than "just living with it".
 
+### Dr Rajveer's five rules while your tailbone hurts
+
+- **Sit on a firm cut-out cushion** Thick at the back, thin at the front, with a gap for the tailbone. A soft pillow doesn't help.
+
+- **Get up and walk often** Every 30 minutes at work. Movement takes the pressure off the coccyx.
+
+- **Stop cycling and bike riding** A narrow saddle puts your weight right under the tailbone.
+
+- **No Kegels or squeezing exercises** Not until the direction of the shift is known: they can pull an inward-shifted coccyx further in.
+
+- **No external "bone setting"** Pressing from outside can push a displaced coccyx deeper. The direction is checked first.
+
+[Why the direction of the shift decides the treatment →](https://tailbone.netlify.app/blog/tailbone-subluxation-inward-or-outward.html)
+
 ### The research in numbers
 
 Figures from published studies. The articles below explain each one, with full references.
@@ -247,23 +261,24 @@ Better without surgery About 9 in 10 Lirette 2014; Garg and Ahuja 2021
 
 ### Go deeper
 
-- [Coccydynia in numbersKey figures, each with its source](https://tailbone.netlify.app/blog/coccydynia-facts-and-figures.html)
+Dr Rajveer explains
 
-- [Coccyx shapes and movementWhy the shape of your coccyx matters](https://tailbone.netlify.app/blog/coccyx-shapes-and-movement.html)
+- [DiagnosisTailbone subluxation: why the direction of the shift decides the treatment](https://tailbone.netlify.app/blog/tailbone-subluxation-inward-or-outward.html)
+- [TreatmentKegel exercises and tailbone pain: when squeezing makes it worse](https://tailbone.netlify.app/blog/kegel-exercises-and-tailbone-pain.html)
+- [TreatmentWhy "bone setting" for tailbone pain can be dangerous](https://tailbone.netlify.app/blog/tailbone-bone-setting-risks.html)
+- [InjuryAmusement and water park rides: protect your tailbone (and your child's)](https://tailbone.netlify.app/blog/amusement-park-rides-and-tailbone-injury.html)
 
-- [Why women get it morePelvis shape, pregnancy and childbirth](https://tailbone.netlify.app/blog/why-women-get-tailbone-pain.html)
+What the research shows
 
-- [Body weight and tailbone painHow weight changes the type of problem](https://tailbone.netlify.app/blog/body-weight-and-tailbone-pain.html)
-
-- [Two-wheeler ridingVibration, posture and practical tips](https://tailbone.netlify.app/blog/two-wheeler-riding-and-tailbone-pain.html)
-
-- [Linked conditionsSpondylitis, pelvic floor and more](https://tailbone.netlify.app/blog/conditions-linked-to-tailbone-pain.html)
-
-- [When it isn't the coccyxConditions that feel similar](https://tailbone.netlify.app/blog/tailbone-pain-mimics.html)
-
-- [Treatment, step by stepWhat works and how often](https://tailbone.netlify.app/blog/coccydynia-treatment-ladder.html)
-
-- [A short historyFrom 1859 to today](https://tailbone.netlify.app/blog/history-of-coccydynia.html)
+- [CausesCoccydynia in numbers: what the research really says](https://tailbone.netlify.app/blog/coccydynia-facts-and-figures.html)
+- [AnatomyThe shape and movement of your tailbone: why some hurt and others don't](https://tailbone.netlify.app/blog/coccyx-shapes-and-movement.html)
+- [Women's healthWhy women get tailbone pain five times more often than men](https://tailbone.netlify.app/blog/why-women-get-tailbone-pain.html)
+- [CausesBody weight and tailbone pain: why both high and low BMI matter](https://tailbone.netlify.app/blog/body-weight-and-tailbone-pain.html)
+- [CausesTwo-wheelers, potholes and tailbone pain: what the research shows](https://tailbone.netlify.app/blog/two-wheeler-riding-and-tailbone-pain.html)
+- [Related conditionsConditions linked to tailbone pain: spondylitis, pelvic floor problems and more](https://tailbone.netlify.app/blog/conditions-linked-to-tailbone-pain.html)
+- [Red flagsWhen it isn't the coccyx: conditions that can mimic tailbone pain](https://tailbone.netlify.app/blog/tailbone-pain-mimics.html)
+- [TreatmentCoccydynia treatment, step by step: what works and how often](https://tailbone.netlify.app/blog/coccydynia-treatment-ladder.html)
+- [HistoryA short history of tailbone pain: from 1859 to today](https://tailbone.netlify.app/blog/history-of-coccydynia.html)
 
 ### ⚠️ See a doctor promptly if tailbone pain comes with:
 
@@ -507,6 +522,10 @@ Our clinics
 
 ## New Delhi, online, and soon Lucknow.
 
+Open by appointment, 7 days a week: Mon–Fri 10–5, Sat 10–3, Sun 8–3.
+
+Open Opening soon Closed
+
 ### New Delhi clinic
 
 Spine and Tailbone Pain Clinic, 150A/09, Shanti Apartment, Kishangarh, Vasant Kunj, New Delhi 110070
@@ -585,6 +604,202 @@ Talk to a coccydynia specialist today.
 
 [Call +91 98866 88323](tel:+919886688323)
 [Book online](https://tailbone.netlify.app/book)
+
+---
+
+Source: https://tailbone.netlify.app/blog/amusement-park-rides-and-tailbone-injury.html (published 2026-10-18)
+
+# Amusement and water park rides: protect your tailbone (and your child's)
+
+Sudden drops and jolts on dry and water rides can push the coccyx out of place, in teenagers as well as adults. Dr Rajveer Singh's tips to ride safely, and what to do if it hurts afterwards.
+
+A day at an amusement or water park is great fun, but the sudden drops, bumps and splash-downs send jolts straight up through the seat into the base of the spine. Dr Rajveer Singh regularly sees tailbone injuries from these rides, in adults and in children as young as 13 or 14.
+
+## Key points
+
+- Sudden vertical drops and sideways jerks can push the coccyx **inward or outward** (a subluxation).
+- Children and teenagers are affected just as badly as adults.
+- **Padded or thick undergarments** and a careful sitting posture absorb some of the jolt.
+- If the tailbone still hurts a few days after a ride, get it checked rather than waiting.
+
+## Why rides hurt the tailbone
+
+On a slide or a drop ride, you land on a hard or wet surface with your whole body weight, often while leaning back. That is exactly the position that loads the coccyx most. The force is sudden, so the muscles around the tailbone don't have time to brace.
+
+## Ride more safely
+
+| Do | Avoid |
+|---|---|
+| Wear thick or padded undergarments | Thin swimwear alone on hard slides |
+| Sit upright, with your weight on your thighs and sitting bones | Leaning far back on landings |
+| Choose gentler rides if you've had tailbone pain before | Repeating high-drop rides one after another |
+| Check on children after rides that jolt hard | Ignoring a child's complaint that sitting hurts |
+Table: Dr Rajveer Singh's tips for amusement and water park rides.
+
+## If it hurts afterwards
+
+- Sit on a cut-out cushion and get up often (see [sitting with tailbone pain](/blog/sitting-with-tailbone-pain.html)).
+- Avoid cycling and squeezing exercises for now.
+- Don't let anyone press or "set" the tailbone from outside (see [why bone setting can be dangerous](/blog/tailbone-bone-setting-risks.html)).
+- If pain on sitting lasts more than a few days, book an assessment. A displaced coccyx is much easier to treat early.
+
+See a doctor urgently if there is numbness, weakness in the legs, or problems with bladder or bowel control after a fall or ride.
+
+## Sources
+
+- [Dr Rajveer Singh's videos on tailbone pain (YouTube)](https://www.youtube.com/channel/UCcLNy_lJceu4Ci8LaVW4GEw)
+- [Lirette LS et al. Coccydynia: an overview of the anatomy, etiology, and treatment of coccyx pain. Ochsner J. 2014;14(1):84–87](https://pmc.ncbi.nlm.nih.gov/articles/PMC3963058/)
+
+---
+
+Source: https://tailbone.netlify.app/blog/tailbone-bone-setting-risks.html (published 2026-10-18)
+
+# Why "bone setting" for tailbone pain can be dangerous
+
+Pressing or massaging the tailbone from outside, without knowing which way it has shifted, can push an inward-displaced coccyx deeper into the pelvis. Dr Rajveer Singh explains the risk.
+
+Many people with tailbone pain are taken to a local "bone setter" for an external massage or a quick push to put it back. Dr Rajveer Singh sees patients every month whose pain became worse afterwards. Here is why.
+
+## Key points
+
+- A displaced coccyx can shift **inward** into the pelvis or **outward**. From the outside, you can't tell which.
+- If it has shifted inward, pressing on it from outside pushes it **deeper into the pelvis**: a small displacement becomes a bigger injury.
+- Treating a displaced coccyx without first checking the direction on a **dynamic X-ray** is unsafe, and in Dr Rajveer's view unethical.
+- A specialist realigns the coccyx with **internal manipulation**, aimed in the right direction.
+
+## How a quick push can go wrong
+
+The coccyx sits at the very bottom of the spine, partly hidden inside the pelvis. When it has been pushed inward (an anterior subluxation), the part you can feel from outside is already further in than it should be. Pressing on it from behind adds to the same force that displaced it. The muscles around it go into spasm, and sitting becomes even more painful.
+
+| Before any treatment | What it shows |
+|---|---|
+| A careful history | How it started: a fall, childbirth, long sitting, a sudden jolt |
+| An examination | Where it hurts, how the coccyx and the pelvic floor muscles respond |
+| A dynamic X-ray (sitting and standing) | Which way the coccyx has moved, and how much it moves when you sit |
+Table: What a specialist checks before treating a displaced coccyx.
+
+## What safe treatment looks like
+
+Once the direction is known, the coccyx is realigned by internal manipulation, gently and from the right side, in a short series of sessions. Exercises chosen for your type of shift then help keep it in place. See [tailbone subluxation: why the direction decides the treatment](/blog/tailbone-subluxation-inward-or-outward.html).
+
+## If you've already had bone setting
+
+Don't worry, and don't repeat it. If the pain is the same or worse, book an assessment. Many patients still recover well once the direction of the shift is known and treated properly.
+
+## Sources
+
+- [Dr Rajveer Singh's videos on tailbone pain (YouTube)](https://www.youtube.com/channel/UCcLNy_lJceu4Ci8LaVW4GEw)
+- [Garg B, Ahuja K. Coccydynia: a comprehensive review on etiology, radiological features and management options. J Clin Orthop Trauma. 2021;12(1):123–129](https://pmc.ncbi.nlm.nih.gov/articles/PMC7920198/)
+
+---
+
+Source: https://tailbone.netlify.app/blog/kegel-exercises-and-tailbone-pain.html (published 2026-10-18)
+
+# Kegel exercises and tailbone pain: when squeezing makes it worse
+
+Kegels and "butt-squeezing" are often suggested for pelvic pain. Dr Rajveer Singh explains why they can pull an inward-shifted or fractured coccyx further out of place, and what to do instead.
+
+Kegel exercises are good for many people, especially after childbirth. But if your tailbone has been pushed **inward**, or it is fractured, squeezing exercises can do harm. Dr Rajveer Singh asks his patients to stop them until the direction of the problem is known.
+
+## Key points
+
+- The pelvic floor muscles are attached to the coccyx.
+- If the coccyx has shifted **inward** (an anterior subluxation) or is fractured, contracting these muscles pulls it further inside.
+- So Kegels and "butt-squeezing" exercises should **not** be done until a specialist has checked which way the coccyx has moved.
+- The right exercises depend on the direction of the shift, and are taught after the coccyx has been realigned.
+
+## Why squeezing can make it worse
+
+Several of the pelvic floor muscles, including the coccygeus and parts of the levator ani, attach to the coccyx. When they contract, they pull on it. With a normally placed coccyx that's fine. But if it has already been pushed into the pelvis, each squeeze tugs it further the wrong way. The displacement increases, the pain lasts longer, and treatment becomes harder.
+
+| Exercise | Coccyx in normal position | Coccyx shifted inward or fractured |
+|---|---|---|
+| Kegel / squeezing exercises | Usually fine | Avoid: they pull the coccyx further in |
+| What helps | Exercises a physiotherapist teaches you | Diagnosis first, internal manipulation, then direction-specific exercises |
+Table: Squeezing exercises and the coccyx, as Dr Rajveer Singh advises.
+
+## What to do instead
+
+1. **Stop squeezing exercises** if you have tailbone pain and haven't been examined yet.
+2. **Take the pressure off** with a cut-out cushion and regular breaks from sitting (see [sitting with tailbone pain](/blog/sitting-with-tailbone-pain.html)).
+3. **Find out the direction.** An examination and a dynamic X-ray show whether the coccyx has moved inward or outward (see [tailbone subluxation](/blog/tailbone-subluxation-inward-or-outward.html)).
+4. **Follow a plan made for you.** Once the coccyx is back in line, your exercises are chosen for your particular shift.
+
+## After childbirth
+
+New mothers are often told to start Kegels straight away. If you have tailbone pain after delivery, check with a specialist first: childbirth is one of the commonest causes of an inward-shifted coccyx (see [tailbone pain after pregnancy](/blog/tailbone-pain-after-pregnancy.html)).
+
+## Sources
+
+- [Dr Rajveer Singh's videos on tailbone pain (YouTube)](https://www.youtube.com/channel/UCcLNy_lJceu4Ci8LaVW4GEw)
+- [Neville CE et al. Association of coccygodynia with pelvic floor symptoms in women with pelvic pain. PM&R. 2022;14(11):1351–1359](https://pubmed.ncbi.nlm.nih.gov/34533893/)
+
+---
+
+Source: https://tailbone.netlify.app/blog/tailbone-subluxation-inward-or-outward.html (published 2026-10-18)
+
+# Tailbone subluxation: why the direction of the shift decides the treatment
+
+A displaced coccyx can be pushed inward into the pelvis or outward. Dr Rajveer Singh explains why the direction must be known first, how treatment differs, and how one patient recovered.
+
+After a fall, a jolt or childbirth, the coccyx rarely breaks cleanly. More often it is pushed slightly out of line with the rest of the spine. This is called a **subluxation**, and it is one of the commonest reasons tailbone pain doesn't go away on its own.
+
+## Key points
+
+- A subluxed coccyx shifts in one of two directions: **inward** into the pelvis (anterior) or **outward** (posterior).
+- The direction matters more than anything else, because the right treatment for one can make the other worse.
+- Dr Rajveer checks the direction on a **dynamic X-ray** (taken sitting and standing) before any manipulation or exercise programme.
+- Treatment then follows three steps: an exact diagnosis, internal manipulation to realign the coccyx, and exercises chosen for that direction.
+
+## Inward or outward: what's the difference?
+
+| What | Inward shift (anterior) | Outward shift (posterior) |
+|---|---|---|
+| Where the coccyx goes | Into the pelvis | Backwards, towards the skin |
+| What makes it worse | Pressure from outside, and squeezing the pelvic floor | Direct pressure when sitting |
+| Never do | Kegel or "butt-squeezing" exercises; external "bone setting" | Long sitting on flat, hard seats |
+| Treatment | Internal manipulation, then exercises for an inward shift | Internal manipulation, then exercises for an outward shift |
+Table: The two directions of tailbone subluxation, as Dr Rajveer Singh explains them.
+
+## Why the X-ray comes first
+
+From the outside, both kinds of subluxation can feel the same: pain on sitting, pain getting up, pain at the base of the spine. But they need opposite handling. A dynamic X-ray, taken sitting and standing, shows how the coccyx actually moves under your body weight. Dr Rajveer's rule is simple: no manipulation, no exercise programme and no physical therapy should begin without knowing the direction of the shift.
+
+## The three steps of treatment
+
+1. **Diagnose exactly.** The examination and a dynamic X-ray show whether the coccyx has shifted inward or outward, and by how much.
+2. **Realign.** Internal manipulation gently moves the coccyx back into line. It is done in a short series of sessions, usually within about a week, spaced at the right intervals.
+3. **Keep it there.** Exercises chosen for your direction of shift strengthen and relax the right muscles, so the coccyx stays in place. Doing them faithfully at home is what makes the result last.
+
+## A patient's recovery
+
+| When | What happened |
+|---|---|
+| Day 1 | An IT professional from Pune, badly affected by tailbone pain, was diagnosed with an outward (posterior) subluxation on a dynamic X-ray |
+| Week 1 | A short series of internal manipulation sessions corrected the outward shift |
+| Month 4 | Marked recovery, after following the home exercise programme very closely |
+| Months 5 to 8 | He continued the exercises for another 3 to 4 months to keep the coccyx stable |
+Table: One patient's recovery from an outward subluxation (shared by Dr Rajveer Singh).
+
+Not everyone recovers at the same pace, but the pattern is typical: the manipulation corrects the position, and the exercises keep it.
+
+## What to avoid while it heals
+
+- **Cycling and riding motorbikes**, which put your weight on a narrow saddle right under the coccyx (see [two-wheelers and tailbone pain](/blog/two-wheeler-riding-and-tailbone-pain.html)).
+- **Sitting flat on hard chairs** without a cut-out cushion (see [sitting with tailbone pain](/blog/sitting-with-tailbone-pain.html)).
+- **Bending forward without support.**
+- **Squeezing exercises** if your coccyx has shifted inward (see [Kegel exercises and tailbone pain](/blog/kegel-exercises-and-tailbone-pain.html)).
+- **External "bone setting"** (see [why bone setting can be dangerous](/blog/tailbone-bone-setting-risks.html)).
+
+## Treat it early
+
+Tailbone pain is often brushed off as soreness that will pass. When the coccyx is out of line, it usually doesn't. Left alone, sitting at work, driving and even sleeping can become harder over months. Early assessment and the right treatment are much easier than undoing years of strain.
+
+## Sources
+
+- [Dr Rajveer Singh's videos on tailbone pain (YouTube)](https://www.youtube.com/channel/UCcLNy_lJceu4Ci8LaVW4GEw)
+- [Maigne JY et al. Causes and mechanisms of common coccydynia: role of body mass index and coccygeal trauma. Spine. 2000;25(23):3072–3079](https://pubmed.ncbi.nlm.nih.gov/11145819/)
+- [Garg B, Ahuja K. Coccydynia: a comprehensive review on etiology, radiological features and management options. J Clin Orthop Trauma. 2021;12(1):123–129](https://pmc.ncbi.nlm.nih.gov/articles/PMC7920198/)
 
 ---
 
@@ -1142,6 +1357,15 @@ Tilting your upper body a little forward shifts your weight onto your thigh bone
 
 A wedge or U-shaped cushion with a gap at the back lets the tailbone hang free instead of pressing on the seat. Round "doughnut" rings help some people but can still press on the coccyx, so a cushion with an open back is usually better. Take it with you: to the office, the car and restaurants.
 
+What Dr Rajveer Singh looks for in a tailbone cushion:
+
+| Feature | Why it matters |
+|---|---|
+| A cut-out or notch at the back | The tailbone doesn't touch the seat at all |
+| Thicker at the back, thinner at the front | Lifts the pelvis and tips your weight forward onto the thighs |
+| Firm foam, not soft memory foam | You don't sink down until the coccyx touches the chair again |
+Table: Choosing a tailbone cushion. An ordinary soft pillow doesn't take the pressure off.
+
 ## 3. Choose firm seats over soft sofas
 
 It sounds backwards, but deep, soft sofas let you sink and roll back onto the tailbone. A firm, supportive chair with a cushion is kinder.
@@ -1212,7 +1436,7 @@ Before taking pain relief while breastfeeding, check with your doctor or pharmac
 
 ## When to get it checked
 
-Postnatal tailbone pain often eases over a few weeks. If it lasts longer than that, keeps returning, or makes caring for your baby difficult, ask for an examination. When the coccyx has been pushed out of its normal position or the surrounding muscles stay in spasm, hands-on treatment can help a great deal, and you don't need to "just put up with it".
+Postnatal tailbone pain often eases over a few weeks, and in Dr Rajveer Singh's experience most of it settles within 3 to 4 months of delivery. If it is still there after about 4 months, keeps returning, or makes caring for your baby difficult, ask for an examination: the coccyx may have been pushed inward or outward during labour (see [tailbone subluxation](/blog/tailbone-subluxation-inward-or-outward.html)). When the coccyx has been pushed out of its normal position or the surrounding muscles stay in spasm, hands-on treatment can help a great deal, and you don't need to "just put up with it".
 
 See a doctor urgently if you have fever, a wound or swelling near the tailbone, numbness, or new problems with bladder or bowel control.
 

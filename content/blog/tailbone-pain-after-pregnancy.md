@@ -38,7 +38,7 @@ Before taking pain relief while breastfeeding, check with your doctor or pharmac
 
 ## When to get it checked
 
-Postnatal tailbone pain often eases over a few weeks. If it lasts longer than that, keeps returning, or makes caring for your baby difficult, ask for an examination. When the coccyx has been pushed out of its normal position or the surrounding muscles stay in spasm, hands-on treatment can help a great deal, and you don't need to "just put up with it".
+Postnatal tailbone pain often eases over a few weeks, and in Dr Rajveer Singh's experience most of it settles within 3 to 4 months of delivery. If it is still there after about 4 months, keeps returning, or makes caring for your baby difficult, ask for an examination: the coccyx may have been pushed inward or outward during labour (see [tailbone subluxation](/blog/tailbone-subluxation-inward-or-outward.html)). When the coccyx has been pushed out of its normal position or the surrounding muscles stay in spasm, hands-on treatment can help a great deal, and you don't need to "just put up with it".
 
 See a doctor urgently if you have fever, a wound or swelling near the tailbone, numbness, or new problems with bladder or bowel control.
 

@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { root, SITE, injectAnims } from "./partials.js";
+import { loadPosts, miniCard } from "./build-blog.js";
 
 export const TEMPLATE = path.join(root, "content/site.html");
 
@@ -207,8 +208,21 @@ export function renderPage(template, p) {
   return html;
 }
 
+// Fill <!-- posts:slug,slug --> … <!-- /posts --> with article cards (picture + title).
+function injectPosts(html) {
+  const bySlug = new Map(loadPosts().map((p) => [p.meta.slug, p.meta]));
+  return html.replace(/<!-- posts:([\w,-]+) -->[\s\S]*?<!-- \/posts -->/g, (all, list) => {
+    const cards = list.split(",").map((slug) => {
+      const meta = bySlug.get(slug);
+      if (!meta) throw new Error(`content/site.html links to a missing article: ${slug}`);
+      return miniCard(meta);
+    });
+    return `<!-- posts:${list} -->${cards.join("")}<!-- /posts -->`;
+  });
+}
+
 export function buildPages() {
-  const template = injectAnims(fs.readFileSync(TEMPLATE, "utf8"));
+  const template = injectPosts(injectAnims(fs.readFileSync(TEMPLATE, "utf8")));
   fs.writeFileSync(TEMPLATE, template);
   for (const p of PAGES) fs.writeFileSync(path.join(root, "public", p.file), renderPage(template, p));
   return PAGES;

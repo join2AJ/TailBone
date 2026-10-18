@@ -112,11 +112,13 @@
           <h2>New Delhi, online, and soon Lucknow.</h2>
         </div>
         <div class="tabs reveal" role="tablist" aria-label="Clinic locations">
-          <button type="button" class="tab is-active" role="tab" aria-selected="true" aria-controls="loc-del" id="tab-del" data-tab="del">New Delhi</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="loc-onl" id="tab-onl" data-tab="onl">Online</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="loc-lko" id="tab-lko" data-tab="lko">Lucknow <small>soon</small></button>
-          <button type="button" class="tab" role="tab" aria-selected="false" aria-controls="loc-blr" id="tab-blr" data-tab="blr">Bengaluru <small>closed</small></button>
+          <button type="button" class="tab tab--open is-active" role="tab" aria-selected="true" aria-controls="loc-del" id="tab-del" data-tab="del" data-note="Open by appointment, 7 days a week: Mon–Fri 10–5, Sat 10–3, Sun 8–3."><span class="tab__dot" aria-hidden="true"></span>New Delhi</button>
+          <button type="button" class="tab tab--open" role="tab" aria-selected="false" aria-controls="loc-onl" id="tab-onl" data-tab="onl" data-note="Video consultations from anywhere in India or abroad, by appointment."><span class="tab__dot" aria-hidden="true"></span>Online</button>
+          <button type="button" class="tab tab--soon" role="tab" aria-selected="false" aria-controls="loc-lko" id="tab-lko" data-tab="lko" data-note="Opening soon. Meanwhile, book an online consultation or visit New Delhi."><span class="tab__dot" aria-hidden="true"></span>Lucknow <small>soon</small></button>
+          <button type="button" class="tab tab--closed" role="tab" aria-selected="false" aria-controls="loc-blr" id="tab-blr" data-tab="blr" data-note="This clinic has closed. Please book New Delhi or an online consultation."><span class="tab__dot" aria-hidden="true"></span>Bengaluru <small>closed</small></button>
         </div>
+        <p class="tab-note" id="tabNote" aria-live="polite">Open by appointment, 7 days a week: Mon–Fri 10–5, Sat 10–3, Sun 8–3.</p>
+        <p class="tab-legend" aria-hidden="true"><span class="tab-legend__open">Open</span><span class="tab-legend__soon">Opening soon</span><span class="tab-legend__closed">Closed</span></p>
 
         <div class="panel is-active" id="loc-del" role="tabpanel" aria-labelledby="tab-del">
           <div class="loc">
