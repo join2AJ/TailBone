@@ -20,6 +20,8 @@ import { getPolicy, savePolicy, refundQuote, policySummary, policyHistory } from
 import { paymentsEnabled, rupees } from "../payments.js";
 import { notify, readNotification, whatsappApiEnabled } from "../notify.js";
 import { listPosts, setEnabled } from "../blog.js";
+import { addDocument, listDocuments, getDocument, readFile, sendFile, KINDS, MAX_BYTES } from "../documents.js";
+import express from "express";
 import {
   HttpError, parseBooking, createAppointment, getAppointment, rescheduleAppointment, createFollowup,
   defaultFollowupDate, cleanText, normalizePhone, validEmail, siteUrl, waLink, messages, checkinMessage, FOLLOWUP_TYPES,
@@ -130,7 +132,7 @@ export function adminRoutes(db) {
     [/^\/appointments\/\d+\/refund$/, "payments"],
     [/^\/patients\/\d+\/(export|erase)$/, "privacy"],
     [/^\/appointments/, "appointments"], [/^\/followups/, "followups"], [/^\/patients/, "patients"],
-    [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"], [/^\/blog/, "blog"],
+    [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"], [/^\/blog/, "blog"], [/^\/documents/, "patients"],
     [/^\/payments/, "payments"], [/^\/privacy/, "privacy"],
     [/^\/settings\/policy$/, "settings", "PUT"], [/^\/blocked/, "settings"], [/^\/calendar/, "settings"],
     [/^\/export/, "export"],
@@ -726,7 +728,7 @@ export function adminRoutes(db) {
     patient.notes = decrypt(patient.notes);
     const first = patient.name.split(" ")[0];
     const storyInvite = waLink(patient.phone, `Hi ${first}, we're so glad you're feeling better! Would you share a few words about your experience to help others with tailbone pain? It takes 2 minutes: ${siteUrl(req)}/stories.html#share`);
-    res.json({ patient, appointments, followups, checkins, consents, storyInvite });
+    res.json({ patient, appointments, followups, checkins, consents, storyInvite, documents: listDocuments(db, pid), documentKinds: KINDS });
   });
 
   r.patch("/patients/:id", (req, res) => {
@@ -791,6 +793,47 @@ export function adminRoutes(db) {
 
   r.delete("/stories/:id", (req, res) => {
     db.prepare("DELETE FROM stories WHERE id = ?").run(id(req.params.id));
+    res.json({ ok: true });
+  });
+
+  // ---------- Patient documents ----------
+  // The file is the request body; details travel in the query string (?kind=plan&title=…&shared=1&appointmentId=…).
+  r.post("/patients/:id/documents", express.raw({ type: () => true, limit: MAX_BYTES + 1024 }), (req, res) => {
+    const pid = id(req.params.id);
+    const patient = db.prepare("SELECT id, anonymised_at FROM patients WHERE id = ?").get(pid);
+    if (!patient || patient.anonymised_at) throw new HttpError(404, "Patient not found.");
+    if (config.demo && req.body?.length > 2 * 1024 * 1024) throw new HttpError(413, "In the demo, files up to 2 MB can be added.");
+    const apptId = req.query.appointmentId ? id(req.query.appointmentId) : null;
+    if (apptId && !db.prepare("SELECT 1 FROM appointments WHERE id = ? AND patient_id = ?").get(apptId, pid)) throw new HttpError(400, "That visit isn't this patient's.");
+    const doc = addDocument(db, {
+      patientId: pid, appointmentId: apptId, kind: String(req.query.kind || ""), title: req.query.title, data: req.body,
+      uploadedBy: "clinic", uploaderName: req.admin.name, shared: req.query.shared === "1",
+    });
+    securityLog(db, req, "document_added", `#${doc.id} for patient #${pid}${doc.shared ? " (shared)" : ""}`);
+    res.status(201).json({ document: doc });
+  });
+
+  r.get("/documents/:id/file", (req, res) => {
+    const doc = getDocument(db, id(req.params.id));
+    if (!doc) throw new HttpError(404, "Document not found.");
+    securityLog(db, req, "document_viewed", `#${doc.id} of patient #${doc.patient_id}`);
+    sendFile(res, readFile(db, doc.id));
+  });
+
+  r.patch("/documents/:id", (req, res) => {
+    const doc = getDocument(db, id(req.params.id));
+    if (!doc) throw new HttpError(404, "Document not found.");
+    if (typeof req.body.shared === "boolean") db.prepare("UPDATE documents SET shared = ? WHERE id = ?").run(req.body.shared ? 1 : 0, doc.id);
+    if (typeof req.body.title === "string" && req.body.title.trim()) db.prepare("UPDATE documents SET title = ? WHERE id = ?").run(cleanText(req.body.title, 120), doc.id);
+    securityLog(db, req, "document_changed", `#${doc.id}${typeof req.body.shared === "boolean" ? (req.body.shared ? " shared" : " unshared") : ""}`);
+    res.json({ document: getDocument(db, doc.id) });
+  });
+
+  r.delete("/documents/:id", (req, res) => {
+    const doc = getDocument(db, id(req.params.id));
+    if (!doc) throw new HttpError(404, "Document not found.");
+    db.prepare("DELETE FROM documents WHERE id = ?").run(doc.id);
+    securityLog(db, req, "document_deleted", `#${doc.id} of patient #${doc.patient_id}`);
     res.json({ ok: true });
   });
 

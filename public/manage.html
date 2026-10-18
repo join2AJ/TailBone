@@ -132,6 +132,20 @@
           </div>
         </div>
 
+        <section class="docs-box" id="docsBox" hidden aria-labelledby="docsTitle">
+          <h2 class="h3" id="docsTitle">Your documents</h2>
+          <p class="small muted" id="docsLocked" hidden>Documents from the clinic appear here once the clinic has confirmed this booking with you, or after your visit.</p>
+          <ul class="docs-list" id="docsList"></ul>
+          <p class="small muted" id="docsEmpty" hidden>No documents yet. After your visit, the clinic may share your treatment and exercise plan here.</p>
+          <form class="form docs-upload" id="docsUpload" hidden novalidate>
+            <h3 class="h4">Add an earlier report <span class="muted small">(optional)</span></h3>
+            <p class="small muted">If you already have reports from before, you can add them here for the doctor. You don't need any new tests or scans.</p>
+            <div class="field"><label for="docFile">File (PDF, JPG or PNG, up to 10 MB)</label><input type="file" id="docFile" name="file" accept="application/pdf,image/jpeg,image/png" required></div>
+            <div class="field"><label for="docTitle">What is it? <span class="muted">(optional)</span></label><input type="text" id="docTitle" name="title" maxlength="120" placeholder="e.g. Report from my previous doctor"></div>
+            <button class="btn btn--ghost btn--sm" type="submit">Add report</button>
+          </form>
+        </section>
+
         <div id="othersBox" hidden style="margin-top:2rem">
           <h2 class="h3">Your other upcoming appointments</h2>
           <div id="othersList"></div>

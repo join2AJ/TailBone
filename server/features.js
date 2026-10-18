@@ -8,6 +8,8 @@ export const FEATURES = {
   stories: { label: "Patient stories", help: "Stories carousel, the stories page and the 'share your story' form.", default: true },
   instagram: { label: "Instagram videos", help: "Instagram highlights on the Treatment page.", default: true },
   symptom_checker: { label: "Symptom self-check", help: "Interactive checklist on the Coccydynia page.", default: true },
+  patient_documents: { label: "Documents in My appointments", help: "Patients see and download the documents the clinic shares with them (plans, visit summaries, reports).", default: true },
+  patient_uploads: { label: "Patients can upload earlier reports", help: "Patients may add PDF or photo reports they already have, before a visit. Off until the clinic decides to use it.", default: false },
   whatsapp_widget: { label: "Floating WhatsApp button", help: "Chat bubble at the bottom-right of every page.", default: true },
 };
 

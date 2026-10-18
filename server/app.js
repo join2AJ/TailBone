@@ -138,6 +138,7 @@ export function createApp(db) {
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
     if (err.type === "entity.parse.failed") return res.status(400).json({ error: "Invalid JSON." });
+    if (err.type === "entity.too.large") return res.status(413).json({ error: "That file is too large. Please send one under 10 MB." });
     const status = err.status && err.status < 500 ? err.status : 500;
     if (status === 500) console.error(err);
     res.status(status).json({ error: status === 500 ? "Something went wrong. Please try again." : err.message });

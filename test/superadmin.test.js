@@ -167,3 +167,49 @@ test("a fee paid at the clinic can be recorded, and appears in the payments CSV"
   const dash = (await api("super", "GET", "/api/admin/dashboard")).body.stats;
   assert.ok("collectedMonth" in dash && "toCollectToday" in dash);
 });
+
+test("the clinic can share documents with a patient, who downloads them from My appointments", async () => {
+  const booked = await api(null, "POST", "/api/appointments", { name: "Pooja Jain", phone: "9811100088", clinic: "del", ...slot(7, 2), consent: true });
+  const ref = booked.body.appointment.ref;
+  const appt = db.prepare("SELECT id, patient_id FROM appointments WHERE appt_no = ?").get(ref);
+  const pdf = Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
+  const upload = (who, body, query, headers = {}) => fetch(`${base}/api/admin/patients/${appt.patient_id}/documents?${query}`, {
+    method: "POST", body, headers: { "content-type": "application/pdf", cookie: jar[who], "x-requested-with": "fetch", ...headers },
+  });
+  assert.equal((await upload("super", Buffer.from("<script>alert(1)</script>"), "kind=plan")).status, 415, "only real PDF/JPG/PNG");
+  assert.equal((await upload("super", pdf, "kind=nonsense")).status, 400);
+  const shared = await (await upload("super", pdf, "kind=plan&title=Exercise%20plan&shared=1")).json();
+  const privateDoc = await (await upload("super", pdf, "kind=summary&title=Internal%20note")).json();
+  assert.ok(shared.document.id && shared.document.shared === 1);
+  assert.equal(Buffer.from(db.prepare("SELECT data FROM documents WHERE id = ?").get(shared.document.id).data).subarray(0, 5).toString(), "TBBK1", "stored encrypted");
+
+  const creds = { ref, phone: "9811100088" };
+  // Until the clinic confirms the booking, nothing is shown.
+  let look = await api(null, "POST", "/api/manage/lookup", creds);
+  assert.deepEqual(look.body.documents.list, []);
+  db.prepare("INSERT INTO appointment_events (appointment_id, actor, action) VALUES (?, 'clinic', 'confirmed')").run(appt.id);
+  look = await api(null, "POST", "/api/manage/lookup", creds);
+  assert.deepEqual(look.body.documents.list.map((d) => d.title), ["Exercise plan"], "only shared documents");
+  assert.equal(look.body.documents.canUpload, false, "patient uploads are off by default");
+
+  const dl = await fetch(`${base}/api/manage/documents/${shared.document.id}/download`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(creds) });
+  assert.equal(dl.status, 200);
+  assert.match(dl.headers.get("content-disposition"), /^attachment; filename="Exercise-plan\.pdf"$/);
+  assert.ok(Buffer.from(await dl.arrayBuffer()).equals(pdf), "decrypted file is identical");
+  const hidden = await fetch(`${base}/api/manage/documents/${privateDoc.document.id}/download`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(creds) });
+  assert.equal(hidden.status, 404, "unshared documents stay with the clinic");
+
+  // Patient uploads only when the clinic switches them on.
+  const patientUpload = () => fetch(`${base}/api/manage/documents?kind=report&title=Old%20X-ray%20report`, { method: "POST", body: pdf, headers: { "content-type": "application/pdf", "x-ref": ref, "x-phone": "9811100088" } });
+  assert.equal((await patientUpload()).status, 403);
+  await api("super", "PUT", "/api/admin/superadmin/features", { patient_uploads: true });
+  const up = await patientUpload();
+  assert.equal(up.status, 201);
+  assert.equal((await up.json()).documents.list.length, 2);
+  await api("super", "PUT", "/api/admin/superadmin/features", { patient_uploads: false });
+
+  // Erasing the patient removes their documents.
+  await api("super", "PATCH", `/api/admin/appointments/${appt.id}`, { status: "cancelled" });
+  assert.equal((await api("super", "POST", `/api/admin/patients/${appt.patient_id}/erase`, { confirm: "Pooja Jain" })).status, 200);
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM documents WHERE patient_id = ?").get(appt.patient_id).n, 0);
+});

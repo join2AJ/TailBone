@@ -9,6 +9,8 @@ import { notify } from "../notify.js";
 import { DEMO_PATIENT } from "../demo.js";
 import { getFeatures, isOn } from "../features.js";
 import { hiddenPosts } from "../blog.js";
+import { addDocument, listDocuments, getDocument, readFile, sendFile, MAX_BYTES, PATIENT_KINDS } from "../documents.js";
+import express from "express";
 import QRCode from "qrcode";
 import crypto from "node:crypto";
 import { ensureBusy, isBusy, googleCalendarLink, calendarFeed } from "../gcal.js";
@@ -180,12 +182,12 @@ export function publicRoutes(db) {
   // Wrong guesses are also counted per phone number, so appointment numbers can't be worked through for one patient
   // even from many addresses.
   const misses = new Map(); // phone -> { n, since }
-  const findOwn = (req) => {
-    const phone = normalizePhone(req.body.phone) || "";
+  const findOwn = (req, creds = req.body) => {
+    const phone = normalizePhone(creds.phone) || "";
     const m = misses.get(phone);
     if (m && Date.now() - m.since > 24 * 3600_000) misses.delete(phone);
     if ((misses.get(phone)?.n || 0) >= 10) throw new HttpError(429, "Too many attempts for this phone number. Please call or WhatsApp the clinic on +91 98866 88323.");
-    const appt = findAppointmentForPatient(db, req.body.ref, req.body.phone);
+    const appt = findAppointmentForPatient(db, creds.ref, creds.phone);
     if (!appt) {
       if (phone) misses.set(phone, { n: (misses.get(phone)?.n || 0) + 1, since: misses.get(phone)?.since || Date.now() });
       if (misses.size > 10_000) misses.clear();
@@ -199,6 +201,18 @@ export function publicRoutes(db) {
     }
   };
   const privacyView = (appt) => ({ ...patientRequests(db, appt.patient_id), verified: isVerifiedBooking(db, appt) });
+  // Documents are shown only for a booking that proves who is asking (see isVerifiedBooking).
+  const documentsView = (appt) => {
+    const verified = isVerifiedBooking(db, appt);
+    const on = isOn(db, "patient_documents");
+    return {
+      enabled: on,
+      verified,
+      canUpload: on && verified && isOn(db, "patient_uploads"),
+      list: on && verified ? listDocuments(db, appt.patient_id, { forPatient: true })
+        .map(({ id, kind, kindLabel, title, mime, size, uploaded_by: by, created_at: at }) => ({ id, kind, kindLabel, title, mime, size, by, at })) : [],
+    };
+  };
 
   r.post("/manage/lookup", lookupLimit, async (req, res) => {
     const found = findOwn(req);
@@ -211,7 +225,7 @@ export function publicRoutes(db) {
     // The patient's other bookings are shown only when this booking proves who is asking (see isVerifiedBooking).
     const upcoming = !isVerifiedBooking(db, appt) ? [] : db.prepare(`${APPT_SELECT} WHERE a.patient_id = ? AND a.id != ? AND a.status IN ('pending','confirmed') AND a.date >= ? ORDER BY a.date, a.time`)
       .all(appt.patient_id, appt.id, clinicNow().date).map((a) => view(readAppt(a), req));
-    res.json({ appointment: await withQr(view(appt, req)), others: upcoming, policy: policySummary(getPolicy(db)), privacy: privacyView(appt) });
+    res.json({ appointment: await withQr(view(appt, req)), others: upcoming, policy: policySummary(getPolicy(db)), privacy: privacyView(appt), documents: documentsView(appt) });
   });
 
   r.post("/manage/cancel", lookupLimit, async (req, res) => {
@@ -291,6 +305,33 @@ export function publicRoutes(db) {
     db.prepare("INSERT INTO notifications (appointment_id, audience, event, channel, body, status) VALUES (?, 'doctor', 'privacy_request', 'dashboard', ?, 'sent')")
       .run(appt.id, encrypt(`Data request ${ref} (${label}) from ${appt.patient_name} ${appt.patient_code || ""}. Completes automatically in 3 days unless you act.`));
     res.status(201).json({ ref, due, privacy: privacyView(appt) });
+  });
+
+  r.post("/manage/documents/:id/download", lookupLimit, (req, res) => {
+    const appt = findOwn(req);
+    requireVerified(appt);
+    if (!isOn(db, "patient_documents")) throw new HttpError(404, "Document not found.");
+    const doc = getDocument(db, Number(req.params.id) || 0);
+    if (!doc || doc.patient_id !== appt.patient_id || !(doc.shared || doc.uploaded_by === "patient")) throw new HttpError(404, "Document not found.");
+    db.prepare("INSERT INTO security_log (actor, action, target, ip) VALUES ('patient', 'document_downloaded', ?, ?)")
+      .run(`#${doc.id} by patient #${appt.patient_id}`, String(req.ip || "").replace(/^::ffff:/, ""));
+    sendFile(res, readFile(db, doc.id));
+  });
+
+  // Upload: the file is the body; the booking details travel in headers so they never appear in logs or URLs.
+  const uploadLimit = rateLimit({ windowMs: 60 * 60_000, max: 10, message: "Too many uploads. Please try again later or WhatsApp us." });
+  r.post("/manage/documents", uploadLimit, express.raw({ type: () => true, limit: MAX_BYTES + 1024 }), (req, res) => {
+    const appt = findOwn(req, { ref: req.get("x-ref"), phone: req.get("x-phone") });
+    requireVerified(appt);
+    if (!isOn(db, "patient_documents") || !isOn(db, "patient_uploads")) throw new HttpError(403, "Uploading documents isn't available. Please bring them to your visit or WhatsApp us.");
+    const kind = PATIENT_KINDS.includes(req.query.kind) ? req.query.kind : "report";
+    if (config.demo && req.body?.length > 2 * 1024 * 1024) throw new HttpError(413, "In the demo, files up to 2 MB can be added.");
+    const doc = addDocument(db, {
+      patientId: appt.patient_id, appointmentId: appt.id, kind, title: req.query.title, data: req.body, uploadedBy: "patient", uploaderName: appt.patient_name,
+    });
+    db.prepare("INSERT INTO notifications (appointment_id, audience, event, channel, body, status) VALUES (?, 'doctor', 'document_uploaded', 'dashboard', ?, 'sent')")
+      .run(appt.id, encrypt(`${appt.patient_name} ${appt.patient_code || ""} added a document: ${doc.title}.`));
+    res.status(201).json({ documents: documentsView(appt) });
   });
 
   r.post("/manage/consent", lookupLimit, (req, res) => {

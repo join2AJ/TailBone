@@ -23,6 +23,7 @@ This is the running record of how the new Tailbone Treatment website and clinic 
 | **Content** | 24 articles, 15 pages | All old articles and newspaper clippings brought over, plus new evidence-based articles with tables, diagrams, animations and sources (25 articles in total) |
 | **Blog tools** | WordPress categories and tags | Search box, topic filters, "On this page" contents, WhatsApp share, related articles, and admin on/off per article |
 | **Search engines and AI** | Yoast SEO, one structured-data block | Separate page per topic, rich structured data (clinic, doctor, condition, FAQ, articles, breadcrumbs), AI-assistant files (llms.txt), IndexNow, sitemap, and 301 redirects from every old address |
+| **Documents** | None | The clinic shares treatment and exercise plans, visit summaries and reports; patients download them from My appointments. Optional patient uploads of earlier reports (switched off for now). Stored encrypted. |
 | **Privacy and law** | Privacy statement page | DPDP Act / GDPR ready: consent records, self-service data requests (copy, correct, delete) completed within 7 days, retention clean-up, encrypted clinical notes and backups, security log |
 | **Accessibility** | Not tested | Tested with automated accessibility checks (no errors), in light and dark mode, on phones and desktop |
 | **Advertising** | Site Kit by Google | Consent-based Google Ads and Analytics tags with booking, WhatsApp and call conversions, plus a ready Google Ads Search campaign plan |
@@ -92,6 +93,7 @@ Newest first. Add one line per change.
 
 | Date | Change |
 |---|---|
+| 18 Oct 2026 | **Documents:** on a patient's page the clinic adds PDF or photo documents (treatment and exercise plans, visit summaries, reports) and ticks "Shared"; the patient downloads them under "Your documents" in My appointments. Optional patient uploads of earlier reports are built but switched off (Control panel). Files are checked to be real PDF/JPG/PNG, stored encrypted, every view is logged, and they're included in data downloads and removed with deletion requests. The demo patient has a sample exercise plan. |
 | 17 Oct 2026 | Patient login (My appointments) checked end to end: login, reschedule, cancel, WhatsApp setting, data requests, past and cancelled bookings. The appointment number now works however it's typed (lower case, spaces, no dashes), and an empty form points to the missing field. |
 | 17 Oct 2026 | Full audit of website, dashboard, backend and speed. Fixed two serious security issues (record takeover by phone number; permission bypass), plus Lucknow bookings, data erasure gaps and date checks. Added the money panel, "Received" button, payments spreadsheet and reminders queue. Made the mobile menu, forms and appointment card easier to use, and added a new 404 page. Pages load faster (first screen, fonts, images, compression). |
 | 17 Oct 2026 | Blog: search, topic tags, numbered articles that the admin can switch off, "On this page" contents, WhatsApp share. The full menu now appears on My appointments and other pages. |
@@ -120,6 +122,12 @@ Newest first. Add one line per change.
 - [ ] **Dr Rajveer reviews** the new articles and the homepage figures ("12 years", "20+ years"), and confirms the treatment wording.
 - [ ] **Google Ads:** launch the Search campaign (website traffic first; switch to booking conversions once there are about 15 a month).
 
+### Decisions we've put off (nothing is blocked by them)
+- [ ] **Login code for patients** (item 3 below): until then, documents open only from bookings the clinic has confirmed, with the existing lockouts. Do this before switching on patient uploads widely.
+- [ ] **Patient uploads:** built but off. Switch on in Control panel → "Patients can upload earlier reports" when the clinic is ready to receive them.
+- [ ] **What to call the doctor's documents:** labels are "Treatment & exercise plan", "Visit summary", "Report" and "Other". Confirm with Dr Rajveer whether "prescription" should ever be used (he is a physiotherapist, BPT).
+- [ ] **Storage:** documents are kept in the database and its backups, which is fine for a single clinic. Move them to cloud storage if they grow past a few gigabytes.
+
 ### Next (highest value first)
 | # | Feature | Why | Effort |
 |---|---|---|---|
@@ -132,8 +140,7 @@ Newest first. Add one line per change.
 | 7 | **Symptom check result sent to WhatsApp** with how long the pain has lasted and the city | More bookings from the symptom check | Low |
 | 8 | **Patient timeline and visit-notes template** (one feed of visits, notes, check-ins, messages and payments) | Quicker review before each visit | Medium |
 | 9 | **No-show and drop-off watchlist** with a one-tap re-engage message | Brings patients back for review | Low |
-| 10 | **Documents:** the clinic shares treatment/exercise plans and visit summaries; patients can optionally upload earlier reports before a visit. Stored encrypted, visible only to that patient and the clinic, included in data downloads and deletion | Fewer papers lost; everything in one place | Medium (best after #3, the login code) |
-| 11 | **Install as an app (PWA)** and new-booking alerts on the doctor's phone | Alerts without checking email | Medium |
+| 10 | **Install as an app (PWA)** and new-booking alerts on the doctor's phone | Alerts without checking email | Medium |
 
 ### Content (ongoing)
 - Two articles a month, reviewed and signed by Dr Rajveer. Topics are listed in [SEO-AND-AI-VISIBILITY.md](SEO-AND-AI-VISIBILITY.md).

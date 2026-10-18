@@ -697,7 +697,7 @@
   }
 
   async function renderPatient(pid) {
-    const { patient: p, appointments, followups, checkins, consents, storyInvite } = await api(`/patients/${Number(pid)}`);
+    const { patient: p, appointments, followups, checkins, consents, storyInvite, documents = [], documentKinds = {} } = await api(`/patients/${Number(pid)}`);
     $("#viewTitle").textContent = `${p.name} · ${p.patient_code || ""}`;
     const first = checkins[0]?.pain_score;
     const last = checkins.at(-1)?.pain_score;
@@ -746,6 +746,19 @@
             ${checkins.length ? `<div class="list" style="margin-top:.8rem">${checkins.slice().reverse().map((c) => `<div class="item"><div>${pain(c.pain_score)}</div>
               <div class="item__main"><strong class="trend-${esc(c.trend)}">Feeling ${esc(c.trend)}</strong><small>${esc(day(c.created_at))}${c.sitting_minutes != null ? ` · sits ${c.sitting_minutes} min` : ""}${c.notes ? ` · ${esc(c.notes)}` : ""}</small></div><div></div></div>`).join("")}</div>` : ""}
           </section>
+          ${p.anonymised_at ? "" : `<section class="panel-card" id="docsPanel">
+            <div class="panel-card__head"><h2>Documents</h2><button class="btn btn--ghost btn--sm" id="addDoc">+ Add document</button></div>
+            <p class="muted small" style="margin-top:0">Plans, visit summaries and reports. Tick <strong>Shared</strong> to let the patient download it from My appointments. PDF, JPG or PNG, up to 10 MB. Stored encrypted.</p>
+            <div class="list">${documents.map((d) => `<div class="item">
+              <div class="item__time">${esc(day(d.created_at, { day: "numeric", month: "short" }))}</div>
+              <div class="item__main"><strong>${esc(d.title)}</strong>
+                <small>${esc(d.kindLabel)} · ${esc(d.mime === "application/pdf" ? "PDF" : "Image")} · ${Math.max(1, Math.round(d.size / 1024))} KB · ${d.uploaded_by === "patient" ? "added by the patient" : `by ${esc(d.uploader_name || "clinic")}`}</small></div>
+              <div class="item__actions">
+                <a class="btn btn--ghost btn--sm" href="/api/admin/documents/${d.id}/file" download>Download</a>
+                ${d.uploaded_by === "clinic" ? `<label class="check"><input type="checkbox" data-doc-share="${d.id}" ${d.shared ? "checked" : ""}> Shared</label>` : ""}
+                <button class="btn btn--ghost btn--sm" data-doc-del="${d.id}" aria-label="Delete ${esc(d.title)}">Delete</button>
+              </div></div>`).join("") || '<div class="empty">No documents yet.</div>'}</div>
+          </section>`}
           <section class="panel-card">
             <h2>Appointments</h2>
             <div class="list">${appointments.map((a) => `<div class="item"><div class="item__time">${esc(day(a.date, { day: "numeric", month: "short", year: "2-digit" }))}</div>
@@ -755,6 +768,46 @@
         </div>
       </div>`;
     $("#backBtn").addEventListener("click", () => history.back());
+    // ---- Documents ----
+    $("#addDoc")?.addEventListener("click", () => {
+      openModal(`<h2>Add a document for ${esc(p.name)}</h2>
+        <form class="form" id="docForm">
+          <div class="field"><label>File (PDF, JPG or PNG, up to 10 MB)</label><input type="file" name="file" accept="application/pdf,image/jpeg,image/png" required></div>
+          <div class="field"><label>Type</label><select name="kind">${Object.entries(documentKinds).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("")}</select></div>
+          <div class="field"><label>Title (optional)</label><input name="title" maxlength="120" placeholder="e.g. Exercise plan, week 1"></div>
+          ${appointments.length ? `<div class="field"><label>Visit (optional)</label><select name="appointmentId"><option value="">Not linked to a visit</option>${appointments.map((a) => `<option value="${a.id}">${esc(day(a.date))} · ${time12(a.time)} · ${esc(CLINIC[a.clinic])}</option>`).join("")}</select></div>` : ""}
+          <label class="check"><input type="checkbox" name="shared" checked> Share with the patient (they can download it from My appointments)</label>
+          <button class="btn btn--primary">Upload</button>
+        </form>`);
+      $("#docForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const f = e.target;
+        const file = f.file.files[0];
+        if (!file) return toast("Please choose a file.");
+        if (file.size > 10 * 1024 * 1024) return toast("That file is larger than 10 MB.");
+        const qs = new URLSearchParams({ kind: f.kind.value, title: f.title.value, shared: f.shared.checked ? "1" : "0", ...(f.appointmentId?.value ? { appointmentId: f.appointmentId.value } : {}) });
+        const btn = f.querySelector("button");
+        btn.disabled = true; btn.textContent = "Uploading…";
+        try {
+          const res = await fetch(`/api/admin/patients/${p.id}/documents?${qs}`, {
+            method: "POST", credentials: "same-origin", body: file,
+            headers: { "content-type": file.type || "application/octet-stream", "x-requested-with": "fetch" },
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "Upload failed.");
+          closeModal();
+          toast(data.document.shared ? "Document added and shared with the patient." : "Document added (not shared).");
+          route();
+        } catch (ex) { btn.disabled = false; btn.textContent = "Upload"; toast(ex.message); }
+      });
+    });
+    $$("[data-doc-share]").forEach((c) => c.addEventListener("change", () => confirmThen(null, async () => {
+      try { await api(`/documents/${c.dataset.docShare}`, { method: "PATCH", body: { shared: c.checked } }); } catch (ex) { c.checked = !c.checked; throw ex; }
+      toast(c.checked ? "Shared: the patient can now download it." : "No longer shared with the patient.");
+    })));
+    $$("[data-doc-del]").forEach((b) => b.addEventListener("click", () => confirmThen("Delete this document permanently?", async () => {
+      await api(`/documents/${b.dataset.docDel}`, { method: "DELETE" }); toast("Document deleted."); route();
+    })));
     const eraseBtn = $("#eraseBtn");
     if (eraseBtn) eraseBtn.addEventListener("click", async () => {
       const typed = prompt(`This permanently removes ${p.name}'s name, contact details, notes and check-in comments. Payment records are kept de-identified for tax law.\n\nType the patient's full name to confirm:`);

@@ -94,6 +94,24 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   changed_by TEXT
 );
 
+-- Patient documents (see documents.js). data holds the encrypted file.
+CREATE TABLE IF NOT EXISTS documents (
+  id INTEGER PRIMARY KEY,
+  patient_id INTEGER NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+  appointment_id INTEGER REFERENCES appointments(id) ON DELETE SET NULL,
+  kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  uploaded_by TEXT NOT NULL CHECK (uploaded_by IN ('clinic','patient')),
+  uploader_name TEXT NOT NULL DEFAULT '',
+  shared INTEGER NOT NULL DEFAULT 0,
+  data BLOB NOT NULL,
+  sha256 TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_documents_patient ON documents(patient_id, created_at);
+
 CREATE TABLE IF NOT EXISTS media (
   id INTEGER PRIMARY KEY,
   url TEXT NOT NULL UNIQUE,

@@ -53,6 +53,8 @@ export function exportPatientData(db, patientId) {
     messages: db.prepare("SELECT event, channel, status, body, created_at FROM notifications WHERE audience = 'patient' AND recipient = ? ORDER BY id").all(patient.phone)
       .map((n) => ({ ...n, body: decrypt(n.body) })),
     stories: db.prepare("SELECT title, body, status, created_at FROM stories WHERE phone = ?").all(patient.phone),
+    // The files themselves are downloaded one by one from My appointments; this lists them.
+    documents: db.prepare("SELECT title, kind, mime, size, uploaded_by, shared, created_at FROM documents WHERE patient_id = ? AND (shared = 1 OR uploaded_by = 'patient') ORDER BY id").all(patientId),
   };
 }
 
@@ -81,6 +83,7 @@ export function erasePatient(db, patientId, { force = false } = {}) {
       .run(encrypt(""), patientId, patient.phone);
     db.prepare("UPDATE appointment_events SET actor_name = '', detail = '' WHERE actor = 'patient' AND appointment_id IN (SELECT id FROM appointments WHERE patient_id = ?)").run(patientId);
     db.prepare("DELETE FROM stories WHERE patient_id = ? OR phone = ?").run(patientId, patient.phone);
+    db.prepare("DELETE FROM documents WHERE patient_id = ?").run(patientId);
     db.prepare("UPDATE consents SET withdrawn_at = COALESCE(withdrawn_at, datetime('now')) WHERE patient_id = ?").run(patientId);
     db.exec("COMMIT");
   } catch (err) {

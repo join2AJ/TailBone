@@ -982,3 +982,11 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .notfound { padding: 2rem 0; }
 .notfound__search { margin: 1.4rem auto 1.2rem; }
 .notfound__links { text-align: left; margin-bottom: 1.4rem; }
+/* My appointments: documents */
+.docs-box { margin-top: 2rem; }
+.docs-list { list-style: none; padding: 0; margin: .6rem 0; display: grid; gap: .5rem; }
+.docs-list li { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .7rem .9rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
+.docs-list strong { display: block; overflow-wrap: anywhere; }
+.docs-list small { display: block; }
+.docs-upload { margin-top: 1rem; padding: 1rem; border: 1px dashed var(--line); border-radius: var(--radius-sm); }
+.docs-upload h3 { margin: 0 0 .3rem; }

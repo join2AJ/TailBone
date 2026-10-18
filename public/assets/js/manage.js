@@ -87,6 +87,7 @@
     msg.hidden = !message;
     if (message) { msg.className = `alert alert--${kind}`; msg.textContent = message; }
     if (data.privacy) renderPrivacy(data.privacy);
+    renderDocuments(data.documents);
     const others = data.others || [];
     $("#othersBox").hidden = others.length === 0;
     $("#othersList").replaceChildren(...others.map(apptCard));
@@ -210,6 +211,57 @@
   });
 
   $("#printCard").addEventListener("click", () => window.print());
+
+  // ---- Documents shared by the clinic (and reports the patient added) ----
+  const fmtSize = (n) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+  function renderDocuments(d) {
+    const box = $("#docsBox");
+    box.hidden = !d || !d.enabled;
+    if (box.hidden) return;
+    $("#docsLocked").hidden = d.verified;
+    $("#docsEmpty").hidden = !d.verified || d.list.length > 0;
+    $("#docsUpload").hidden = !d.canUpload;
+    $("#docsList").replaceChildren(...d.list.map((doc) => {
+      const li = el("li");
+      const info = el("div");
+      info.append(el("strong", "", doc.title), el("small", "muted", `${doc.kindLabel} · ${fmtDay(doc.at)} · ${fmtSize(doc.size)}${doc.by === "patient" ? " · added by you" : ""}`));
+      const btn = el("button", "btn btn--ghost btn--sm", "Download");
+      btn.type = "button";
+      btn.setAttribute("aria-label", `Download ${doc.title}`);
+      btn.addEventListener("click", () => downloadDocument(doc, btn));
+      li.append(info, btn);
+      return li;
+    }));
+  }
+  async function downloadDocument(doc, btn) {
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/manage/documents/${doc.id}/download`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(creds) });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Couldn't download this document. Please try again.");
+      const name = (/filename="([^"]+)"/.exec(res.headers.get("content-disposition") || "") || [])[1] || "document";
+      const url = URL.createObjectURL(await res.blob());
+      const a = Object.assign(document.createElement("a"), { href: url, download: name });
+      document.body.append(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (e) { toast(e.message); } finally { btn.disabled = false; }
+  }
+  $("#docsUpload").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const file = $("#docFile").files[0];
+    if (!file) { toast("Please choose a file."); $("#docFile").focus(); return; }
+    if (file.size > 10 * 1024 * 1024) { toast("That file is larger than 10 MB. Please send a smaller copy."); return; }
+    const btn = e.submitter || $("#docsUpload button");
+    btn.disabled = true;
+    try {
+      const qs = new URLSearchParams({ kind: "report", title: $("#docTitle").value.trim() });
+      const res = await fetch(`/api/manage/documents?${qs}`, { method: "POST", body: file, headers: { "content-type": file.type || "application/octet-stream", "x-ref": creds.ref, "x-phone": creds.phone } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't add the report. Please try again.");
+      renderDocuments(data.documents);
+      e.target.reset();
+      toast("Report added. The clinic has been told.");
+    } catch (ex) { toast(ex.message); } finally { btn.disabled = false; }
+  });
 
   // ---- Privacy self-service: requests go to the clinic, completed within 7 days ----
   const REQ_LABEL = { access: "Copy of your data", correction: "Correction of your details", erasure: "Deletion of your data" };

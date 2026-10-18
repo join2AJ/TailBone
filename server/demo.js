@@ -6,12 +6,32 @@ import { seedStories, makeToken } from "./services.js";
 import { NOTICE_VERSION } from "./privacy.js";
 import { patientCode, nextApptNo } from "./db.js";
 import { config } from "./config.js";
+import { addDocument } from "./documents.js";
+
+/** A one-page PDF of plain text lines (for the demo's sample documents). */
+function samplePdf(lines) {
+  const esc = (t) => t.replace(/[\\()]/g, "\\$&");
+  const text = ["BT /F1 18 Tf 56 780 Td", `(${esc(lines[0])}) Tj`, "/F1 11 Tf 0 -30 Td", ...lines.slice(1).flatMap((l) => [`(${esc(l)}) Tj`, "0 -18 Td"]), "ET"].join("\n");
+  const objs = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+    `<< /Length ${Buffer.byteLength(text)} >>\nstream\n${text}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+  ];
+  let out = "%PDF-1.4\n";
+  const offsets = objs.map((o, i) => { const at = Buffer.byteLength(out); out += `${i + 1} 0 obj\n${o}\nendobj\n`; return at; });
+  const xref = Buffer.byteLength(out);
+  out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, "0")} 00000 n \n`).join("")}`;
+  out += `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(out, "latin1");
+}
 
 // Sample data for DEMO_MODE. All people are fictional; phone numbers use the unassigned 9999900xxx range.
 export const DEMO_ADMIN = { email: "demo@tailbonetreatment.com", name: "Demo Doctor" };
 export const DEMO_PATIENT = { ref: "TB-DEMO42", phone: "9999900001", name: "Asha Verma" };
 
-const TABLES = ["notifications", "refunds", "appointment_events", "checkins", "followups", "consents", "data_requests",
+const TABLES = ["documents", "notifications", "refunds", "appointment_events", "checkins", "followups", "consents", "data_requests",
   "appointments", "patients", "stories", "media", "blocked_dates", "settings", "security_log", "admins"];
 
 /** Wipe the demo database and fill it with a realistic day at the clinic. */
@@ -68,6 +88,15 @@ export function seedDemo(db) {
     const f2 = followup(asha, ashaPast, addDays(today, -7), "done");
     checkin(asha, f2, 2, "better", 7, "", 90);
     appt(asha, DEMO_PATIENT.ref, "del", addDays(today, 3), 3, "confirmed", { reason: "Review visit", paid: 50000, platform: 10000, visit: "followup" });
+    addDocument(db, {
+      patientId: asha, appointmentId: ashaPast, kind: "plan", title: "Exercise plan after first visit", uploadedBy: "clinic", uploaderName: "Dr Rajveer Singh", shared: true,
+      data: samplePdf([
+        "Exercise plan (sample document for the demo)", "Patient: Asha Verma (TBP-00001)", "",
+        "1. Sit leaning slightly forward, on a wedge or cut-out cushion.", "2. Stand up and walk for 2 minutes every 30 minutes.",
+        "3. Gentle pelvic floor relaxation: 5 slow breaths, twice a day.", "4. Knee-to-chest stretch: 3 x 20 seconds, morning and evening.",
+        "", "Review visit as booked. Call or WhatsApp +91 98866 88323 with any questions.",
+      ]),
+    });
 
     // 2. Today's patients.
     const rohan = patient("Rohan Mehta", "9999900002");
