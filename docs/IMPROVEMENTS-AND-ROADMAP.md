@@ -2,7 +2,7 @@
 
 This is the running record of how the new Tailbone Treatment website and clinic system improves on the old site at **tailbonetreatment.com**, and the plan for what comes next.
 
-**Keep it current:** whenever something is added or changed, add a line to the [change log](#3-change-log) and tick or move items in the [future plan](#4-future-plan). Last updated: **17 October 2026**.
+**Keep it current:** whenever something is added or changed, add a line to the [change log](#3-change-log) and tick or move items in the [future plan](#4-future-plan). Last updated: **18 October 2026**.
 
 ---
 
@@ -20,8 +20,8 @@ This is the running record of how the new Tailbone Treatment website and clinic 
 | **Calendar** | None | Every appointment appears in the doctor's Google Calendar with appointment number, patient ID and in-clinic or online |
 | **Clinics** | Bangalore and New Delhi both listed | New Delhi plus online; Bengaluru marked closed; Lucknow shown as opening soon. All switchable from the dashboard. |
 | **Fees and policies** | Not published online | Fees, refund and reschedule rules published, editable by the clinic, with a dated history of every change; each booking keeps the rules in force when it was made |
-| **Content** | 24 articles, 15 pages | All old articles and newspaper clippings brought over, plus new evidence-based articles with tables, diagrams, animations and sources (25 articles in total) |
-| **Blog tools** | WordPress categories and tags | Search box, topic filters, "On this page" contents, WhatsApp share, related articles, and admin on/off per article |
+| **Content** | 24 articles, 15 pages | All old articles and newspaper clippings brought over, plus new evidence-based articles with tables, diagrams, animations and sources (29 articles in total, 4 of them from Dr Rajveer's own videos) |
+| **Blog tools** | WordPress categories and tags | Picture cards for every article, search box, topic filters, "On this page" contents, WhatsApp share, related articles, and admin on/off per article |
 | **Search engines and AI** | Yoast SEO, one structured-data block | Separate page per topic, rich structured data (clinic, doctor, condition, FAQ, articles, breadcrumbs), AI-assistant files (llms.txt), IndexNow, sitemap, and 301 redirects from every old address |
 | **Online consultations** | Mentioned, arranged by phone | A "Join call" button in My appointments from 15 minutes before, a 2-minute preparation guide and a camera/microphone test; the doctor starts the call or sends the link on WhatsApp from the dashboard |
 | **Documents** | None | The clinic shares treatment and exercise plans, visit summaries and reports; patients download them from My appointments. Optional patient uploads of earlier reports (switched off for now). Stored encrypted. |
@@ -94,6 +94,9 @@ Newest first. Add one line per change.
 
 | Date | Change |
 |---|---|
+| 18 Oct 2026 | **Dr Rajveer's own advice on the site:** four new articles from his videos (inward vs outward subluxation, when Kegel exercises make it worse, the risks of untrained "bone setting", amusement and water park rides), a new animated diagram of the tailbone shifting inward and outward, and "Dr Rajveer's five rules" on the Tailbone pain page. The cushion and pregnancy articles now include his advice, and the dynamic (sitting and standing) X-ray is explained consistently. |
+| 18 Oct 2026 | **Cleaner look:** blog cards now show a picture and the title (tap anywhere to open); inside an article the booking box and "Keep reading" are clearly separate; "Go deeper" is split into "Dr Rajveer explains" and "What the research shows" with picture cards; the fact tiles have icons and colours; clinic tabs are colour-coded (green open, amber opening soon, grey closed) with a one-line status; footer contact details line up properly. |
+| 18 Oct 2026 | **Dashboard tidy-up:** Settings is now in tabs (Fees & policies, Holidays, Online consultations, Calendar, My account, Data & backups) instead of one long page; buttons in Follow-ups due line up under the patient's name. A full website and dashboard map is in SITE-MAP.md. |
 | 18 Oct 2026 | **Join call for online consultations:** the clinic saves its usual video room (Google Meet, Zoom…) in Settings, or a different link on one appointment. Patients see a "Join call" button in My appointments from 15 minutes before (never earlier, so nobody walks into another consultation), plus a short preparation guide and a camera and microphone test. The doctor has "Start call" and "Send link on WhatsApp" in the dashboard. Online confirmations and reminders now explain how to join, and use the appointment number. |
 | 18 Oct 2026 | **Payment receipts:** every paid booking (online or at the clinic) gets a numbered receipt (e.g. TBR-2610-0001). Patients open it from My appointments, the clinic from the appointment's details; both can print it or save it as a PDF. Shows the service, the amount, how it was paid and any refunds. |
 | 18 Oct 2026 | **Documents:** on a patient's page the clinic adds PDF or photo documents (treatment and exercise plans, visit summaries, reports) and ticks "Shared"; the patient downloads them under "Your documents" in My appointments. Optional patient uploads of earlier reports are built but switched off (Control panel). Files are checked to be real PDF/JPG/PNG, stored encrypted, every view is logged, and they're included in data downloads and removed with deletion requests. The demo patient has a sample exercise plan. |
@@ -176,6 +179,7 @@ These GitHub projects do parts of what this system does. We borrow ideas from th
 - Page text: `content/site.html`. Articles: `content/blog/`. Press: `content/press.json`. Old-address redirects: `content/redirects.json`.
 - `npm run build` publishes everything into `public/`. Commit and push, and Netlify deploys.
 - More detail:
+  - [SITE-MAP.md](SITE-MAP.md) (every page and dashboard section)
   - [SEO-AND-AI-VISIBILITY.md](SEO-AND-AI-VISIBILITY.md)
   - [AUDIT-REPORT.md](AUDIT-REPORT.md)
   - [PAYMENTS-SECURITY-HOSTING.md](PAYMENTS-SECURITY-HOSTING.md)
