@@ -5,7 +5,7 @@ import { calendarSync } from "./services.js";
 // DPDP Act 2023 (India) and GDPR: consent records, rights requests, export, erasure and retention.
 // The privacy notice shown to patients is versioned so each consent can be tied to the exact text agreed to.
 
-export const NOTICE_VERSION = "2026-10-17";
+export const NOTICE_VERSION = "2026-10-22";
 export const CONSENT_PURPOSES = {
   care: "Use my details to book, provide and follow up my treatment",
   whatsapp_updates: "Send appointment updates, reminders and follow-up check-ins on WhatsApp",
@@ -34,8 +34,14 @@ export const hasConsent = (db, patientId, purpose) =>
 
 /** Everything held about a patient, decrypted, for an access / portability request (GDPR Art. 15 & 20, DPDP s.11). */
 export function exportPatientData(db, patientId) {
-  const patient = db.prepare("SELECT id, name, phone, email, notes, created_at, anonymised_at FROM patients WHERE id = ?").get(patientId);
+  const patient = db.prepare(
+    `SELECT id, name, phone, email, notes, created_at, anonymised_at, gender, birth_year, occupation_group, occupation, city,
+       sitting_hours, pain_since, heard_from, referred_by FROM patients WHERE id = ?`,
+  ).get(patientId);
   if (!patient) return null;
+  const referrer = patient.referred_by ? db.prepare("SELECT code, name FROM partners WHERE id = ?").get(patient.referred_by) : null;
+  delete patient.referred_by;
+  const ownPartner = db.prepare("SELECT id, code, status, payout_details, created_at FROM partners WHERE patient_id = ?").get(patientId);
   return {
     exportedAt: new Date().toISOString(),
     controller: "Tailbone Treatment Clinic, +91 98866 88323, contact@tailbonetreatment.com",
@@ -55,6 +61,14 @@ export function exportPatientData(db, patientId) {
     stories: db.prepare("SELECT title, body, status, created_at FROM stories WHERE phone = ?").all(patient.phone),
     // The files themselves are downloaded one by one from My appointments; this lists them.
     documents: db.prepare("SELECT title, kind, mime, size, uploaded_by, shared, created_at FROM documents WHERE patient_id = ? AND (shared = 1 OR uploaded_by = 'patient') ORDER BY id").all(patientId),
+    referredBy: referrer,
+    yourReferralId: ownPartner ? {
+      code: ownPartner.code, status: ownPartner.status, payTo: decrypt(ownPartner.payout_details), createdAt: ownPartner.created_at,
+      rewards: db.prepare("SELECT kind, amount, status, created_at FROM referral_rewards WHERE partner_id = ? ORDER BY id").all(ownPartner.id),
+      payouts: db.prepare("SELECT amount, method, reference, paid_at FROM partner_payouts WHERE partner_id = ? ORDER BY id").all(ownPartner.id),
+    } : null,
+    homeVisitRequests: db.prepare("SELECT ref, city, date_from, date_to, status, details, created_at FROM home_visits WHERE phone = ? ORDER BY id").all(patient.phone)
+      .map((v) => decryptFields(v, ["details"])),
   };
 }
 
@@ -72,7 +86,12 @@ export function erasePatient(db, patientId, { force = false } = {}) {
   const placeholder = `erased-${patientId}-${crypto.randomBytes(3).toString("hex")}`;
   db.exec("BEGIN IMMEDIATE");
   try {
-    db.prepare("UPDATE patients SET name = 'Erased patient', phone = ?, email = NULL, notes = '', anonymised_at = datetime('now') WHERE id = ?").run(placeholder, patientId);
+    db.prepare(`UPDATE patients SET name = 'Erased patient', phone = ?, email = NULL, notes = '', anonymised_at = datetime('now'),
+      gender = NULL, birth_year = NULL, occupation_group = NULL, occupation = NULL, city = NULL, sitting_hours = NULL, pain_since = NULL, heard_from = NULL
+      WHERE id = ?`).run(placeholder, patientId);
+    // Their own referral ID stops; amounts already paid stay on record (de-identified) for the accounts.
+    db.prepare("UPDATE partners SET name = 'Erased patient', email = NULL, phone = NULL, payout_details = '', notes = '', status = 'suspended' WHERE patient_id = ?").run(patientId);
+    db.prepare("UPDATE home_visits SET name = 'Erased', phone = ?, email = NULL, details = '', clinic_notes = '' WHERE phone = ?").run(placeholder, patient.phone);
     db.prepare("UPDATE appointments SET reason = '', notes = '' WHERE patient_id = ?").run(patientId);
     db.prepare("UPDATE checkins SET notes = '' WHERE patient_id = ?").run(patientId);
     db.prepare("UPDATE followups SET notes = '' WHERE patient_id = ?").run(patientId);

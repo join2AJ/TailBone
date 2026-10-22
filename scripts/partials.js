@@ -1,6 +1,7 @@
 // Shared page parts. content/site.html (the page template) holds the master header and footer; the animated explainers live in content/animations.
 // `npm run build` copies both into the other pages so there is one source for each.
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -59,3 +60,22 @@ export function siteHeader(active) {
 
 // Fill <!-- anim:name --> … <!-- /anim --> blocks.
 export const injectAnims = (html) => html.replace(/<!-- anim:([\w-]+) -->[\s\S]*?<!-- \/anim -->/g, (_, name) => `<!-- anim:${name} -->\n${animFigure(name)}\n<!-- /anim -->`);
+
+/**
+ * Adds ?v=<content hash> to our own stylesheet and script links, so a browser never pairs a new page with an old cached
+ * stylesheet (which made new sections look broken until the cache expired). Used by the build and by pages the server renders.
+ */
+export function versionHtml(html, publicDir = path.join(root, "public"), cache = new Map()) {
+  const hash = (url) => {
+    if (!cache.has(url)) {
+      const file = path.join(publicDir, url);
+      cache.set(url, fs.existsSync(file) ? crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex").slice(0, 10) : null);
+    }
+    return cache.get(url);
+  };
+  // Relative links (standalone pages at the site root) resolve from the root too.
+  return html.replace(/((?:href|src)=")(\/?(?:assets|admin)\/[^"?#]+\.(?:css|js))(?:\?v=\w*)?"/g, (m, attr, url) => {
+    const h = hash(url.replace(/^\//, ""));
+    return h ? `${attr}${url}?v=${h}"` : m;
+  });
+}

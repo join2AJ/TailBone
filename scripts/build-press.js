@@ -14,10 +14,19 @@ const heading = (p) => p.title
   .replace(/^Kanada$/, "Kannada newspaper")
   .replace(/^Hindustan Delhi \((English|Hindi)\)$/, "Hindustan, Delhi ($1 edition)");
 
+// Independent pages that mention Dr Rajveer Singh (checked by hand; see docs/IMPROVEMENTS-AND-ROADMAP.md).
+const MENTIONS = [
+  { url: "https://www.coccyx.org/treatmen/docsindi.htm", title: "coccyx.org: list of doctors for tailbone pain in India", note: "Dr Rajveer Singh, physiotherapist (an older listing that still shows the Bengaluru address)" },
+  { url: "https://coccyx.org/personal/2026/rahul.htm", title: "\"Severe pain in the tailbone\" (2026)", note: "A patient's account of treatment in Delhi" },
+  { url: "https://www.coccyx.org/personal/2024/anon2402.htm", title: "\"Tailbone treatment by Dr Rajveer Singh\" (2024)", note: "Dynamic X-ray, then treatment in Delhi" },
+  { url: "https://coccyx.org/personal/2022/akanksha.htm", title: "\"Big thanks to Dr Rajveer for coccyx pain recovery\" (2022)", note: "A patient's account" },
+  { url: "https://coccyx.org/personal/2009/sachin.htm", title: "\"Treatment of coccyx injury by Dr. Rajveer Singh\" (2009)", note: "One of the earliest patient accounts, from Bengaluru" },
+];
+
 export function buildPress() {
   const items = JSON.parse(fs.readFileSync(path.join(root, "content/press.json"), "utf8"));
   const cards = items.map((p) => `        <li class="press-card" id="${esc(p.slug)}">
-          <a href="${esc(p.image)}" class="press-card__img" target="_blank" rel="noopener" aria-label="Open the full clipping: ${esc(heading(p))}">
+          <a href="${esc(p.image)}" class="press-card__img" data-full="${esc(p.image)}" data-w="${p.width}" data-h="${p.height}" data-caption="${esc(heading(p))}, ${prettyDate(p.date)}" aria-label="Open the full clipping: ${esc(heading(p))}">
             <img src="${esc(p.thumb || p.image)}" alt="Newspaper clipping: ${esc(p.title)}" width="${p.thumbWidth || p.width}" height="${p.thumbHeight || p.height}" loading="lazy" decoding="async">
           </a>
           <h2>${esc(heading(p))}</h2>
@@ -31,7 +40,14 @@ export function buildPress() {
       </div>
       <ul class="press-grid">
 ${cards}
-      </ul>`;
+      </ul>
+      <section class="online-mentions" aria-labelledby="onlineTitle">
+        <h2 class="subhead" id="onlineTitle">Also mentioned online</h2>
+        <p class="muted">coccyx.org is an independent international website about tailbone pain, run by Jon Miles in the UK. It lists Dr Rajveer Singh among the specialists in India and publishes patients' own accounts of their treatment.</p>
+        <ul class="research-links">
+${MENTIONS.map((m) => `          <li><a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.title)}<span>${esc(m.note)}</span></a></li>`).join("\n")}
+        </ul>
+      </section>`;
   const html = page({
     title: "In the News: Tailbone Treatment and Dr Rajveer Singh",
     description: `Newspaper coverage of Dr Rajveer Singh and tailbone (coccyx) pain treatment, in ${pubs.join(", ")}.`,
@@ -51,6 +67,6 @@ ${cards}
     },
     body,
   });
-  fs.writeFileSync(path.join(root, "public/press.html"), html);
+  fs.writeFileSync(path.join(root, "public/press.html"), html.replace("</body>", '  <script src="/assets/js/press.js" defer></script>\n</body>'));
   return items;
 }

@@ -8,6 +8,7 @@ import { patientCode, nextApptNo } from "./db.js";
 import { config } from "./config.js";
 import { addDocument } from "./documents.js";
 import { saveVideoSettings } from "./video.js";
+import { syncRewards } from "./referrals.js";
 
 /** A one-page PDF of plain text lines (for the demo's sample documents). */
 function samplePdf(lines) {
@@ -31,8 +32,9 @@ function samplePdf(lines) {
 // Sample data for DEMO_MODE. All people are fictional; phone numbers use the unassigned 9999900xxx range.
 export const DEMO_ADMIN = { email: "demo@tailbonetreatment.com", name: "Demo Doctor" };
 export const DEMO_PATIENT = { ref: "TB-DEMO42", phone: "9999900001", name: "Asha Verma" };
+export const DEMO_PARTNER = { phone: "9999900021", password: "demo-partner" };
 
-const TABLES = ["documents", "notifications", "refunds", "appointment_events", "checkins", "followups", "consents", "data_requests",
+const TABLES = ["referral_rewards", "partner_payouts", "partners", "home_visits", "blog_media", "documents", "notifications", "refunds", "appointment_events", "checkins", "followups", "consents", "data_requests",
   "appointments", "patients", "stories", "media", "blocked_dates", "settings", "security_log", "admins"];
 
 /** Wipe the demo database and fill it with a realistic day at the clinic. */
@@ -40,6 +42,7 @@ export function seedDemo(db) {
   db.exec("BEGIN IMMEDIATE");
   try {
     for (const t of TABLES) db.exec(`DELETE FROM ${t}`);
+    db.exec("DELETE FROM blog_posts WHERE source = 'dashboard'");
     // Unusable random password: the demo admin can only sign in with the demo button.
     db.prepare("INSERT INTO admins (email, name, password_hash, role) VALUES (?, ?, ?, 'superadmin')")
       .run(DEMO_ADMIN.email, DEMO_ADMIN.name, hashPassword(crypto.randomBytes(24).toString("hex")));
@@ -149,6 +152,58 @@ export function seedDemo(db) {
 
     db.prepare("INSERT INTO data_requests (ref, type, name, phone, details, patient_id, due_at) VALUES ('DR-DEMO0001', 'access', 'Imran Khan', '919999900004', ?, ?, ?)")
       .run(encrypt("Please send me a copy of my records."), imran, addDays(today, 25));
+
+    // 7. Profiles, where bookings came from, referral partners, a home-visit request and a draft article.
+    const year = Number(today.slice(0, 4));
+    const prof = db.prepare("UPDATE patients SET gender = ?, birth_year = ?, city = ?, occupation_group = ?, occupation = ?, sitting_hours = ?, pain_since = ?, heard_from = ? WHERE id = ?");
+    prof.run("female", year - 34, "Gurugram", "office", "Software engineer", "gt8", "6to12m", "google", asha);
+    prof.run("male", year - 41, "New Delhi", "driver", "Taxi driver", "gt8", "1to6m", "doctor", rohan);
+    prof.run("female", year - 29, "Noida", "homemaker", "", "2to5", "1to6m", "instagram", kavya);
+    prof.run("male", year - 46, "Gurugram", "business", "Shop owner", "5to8", "gt1y", "google", vikram);
+    prof.run("female", year - 38, "New Delhi", "office", "Bank officer", "5to8", "lt1m", "friend", meera);
+    prof.run("male", year - 52, "Faridabad", "office", "Accountant", "gt8", "gt1y", "youtube", imran);
+    prof.run("female", year - 31, "New Delhi", "healthcare", "Nurse", "2to5", "6to12m", "google", neha);
+    const attr = db.prepare("UPDATE appointments SET ad_click = ?, utm_source = ?, utm_medium = ?, utm_campaign = ?, landing_page = ?, created_at = datetime('now', ?) WHERE ref = ?");
+    attr.run(1, "google", "cpc", "tailbone-pain-delhi", "/coccydynia", "-5 days", "TB-DEMO17");
+    attr.run(1, "google", "cpc", "coccyx-specialist", "/", "-2 days", "TB-DEMO51");
+    attr.run(0, "instagram", "social", "reel-sitting-tips", "/treatment", "-1 days", "TB-DEMO35");
+    attr.run(1, "google", "cpc", "tailbone-pain-delhi", "/coccydynia", "-12 days", "TB-DEMO56");
+
+    const partner = db.prepare(`INSERT INTO partners (code, kind, name, contact_name, phone, email, city, payout_details, password_hash, patient_id, status, approved_at, approved_by, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'active' THEN datetime('now','-60 days') END, CASE WHEN ? = 'active' THEN 'Demo Doctor' END, datetime('now', ?))`);
+    const hospital = Number(partner.run("REF-CITY7", "hospital", "City Ortho Hospital", "Dr P. Malhotra", `91${DEMO_PARTNER.phone}`, "ortho@example.com", "Gurugram",
+      encrypt("cityortho@okicici"), hashPassword(DEMO_PARTNER.password), null, "active", "active", "active", "-60 days").lastInsertRowid);
+    const ashaCode = Number(partner.run("REF-ASHA4", "patient", DEMO_PATIENT.name, "", null, null, "", encrypt("asha@okaxis"), null, asha, "active", "active", "active", "-14 days").lastInsertRowid);
+    partner.run("REF-SAAT2", "ngo", "Saathi Women's Health Trust", "Ritu Bansal", "919999900022", null, "Lucknow", "", hashPassword(crypto.randomBytes(12).toString("hex")), null, "pending", "pending", "pending", "-1 days");
+    // Rohan was referred by the hospital (first booking confirmed: reward earned). Pooja, last month, was paid for.
+    db.prepare("UPDATE patients SET referred_by = ? WHERE id = ?").run(hospital, rohan);
+    db.prepare("UPDATE appointments SET referral_partner_id = ? WHERE ref = 'TB-DEMO23'").run(hospital);
+    const pooja = patient("Pooja Sharma", "9999900013");
+    consent(pooja);
+    prof.run("female", year - 27, "Gurugram", "office", "Designer", "gt8", "1to6m", "doctor", pooja);
+    db.prepare("UPDATE patients SET referred_by = ? WHERE id = ?").run(hospital, pooja);
+    const poojaVisit = appt(pooja, "TB-DEMO71", "del", addDays(today, -35), 2, "completed", { paid: 80000, notes: "Referred by City Ortho. IM session 1." });
+    db.prepare("UPDATE appointments SET referral_partner_id = ?, created_at = datetime('now','-40 days') WHERE id = ?").run(hospital, poojaVisit);
+    // Meera was referred by Asha (pending booking: nothing earned until it's confirmed).
+    db.prepare("UPDATE patients SET referred_by = ? WHERE id = ?").run(ashaCode, meera);
+    db.prepare("UPDATE appointments SET referral_partner_id = ? WHERE ref = 'TB-DEMO52'").run(ashaCode);
+    for (const { id } of db.prepare("SELECT id FROM appointments WHERE referral_partner_id IS NOT NULL").all()) syncRewards(db, id);
+    const payout = Number(db.prepare("INSERT INTO partner_payouts (partner_id, amount, method, reference, notes, paid_by, paid_at) VALUES (?, ?, 'UPI', 'UTR 4021 7781 0032', ?, 'Demo Doctor', datetime('now','-3 days'))")
+      .run(hospital, 105000, `For ${addDays(today, -30).slice(0, 7)}`).lastInsertRowid);
+    db.prepare("UPDATE referral_rewards SET status = 'paid', payout_id = ? WHERE patient_id = ?").run(payout, pooja);
+
+    const hv = db.prepare(`INSERT INTO home_visits (ref, name, phone, email, organisation, city, details, patients, date_from, date_to, status, clinic_notes, agreed_terms, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now', ?))`);
+    hv.run("HV-D3M01", "Anil Gupta", "919999900031", null, "", "Jaipur, India", encrypt("My mother (62) and my wife (35) both have tailbone pain. We live in Malviya Nagar; nearest airport Jaipur."), 2,
+      addDays(today, 12), addDays(today, 13), "new", encrypt(""), "-6 hours");
+    hv.run("HV-D3M02", "Farah Siddiqui", "919999900032", "hr@example.com", "Nimbus Software (HR)", "Pune, India", encrypt("Workplace health day for employees with back and tailbone pain; about 8 people want to be seen."), 8,
+      addDays(today, 25), addDays(today, 26), "discussing", encrypt("Sent estimate: fees for 8 + flights + 1 night. Waiting for approval."), "-4 days");
+
+    db.prepare(`INSERT INTO blog_posts (id, slug, title, source, status, summary, tags, body, author, enabled, updated_at, changed_at, changed_by)
+      VALUES (1001, 'desk-habits-for-tailbone-pain', ?, 'dashboard', 'draft', ?, ?, ?, 'Dr Rajveer Singh', 1, datetime('now','-1 hours'), datetime('now','-1 hours'), 'Demo Doctor')`)
+      .run("Five desk habits that ease tailbone pain", "Small changes at work that take pressure off a sore coccyx: how you sit, how often you stand, and what to sit on.",
+        JSON.stringify(["Self-care", "Work and lifestyle"]),
+        "A draft written in the dashboard, to show how articles work. Add pictures, a YouTube or Instagram video, or a voice recording with the buttons above.\n\n## 1. Lean slightly forward\n\nSitting upright or a little forward moves your weight from the tailbone onto your thigh bones.\n\n## 2. Stand up every 30 minutes\n\nSet a reminder. Two minutes of walking is enough.\n\n## 3. Use the right cushion\n\nFirm, with a cut-out at the back, thicker at the back than the front.\n\n> Tip: keep a cushion in the car too.");
 
     db.exec("COMMIT");
   } catch (err) {

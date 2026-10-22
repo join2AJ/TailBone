@@ -6,12 +6,18 @@ import { encrypt } from "../crypto.js";
 import { getPolicy, policySummary, refundQuote, rescheduleCheck, isClinicOpen, policyUpdatedAt } from "../policy.js";
 import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, verifyWebhookSignature, rupees } from "../payments.js";
 import { notify } from "../notify.js";
-import { DEMO_PATIENT } from "../demo.js";
+import { DEMO_PATIENT, DEMO_PARTNER } from "../demo.js";
 import { getFeatures, isOn } from "../features.js";
 import { hiddenPosts } from "../blog.js";
 import { addDocument, listDocuments, getDocument, readFile, sendFile, MAX_BYTES, PATIENT_KINDS } from "../documents.js";
 import express from "express";
 import { videoForPatient } from "../video.js";
+import { cleanProfile, saveProfile, cleanAttribution } from "../profile.js";
+import { decrypt } from "../crypto.js";
+import { linkReferral, syncRewards, findActivePartner, patientPartner, partnerTotals, getReferralSettings } from "../referrals.js";
+import { profileView, PROFILE_OPTIONS } from "../profile.js";
+import { createHomeVisit, HOME_VISIT_MIN_DAYS } from "../homevisits.js";
+import { publicArticles } from "../articles.js";
 import QRCode from "qrcode";
 import crypto from "node:crypto";
 import { ensureBusy, isBusy, googleCalendarLink, calendarFeed } from "../gcal.js";
@@ -81,9 +87,16 @@ export function publicRoutes(db) {
       payOnline: paymentsEnabled() && policy.payments.mode === "online" && isOn(db, "online_payments"),
       policy: policySummary(policy),
       privacy: { noticeVersion: NOTICE_VERSION, purposes: CONSENT_PURPOSES },
-      demo: config.demo ? { patient: { ref: DEMO_PATIENT.ref, phone: DEMO_PATIENT.phone } } : null,
+      demo: config.demo ? { patient: { ref: DEMO_PATIENT.ref, phone: DEMO_PATIENT.phone }, partner: DEMO_PARTNER } : null,
       features: getFeatures(db),
     });
+  });
+
+  // The booking form shows who referred the patient when a referral code is entered (organisation or first name only).
+  r.get("/referral/:code", lookupLimit, (req, res) => {
+    const p = findActivePartner(db, req.params.code);
+    if (!p) throw new HttpError(404, "We don't recognise that referral code. Please check it, or leave it blank.");
+    res.json({ code: p.code, name: p.kind === "patient" || p.kind === "individual" ? p.name.split(/\s+/)[0] : p.name });
   });
 
   r.get("/days", async (req, res) => {
@@ -106,10 +119,17 @@ export function publicRoutes(db) {
     if (!isOn(db, "online_booking")) throw new HttpError(403, "Online booking is turned off. Please WhatsApp or call the clinic.");
     if (req.body.consent !== true) throw new HttpError(400, "Please agree to the privacy notice so we can book and treat you.");
     const data = parseBooking(req.body);
+    const profile = cleanProfile(req.body.profile || {});
     await ensureBusy(data.date);
     if (isBusy(data.date, data.time)) throw new HttpError(409, "Sorry, the doctor isn't available at that time. Please pick another slot.");
     const appt = createAppointment(db, data, { source: "web" });
     recordConsent(db, appt.patient_id, ["care", ...(req.body.whatsappConsent ? ["whatsapp_updates"] : [])], "web");
+    // Optional details and where the visitor came from. A website booking only fills blanks (it can't prove who owns the phone).
+    saveProfile(db, appt.patient_id, profile);
+    const attr = cleanAttribution(req.body.attribution || {});
+    db.prepare("UPDATE appointments SET utm_source = ?, utm_medium = ?, utm_campaign = ?, ad_click = ?, landing_page = ? WHERE id = ?")
+      .run(attr.utm_source, attr.utm_medium, attr.utm_campaign, attr.ad_click, attr.landing_page, appt.id);
+    if (linkReferral(db, appt.id, req.body.referralCode)) syncRewards(db, appt.id);
     const base = siteUrl(req);
 
     if (appt.payment_status === "awaiting") {
@@ -229,7 +249,67 @@ export function publicRoutes(db) {
     // The patient's other bookings are shown only when this booking proves who is asking (see isVerifiedBooking).
     const upcoming = !isVerifiedBooking(db, appt) ? [] : db.prepare(`${APPT_SELECT} WHERE a.patient_id = ? AND a.id != ? AND a.status IN ('pending','confirmed') AND a.date >= ? ORDER BY a.date, a.time`)
       .all(appt.patient_id, appt.id, clinicNow().date).map((a) => view(readAppt(a), req));
-    res.json({ appointment: await withQr(view(appt, req)), others: upcoming, policy: policySummary(getPolicy(db)), privacy: privacyView(appt), documents: documentsView(appt) });
+    res.json({ appointment: await withQr(view(appt, req)), others: upcoming, policy: policySummary(getPolicy(db)), privacy: privacyView(appt), documents: documentsView(appt), home: homeView(appt, req) });
+  });
+
+  // The patient's personal home in My appointments: a greeting, their progress and visits, profile, who referred them
+  // and their own referral code. Beyond the greeting, only for a booking that proves who is asking (see isVerifiedBooking).
+  function homeView(appt, req) {
+    const first = appt.patient_name.split(" ")[0];
+    const verified = isVerifiedBooking(db, appt);
+    if (!verified) return { firstName: first, verified: false };
+    const patient = db.prepare("SELECT * FROM patients WHERE id = ?").get(appt.patient_id);
+    const visits = db.prepare("SELECT COUNT(*) n FROM appointments WHERE patient_id = ? AND status = 'completed'").get(patient.id).n;
+    const checkins = db.prepare("SELECT pain_score, trend, created_at FROM checkins WHERE patient_id = ? ORDER BY created_at").all(patient.id);
+    const lastVisit = db.prepare("SELECT date FROM appointments WHERE patient_id = ? AND status = 'completed' ORDER BY date DESC LIMIT 1").get(patient.id)?.date || null;
+    const nextFollowup = db.prepare("SELECT due_date, type FROM followups WHERE patient_id = ? AND status = 'pending' ORDER BY due_date LIMIT 1").get(patient.id) || null;
+    const referrer = patient.referred_by ? db.prepare("SELECT name, kind FROM partners WHERE id = ?").get(patient.referred_by) : null;
+    const own = isOn(db, "referrals") ? db.prepare("SELECT * FROM partners WHERE patient_id = ?").get(patient.id) : null;
+    const s = getReferralSettings(db);
+    return {
+      firstName: first,
+      verified: true,
+      patientCode: patient.patient_code,
+      since: patient.created_at,
+      visits,
+      lastVisit,
+      nextFollowup,
+      pain: checkins.map((c) => ({ score: c.pain_score, trend: c.trend, at: c.created_at })),
+      profile: profileView(patient),
+      profileOptions: PROFILE_OPTIONS,
+      referredBy: referrer ? (["patient", "individual"].includes(referrer.kind) ? referrer.name.split(/\s+/)[0] : referrer.name) : null,
+      referral: isOn(db, "referrals") ? {
+        code: own?.status === "active" ? own.code : null,
+        link: own?.status === "active" ? `${siteUrl(req)}/book?ref=${own.code}` : null,
+        totals: own ? partnerTotals(db, own.id) : null,
+        payTo: own ? decrypt(own.payout_details) : "",
+        rules: { firstBooking: rupees(s.firstBooking), treatment: rupees(s.treatment), months: s.months },
+      } : null,
+    };
+  }
+
+  // A verified patient may update their own profile details (age, city, work…).
+  r.post("/manage/profile", lookupLimit, (req, res) => {
+    const appt = findOwn(req);
+    requireVerified(appt);
+    const prof = cleanProfile(req.body.profile || {});
+    const keys = ["gender", "occupation_group", "occupation", "city", "sitting_hours", "pain_since", "heard_from"];
+    for (const k of keys) if (req.body.profile && k in req.body.profile && !(k in prof)) prof[k] = null;
+    if (req.body.profile && (req.body.profile.age === "" || req.body.profile.age === null)) prof.birth_year = null;
+    saveProfile(db, appt.patient_id, prof, { overwrite: true });
+    res.json({ home: homeView(appt, req) });
+  });
+
+  // "Refer a friend": the patient's own referral ID, created the first time they ask.
+  r.post("/manage/referral", lookupLimit, (req, res) => {
+    const appt = findOwn(req);
+    requireVerified(appt);
+    if (!isOn(db, "referrals")) throw new HttpError(404, "The referral programme is not open at the moment.");
+    const patient = db.prepare("SELECT * FROM patients WHERE id = ?").get(appt.patient_id);
+    const partner = patientPartner(db, patient);
+    if (partner.status !== "active") throw new HttpError(403, "Your referral ID is paused. Please contact the clinic.");
+    if (req.body.payoutDetails !== undefined) db.prepare("UPDATE partners SET payout_details = ? WHERE id = ?").run(encrypt(cleanText(req.body.payoutDetails, 300)), partner.id);
+    res.json({ home: homeView(appt, req), payoutDetails: decrypt(db.prepare("SELECT payout_details FROM partners WHERE id = ?").get(partner.id).payout_details) });
   });
 
   r.post("/manage/cancel", lookupLimit, async (req, res) => {
@@ -440,6 +520,22 @@ export function publicRoutes(db) {
       .run(name, cleanText(req.body.city, 60), rating, cleanText(req.body.title, 100), body, cleanText(req.body.duration, 60), visit.phone, visit.patient_id, visit.id);
     res.status(201).json({ ok: true });
   });
+
+  // ---------- Doctor at your place ----------
+  const homeVisitLimit = rateLimit({ windowMs: 60 * 60_000, max: 5, message: "Too many requests. Please WhatsApp us on +91 98866 88323." });
+  r.post("/home-visits", homeVisitLimit, (req, res) => {
+    if (!isOn(db, "home_visits")) throw new HttpError(403, "Home visits aren't available at the moment. Please WhatsApp us.");
+    if (req.body.website) throw new HttpError(400, "Invalid submission.");
+    if (req.body.consent !== true) throw new HttpError(400, "Please agree to the privacy notice so we can contact you.");
+    const { ref } = createHomeVisit(db, req.body);
+    db.prepare("INSERT INTO notifications (audience, event, channel, body, status) VALUES ('doctor', 'home_visit', 'dashboard', ?, 'sent')")
+      .run(encrypt(`Doctor at your place: request ${ref} from ${cleanText(req.body.name, 120)} for ${cleanText(req.body.city, 80)}, ${req.body.dateFrom} to ${req.body.dateTo}.`));
+    res.status(201).json({ ref, whatsappUrl: waLink(config.whatsappNumber, `Hi Dr Rajveer, I've sent a request (${ref}) for you to visit ${cleanText(req.body.city, 80)}.`) });
+  });
+  r.get("/home-visits/rules", (req, res) => res.json({ minDays: HOME_VISIT_MIN_DAYS, earliest: addDays(clinicNow().date, HOME_VISIT_MIN_DAYS), enabled: isOn(db, "home_visits") }));
+
+  // Articles written in the dashboard, for the /blog/ list (the static list has the others).
+  r.get("/blog/articles", (req, res) => res.json({ articles: publicArticles(db) }));
 
   // ---------- Instagram highlights ----------
   r.get("/media", (req, res) => {

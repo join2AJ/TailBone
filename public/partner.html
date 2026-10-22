@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="canonical" href="https://tailbone.netlify.app/partner.html">
+  <title>Partner Log-in | Tailbone Treatment</title>
+  <meta name="description" content="Referral partners: see your referral ID, the patients you referred and your rewards.">
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/sora-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <meta property="og:image" content="https://tailbone.netlify.app/assets/img/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Tailbone Treatment Clinic: sit down again without the pain. New Delhi and online.">
+  <meta property="og:site_name" content="Tailbone Treatment Clinic">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:title" content="Partner Log-in | Tailbone Treatment">
+  <meta property="og:description" content="Referral partners: see your referral ID, the patients you referred and your rewards.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="assets/css/fonts.css?v=5b80af84ed">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0ac245e85b">
+  <script src="assets/js/theme.js?v=78d8f3c3d4"></script>
+</head>
+<body class="page">
+  <header class="header" id="header">
+    <div class="container header__inner">
+      <a href="/" class="brand" aria-label="Tailbone Treatment home">
+        <img src="/assets/img/logo.svg" alt="" width="40" height="40">
+        <span class="brand__text"><strong>TAILBONE</strong><small>TREATMENT.com</small></span>
+      </a>
+      <nav class="nav" id="nav" aria-label="Main">
+        <a href="/coccydynia">Tailbone pain</a>
+        <a href="/treatment">Treatment</a>
+        <a href="/doctor">Doctor</a>
+        <a href="/blog/">Blog</a>
+        <a href="/locations">Clinics</a>
+        <a href="/faq" class="nav__mobile-only">Questions</a>
+        <a href="/stories.html" class="nav__mobile-only">Patient stories</a>
+        <a href="/manage.html" class="nav__mobile-only">My appointments</a>
+        <a href="/book" class="btn btn--primary nav__cta">Book appointment</a>
+      </nav>
+      <div class="header__actions">
+        <button type="button" class="icon-btn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+          <svg class="i-sun" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="i-moon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <button type="button" class="icon-btn burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="nav">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container narrow">
+      <section class="card" id="loginCard" hidden>
+        <span class="eyebrow">Referral partners</span>
+        <h1 class="h2">Partner log-in</h1>
+        <div class="alert alert--error" id="loginErr" hidden></div>
+        <form class="form" id="partnerLogin" novalidate>
+          <div class="field"><label for="plPhone">Mobile number</label><input id="plPhone" name="phone" type="tel" required autocomplete="tel"></div>
+          <div class="field"><label for="plPw">Password</label><input id="plPw" name="password" type="password" required autocomplete="current-password"></div>
+          <button class="btn btn--primary btn--block" type="submit">Log in</button>
+        </form>
+        <p class="small muted">Not a partner yet? <a href="/refer.html#join">Sign up</a>. Forgotten your password? WhatsApp us on <a href="https://wa.me/919886688323">+91 98866 88323</a> and we'll reset it. Patients: your referral ID is in <a href="/manage.html">My appointments</a>.</p>
+      </section>
+
+      <div id="portal" hidden>
+        <div class="portal-head">
+          <div>
+            <span class="eyebrow" id="pKind">Partner</span>
+            <h1 class="h2" id="pHello">Welcome</h1>
+          </div>
+          <button class="btn btn--ghost btn--sm" id="logoutBtn" type="button">Log out</button>
+        </div>
+        <div class="alert" id="pendingNote" hidden>Thanks for signing up! We're checking your details and will approve your account within 2 working days. Your referral ID will appear here.</div>
+        <section class="card refcode" id="codeCard" hidden>
+          <small>Your referral ID</small>
+          <strong class="refcode__id" id="pCode"></strong>
+          <p class="small muted">Patients enter it when they book, or use your link: <a id="pLink" href="#" target="_blank" rel="noopener"></a></p>
+          <div class="row-gap">
+            <a class="btn btn--wa" id="pShareWa" target="_blank" rel="noopener" href="#">Share on WhatsApp</a>
+            <button class="btn btn--ghost" id="pCopy" type="button">Copy link</button>
+          </div>
+        </section>
+        <div class="stat-row" id="pStats" hidden>
+          <div><small>Patients referred</small><strong id="sPatients">0</strong></div>
+          <div><small>Treatment visits</small><strong id="sVisits">0</strong></div>
+          <div><small>To be paid</small><strong id="sDue">₹0</strong></div>
+          <div><small>Paid so far</small><strong id="sPaid">₹0</strong></div>
+        </div>
+        <p class="small muted" id="pRules"></p>
+        <section class="card" id="refCard" hidden>
+          <h2 class="h3">Your referrals</h2>
+          <p class="small muted">Initials only. We never share patients' contact or health details.</p>
+          <div class="table-wrap" role="region" aria-label="Your referrals" tabindex="0"><table class="simple-table">
+            <thead><tr><th scope="col">Patient</th><th scope="col">Referred</th><th scope="col">Progress</th><th scope="col">Earned</th></tr></thead>
+            <tbody id="refRows"></tbody></table></div>
+        </section>
+        <section class="card" id="payCard" hidden>
+          <h2 class="h3">Payments</h2>
+          <ul class="plain-list" id="payRows"></ul>
+        </section>
+        <details class="card">
+          <summary><strong>Change password</strong></summary>
+          <form class="form" id="pwForm" novalidate>
+            <div class="field-row">
+              <div class="field"><label for="pwCur">Current password</label><input id="pwCur" name="current" type="password" required autocomplete="current-password"></div>
+              <div class="field"><label for="pwNew">New password (8+ characters)</label><input id="pwNew" name="next" type="password" required minlength="8" autocomplete="new-password"></div>
+            </div>
+            <button class="btn btn--ghost" type="submit">Change password</button>
+          </form>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__grid">
+      <div class="footer__about">
+        <a href="/" class="brand brand--light" aria-label="Tailbone Treatment home"><img src="/assets/img/logo.svg" alt="" width="36" height="36"><span class="brand__text"><strong>TAILBONE</strong><small>TREATMENT.com</small></span></a>
+        <p>Specialist, non-surgical care for tailbone (coccyx) pain since 2014, led by Dr Rajveer Singh.</p>
+        <ul class="footer__contact">
+          <li><a href="tel:+919886688323"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>+91&nbsp;98866&nbsp;88323</a></li>
+          <li><a href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment." target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm4.5 12.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>WhatsApp</a></li>
+          <li><a href="mailto:contact@tailbonetreatment.com"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 2.4V17h16V7.4l-8 5.3-8-5.3zM5.6 7 12 11.2 18.4 7H5.6z"/></svg>contact@tailbonetreatment.com</a></li>
+          <li><a href="https://www.instagram.com/drrajveersingh_9886688323/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7zm5 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM17.5 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>Instagram</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="footer__title">Clinics</h2>
+        <address class="footer__clinic"><strong>New Delhi</strong>150A/09, Shanti Apartment, Kishangarh, Vasant Kunj, New Delhi 110070<a href="https://www.google.com/maps/search/?api=1&amp;query=Shanti+Apartment+Kishangarh+Vasant+Kunj+New+Delhi+110070" target="_blank" rel="noopener">Directions ↗</a></address>
+        <address class="footer__clinic"><strong>Lucknow</strong>Opening soon</address>
+        <address class="footer__clinic"><strong>Online</strong>Video consultations, anywhere</address>
+      </div>
+      <div>
+        <h2 class="footer__title">Opening hours</h2>
+        <ul class="f-hours">
+          <li><span>Mon – Fri</span><span>10:00 – 17:00</span></li>
+          <li><span>Saturday</span><span>10:00 – 15:00</span></li>
+          <li><span>Sunday</span><span>08:00 – 15:00</span></li>
+        </ul>
+        <p class="footer__note">New Delhi clinic. Video consultations by appointment.</p>
+      </div>
+      <div>
+        <h2 class="footer__title">Useful links</h2>
+        <ul class="footer__links">
+          <li><a href="/blog/">Blog</a></li>
+          <li><a href="/stories.html" data-feature="stories">Patient stories</a></li>
+          <li><a href="/press.html">In the news</a></li>
+          <li><a href="/home-visit.html">Doctor at your place</a></li>
+          <li><a href="/refer.html">Refer a patient</a></li>
+          <li><a href="/faq">FAQ</a></li>
+          <li><a href="/manage.html">My appointments</a></li>
+          <li><a href="/policies.html">Terms &amp; refunds</a></li>
+          <li><a href="/privacy.html">Privacy</a></li>
+          <li><button type="button" class="linkish" data-cookie-settings>Cookie choices</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer__bottom">
+      <span>© 2014 – <span id="year">2026</span> Tailbone Treatment. All rights reserved.</span>
+      <span>Information on this site is not a substitute for medical advice.</span>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="assets/js/partners.js?v=a804b1d438" defer></script>
+  <script src="/assets/js/consent.js?v=64a81c4272" defer></script>
+  <script src="/assets/js/site-nav.js?v=9220922f94" defer></script>
+</body>
+</html>

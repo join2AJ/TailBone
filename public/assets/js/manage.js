@@ -90,10 +90,123 @@
     renderVideo(current.video);
     $("#receiptBtn").hidden = !(current.payment && current.payment.paid > 0);
     renderDocuments(data.documents);
+    renderHome(data.home, data.others || []);
     const others = data.others || [];
     $("#othersBox").hidden = others.length === 0;
     $("#othersList").replaceChildren(...others.map(apptCard));
   }
+
+  // ---- Personal home: greeting, summary, progress, profile and referral ID ----
+  let home = null;
+  function renderHome(h, others) {
+    home = h;
+    const box = $("#homeBox");
+    if (!h) { box.hidden = true; return; }
+    $("#hello").textContent = `Hi ${h.firstName}`;
+    const pain = h.pain || [];
+    const last = pain.at(-1);
+    $("#helloLine").textContent = !h.verified ? "Thank you for booking with us. We look forward to seeing you."
+      : last?.trend === "worse" ? "We're sorry the pain has been tough lately. The doctor can see your last check-in, and we're here to help."
+      : h.visits ? "We hope you're feeling better and sitting more comfortably today!" : "We hope you're feeling great today! We look forward to seeing you.";
+    $("#homeLocked").hidden = h.verified;
+    box.hidden = !h.verified;
+    $("#aboutBox").hidden = !h.verified;
+    $("#referBox").hidden = !h.verified || !h.referral;
+    if (!h.verified) return;
+    // Summary tiles
+    const upcoming = [current, ...others].filter((a) => ["pending", "confirmed"].includes(a.status)).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))[0];
+    const tiles = [
+      ["Next appointment", upcoming ? upcoming.when.replace(/, \d{4}/, "") : "None booked", upcoming ? upcoming.clinicName : "Book from the Book page"],
+      ["Visits so far", String(h.visits), h.lastVisit ? `Last: ${prettyDay(h.lastVisit, { day: "numeric", month: "short", year: "numeric" })}` : "Welcome!"],
+      ...(last ? [["Pain now", `${last.score}/10`, pain.length > 1 ? `Was ${pain[0].score}/10 at first` : "From your last check-in"]] : []),
+      ...(h.nextFollowup ? [["Next check-in", prettyDay(h.nextFollowup.due_date, { day: "numeric", month: "short" }), "We'll message you"]] : []),
+      ["Patient ID", h.patientCode || "", "Quote it when you call"],
+    ];
+    $("#homeTiles").replaceChildren(...tiles.map(([k, v, sub]) => {
+      const t = el("div", "home-tile");
+      t.append(el("small", "", k), el("strong", "", v), el("span", "", sub));
+      return t;
+    }));
+    // Pain over time (from follow-up check-ins)
+    $("#homePain").hidden = pain.length < 2;
+    if (pain.length >= 2) {
+      const W = 320, H = 90, P = 10;
+      const x = (i) => P + (i * (W - 2 * P)) / (pain.length - 1);
+      const y = (v) => H - P - (v / 10) * (H - 2 * P);
+      const d = pain.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.score).toFixed(1)}`).join(" ");
+      $("#painSpark").innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="spark" role="img" aria-label="Pain from ${pain[0].score} to ${last.score} out of 10">
+        <path d="${d}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+        ${pain.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.score).toFixed(1)}" r="3.5"/>`).join("")}</svg>`;
+    }
+    $("#homeReferred").hidden = !h.referredBy;
+    $("#homeReferred").textContent = h.referredBy ? `Referred by ${h.referredBy}. Thank you for trusting their recommendation.` : "";
+    renderAbout();
+    renderRefer();
+  }
+
+  function renderAbout() {
+    const p = home.profile;
+    const rows = [["Age", p.age ?? ""], ["Gender", p.genderLabel], ["City", p.city], ["Work", [p.occupationGroupLabel, p.occupation].filter(Boolean).join(" · ")],
+      ["Sitting per day", p.sittingHoursLabel], ["Pain for", p.painSinceLabel]];
+    const filled = rows.filter(([, v]) => v !== "" && v != null);
+    $("#aboutList").replaceChildren(...(filled.length ? filled : [["Nothing yet", "Tap Update to add your details"]]).flatMap(([k, v]) => [el("dt", "", k), el("dd", "", String(v))]));
+    $("#aboutForm").hidden = true;
+    $("#aboutList").hidden = false;
+  }
+
+  $("#aboutEdit").addEventListener("click", () => {
+    const p = home.profile;
+    const o = home.profileOptions;
+    const sel = (name, label, val) => `<div class="field"><label for="ab_${name}">${label}</label><select id="ab_${name}" name="${name}"><option value="">Not given</option>${Object.entries(o[name]).map(([k, t]) => `<option value="${k}" ${val === k ? "selected" : ""}>${t}</option>`).join("")}</select></div>`;
+    const form = $("#aboutForm");
+    form.innerHTML = `<div class="field-row"><div class="field"><label for="ab_age">Age</label><input id="ab_age" name="age" type="number" min="1" max="110" inputmode="numeric"></div>
+        ${sel("gender", "Gender", p.gender)}</div>
+      <div class="field-row"><div class="field"><label for="ab_city">City you live in</label><input id="ab_city" name="city" autocomplete="address-level2"></div>
+        ${sel("occupation_group", "Work", p.occupationGroup)}</div>
+      <div class="field-row"><div class="field"><label for="ab_occ">Occupation</label><input id="ab_occ" name="occupation"></div>
+        ${sel("sitting_hours", "Sitting per day", p.sittingHours)}</div>
+      <div class="field-row">${sel("pain_since", "Pain for how long?", p.painSince)}${sel("heard_from", "How did you hear about us?", p.heardFrom)}</div>
+      <div class="row-gap"><button class="btn btn--primary btn--sm" type="submit">Save</button><button class="btn btn--ghost btn--sm" type="button" id="aboutCancel">Cancel</button></div>`;
+    form.age.value = p.age ?? "";
+    form.city.value = p.city || "";
+    form.occupation.value = p.occupation || "";
+    form.hidden = false;
+    $("#aboutList").hidden = true;
+    $("#aboutCancel").addEventListener("click", renderAbout);
+    form.age.focus();
+  });
+  $("#aboutForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const d = await api("/api/manage/profile", { ...creds, profile: Object.fromEntries(new FormData(e.target)) });
+      home = d.home;
+      renderAbout();
+      toast("Thank you, saved.");
+    } catch (ex) { toast(ex.message); }
+  });
+
+  function renderRefer() {
+    const r = home.referral;
+    if (!r) return;
+    $("#referRules").textContent = `Know someone with tailbone pain? Share your referral ID. When they come to us for the first time, we'll thank you with ${r.rules.firstBooking} when their first appointment is confirmed and ${r.rules.treatment} for each treatment visit.`;
+    $("#referHave").hidden = !r.code;
+    $("#getCode").hidden = !!r.code;
+    if (!r.code) return;
+    $("#myCode").textContent = r.code;
+    if (document.activeElement !== $("#payTo")) $("#payTo").value = r.payTo || "";
+    const text = `For tailbone (coccyx) pain I recommend Dr Rajveer Singh. He treated me without surgery. Book with my referral ID ${r.code}: ${r.link}`;
+    $("#myShareWa").href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    $("#myCopy").onclick = async () => { try { await navigator.clipboard.writeText(r.link); toast("Link copied."); } catch { prompt("Copy your link:", r.link); } };
+    const t = r.totals || { patients: 0, due: 0, paid: 0 };
+    $("#myTotals").textContent = `${t.patients} friend${t.patients === 1 ? "" : "s"} referred · ${rupees(t.due)} to be paid · ${rupees(t.paid)} paid so far. We pay once a month.`;
+  }
+  $("#getCode").addEventListener("click", async () => {
+    try { const d = await api("/api/manage/referral", creds); home = d.home; renderRefer(); toast("Your referral ID is ready."); } catch (ex) { toast(ex.message); }
+  });
+  $("#payForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try { await api("/api/manage/referral", { ...creds, payoutDetails: $("#payTo").value }); toast("Saved."); } catch (ex) { toast(ex.message); }
+  });
 
   async function lookup(ref, phone) {
     const err = $("#lookupErr");

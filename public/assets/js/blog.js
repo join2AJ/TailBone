@@ -103,7 +103,28 @@
     }
   }
 
-  $$("#postGrid .post-card").forEach((c, i) => { c.dataset.order = i; });
+  // Articles written in the dashboard come from the server; they join the list, newest first.
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pretty = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  const extraReady = fetch("/api/blog/articles").then((r) => (r.ok ? r.json() : { articles: [] })).then(({ articles = [] }) => {
+    const cards = $$("#postGrid .post-card");
+    for (const a of articles) {
+      const li = document.createElement("li");
+      li.className = "post-card";
+      li.dataset.postId = a.id;
+      li.dataset.tags = a.tags.join("|");
+      li.dataset.date = a.date;
+      li.innerHTML = `<img class="post-card__img" src="${esc(a.art)}" alt="" width="600" height="340" loading="lazy" decoding="async">
+        <div class="post-card__body">${a.tags.length ? `<ul class="post-tags">${a.tags.slice(0, 2).map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+        <h2><a href="${esc(a.url)}">${esc(a.title)}</a></h2>
+        <p class="muted small"><time datetime="${esc(a.date)}">${esc(pretty(a.date))}</time> · ${a.readMinutes} min read</p></div>`;
+      const after = cards.find((c) => (c.querySelector("time")?.getAttribute("datetime") || "") <= a.date);
+      grid.insertBefore(li, after || null);
+    }
+  }).catch(() => {});
+
+  const numberCards = () => $$("#postGrid .post-card").forEach((c, i) => { c.dataset.order = i; });
+  numberCards();
   let timer;
   input.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(apply, 150); });
   input.addEventListener("focus", loadIndex, { once: true });
@@ -114,5 +135,8 @@
   const params = new URLSearchParams(location.search);
   input.value = params.get("q") || "";
   tag = chips.some((c) => c.dataset.tag === params.get("tag")) ? params.get("tag") : "";
-  hiddenReady.then(() => { if (input.value || tag) apply({ push: false }); else count.textContent = `${$$("#postGrid .post-card").length} articles`; });
+  Promise.all([hiddenReady, extraReady]).then(() => {
+    numberCards();
+    if (input.value || tag) apply({ push: false }); else count.textContent = `${$$("#postGrid .post-card").length} articles`;
+  });
 })();

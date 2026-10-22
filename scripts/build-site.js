@@ -3,16 +3,15 @@
 // and the plain-text summaries for AI assistants (llms.txt).
 import fs from "node:fs";
 import path from "node:path";
-import crypto from "node:crypto";
-import { root, SITE, siteFooter, siteHeader } from "./partials.js";
+import { root, SITE, siteFooter, siteHeader, versionHtml } from "./partials.js";
 import { buildPages } from "./build-pages.js";
 import { build as buildBlog, page as blogPage } from "./build-blog.js";
 import { writeRobots, writeLlms } from "./build-ai.js";
 import { buildPress } from "./build-press.js";
 
-const STANDALONE = ["manage.html", "policies.html", "privacy.html", "stories.html", "press.html"];
+const STANDALONE = ["manage.html", "policies.html", "privacy.html", "stories.html", "press.html", "refer.html", "partner.html", "home-visit.html"];
 // Pages outside the template that get the shared header (menu) and the nav link to mark as current.
-const HEADERS = { "manage.html": "/manage.html", "policies.html": null, "privacy.html": null, "stories.html": null, "checkin.html": null };
+const HEADERS = { "manage.html": "/manage.html", "policies.html": null, "privacy.html": null, "stories.html": null, "checkin.html": null, "refer.html": null, "partner.html": null, "home-visit.html": null };
 
 export function syncFooters() {
   for (const [f, active] of Object.entries(HEADERS)) {
@@ -69,6 +68,8 @@ export function writeSitemap(pages, posts, today = null) {
     ...posts.map(({ meta }) => row(`${SITE}/blog/${meta.slug}.html`, meta.updated || meta.date, "yearly", "0.6")),
     ...(fs.existsSync(path.join(root, "public/press.html")) ? [row(`${SITE}/press.html`, today, "monthly", "0.6")] : []),
     row(`${SITE}/stories.html`, today, "weekly", "0.6"),
+    row(`${SITE}/home-visit.html`, today, "monthly", "0.5"),
+    row(`${SITE}/refer.html`, today, "monthly", "0.4"),
     row(`${SITE}/policies.html`, today, "yearly", "0.3"),
     row(`${SITE}/privacy.html`, today, "yearly", "0.3"),
   ];
@@ -90,26 +91,14 @@ ${lines.join("\n")}
 `);
 }
 
-/** Adds ?v=<content hash> to our own stylesheets and scripts in every page, so a browser never pairs a new page
- * with an old cached stylesheet (which made new sections look broken until the cache expired). */
+/** Adds ?v=<content hash> to our own stylesheets and scripts in every page (see versionHtml in partials.js). */
 export function versionAssets() {
   const hashes = new Map();
-  const hash = (url) => {
-    if (!hashes.has(url)) {
-      const file = path.join(root, "public", url);
-      hashes.set(url, fs.existsSync(file) ? crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex").slice(0, 10) : null);
-    }
-    return hashes.get(url);
-  };
   const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith(".html") ? [path.join(dir, e.name)] : []);
   for (const file of walk(path.join(root, "public"))) {
     const html = fs.readFileSync(file, "utf8");
-    const out = html.replace(/((?:href|src)=")(\/?(?:assets|admin)\/[^"?#]+\.(?:css|js))(?:\?v=\w*)?"/g, (m, attr, url) => {
-      // Relative links (standalone pages at the site root) resolve from the root too.
-      const h = hash(url.replace(/^\//, ""));
-      return h ? `${attr}${url}?v=${h}"` : m;
-    });
+    const out = versionHtml(html, path.join(root, "public"), hashes);
     if (out !== html) fs.writeFileSync(file, out);
   }
 }

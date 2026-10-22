@@ -8,6 +8,7 @@ import { paymentsEnabled, refundPayment, rupees } from "./payments.js";
 import { notify } from "./notify.js";
 import { isOn } from "./features.js";
 import { syncAppointment, isBusy } from "./gcal.js";
+import { syncRewards } from "./referrals.js";
 
 /** Mirror an appointment to Google Calendar in the background (no-op unless configured). */
 export const calendarSync = (db, id) => { syncAppointment(db, id, { getAppointment }).catch(() => {}); };
@@ -104,9 +105,13 @@ export function availableDays(db, clinic, days = 14, now = new Date()) {
 
 // ---------- Audit trail ----------
 
+// Status and payment changes that can earn or withdraw a referral reward (see referrals.js).
+const REWARD_ACTIONS = new Set(["booked", "confirmed", "completed", "pending", "cancelled", "no_show", "paid", "hold_expired"]);
+
 export function logEvent(db, appointmentId, actor, actorName, action, detail = "") {
   db.prepare("INSERT INTO appointment_events (appointment_id, actor, actor_name, action, detail) VALUES (?, ?, ?, ?, ?)")
     .run(appointmentId, actor, actorName || "", action, cleanText(detail, 500));
+  if (REWARD_ACTIONS.has(action)) syncRewards(db, appointmentId);
 }
 
 export function appointmentEvents(db, appointmentId) {

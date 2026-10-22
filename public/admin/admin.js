@@ -81,7 +81,13 @@
       }));
     });
     // Scrollable tables must be reachable with the keyboard.
-    root.querySelectorAll(".table-wrap:not([tabindex])").forEach((w) => { w.tabIndex = 0; w.setAttribute("role", "region"); w.setAttribute("aria-label", "Table"); });
+    // Each is named after its section's heading, so several tables on one page can be told apart.
+    root.querySelectorAll(".table-wrap:not([tabindex])").forEach((w, i) => {
+      w.tabIndex = 0;
+      w.setAttribute("role", "region");
+      const head = w.closest("section")?.querySelector("h2")?.textContent.trim();
+      w.setAttribute("aria-label", head ? `${head} (table)` : `Table ${i + 1}`);
+    });
   }
   new MutationObserver(() => { linkLabels(content); linkLabels(modalBody); }).observe(document.body, { childList: true, subtree: true });
 
@@ -161,7 +167,7 @@
   async function boot() {
     try {
       const me = await api("/me");
-      Object.assign(state, { admin: me.admin, clinics: me.clinics, today: me.today, demo: me.demo, features: me.features });
+      Object.assign(state, { admin: me.admin, clinics: me.clinics, today: me.today, demo: me.demo, features: me.features, profileOptions: me.profileOptions || {} });
       applyAccess();
       state.apptFilter.from ??= me.today;
       $("#meName").textContent = me.admin.name;
@@ -197,6 +203,10 @@
     payments: ["Payments", renderPayments],
     instagram: ["Instagram highlights", renderInstagram],
     blog: ["Blog articles", renderBlog],
+    article: ["Article", renderArticleEditor],
+    referrals: ["Referral partners", renderReferrals],
+    visits: ["Doctor at your place", renderHomeVisits],
+    insights: ["Ads & insights", renderInsights],
     settings: ["Settings", renderSettings],
     control: ["Control panel", renderControl],
   };
@@ -204,7 +214,8 @@
   // Which dashboard section needs which permission (the server enforces the same rules).
   const VIEW_PERM = {
     appointments: "appointments", inbox: "inbox", followups: "followups", patients: "patients", patient: "patients",
-    stories: "stories", instagram: "instagram", blog: "blog", payments: "payments", privacy: "privacy", control: "superadmin",
+    stories: "stories", instagram: "instagram", blog: "blog", article: "blog", payments: "payments", privacy: "privacy", control: "superadmin",
+    referrals: "referrals", visits: "homevisits", insights: "insights",
   };
   const allowed = (view) => !VIEW_PERM[view] || state.admin.permissions.includes(VIEW_PERM[view]);
   function applyAccess() {
@@ -222,16 +233,29 @@
     }
     const [title, render] = VIEWS[name] || VIEWS.overview;
     $("#viewTitle").textContent = title;
-    $$(".side__nav a").forEach((a) => a.classList.toggle("is-active", a.dataset.view === (name === "patient" ? "patients" : name)));
+    const navFor = { patient: "patients", article: "blog" };
+    $$(".side__nav a").forEach((a) => a.classList.toggle("is-active", a.dataset.view === (navFor[name] || name)));
     $("#side").classList.remove("is-open");
     content.innerHTML = '<div class="empty">Loading…</div>';
+    state.primary = null;
     try {
       await render(param);
     } catch (e) {
       content.innerHTML = `<div class="alert alert--error">${esc(e.message)}</div>`;
     }
+    updatePrimary();
     content.focus({ preventScroll: true });
     refreshBadges();
+  }
+
+  // The green button in the header does the main job of the section you're in (a section sets state.primary);
+  // elsewhere it books a new appointment.
+  function updatePrimary() {
+    const btn = $("#newApptBtn");
+    const label = state.primary?.label || "New appointment";
+    btn.hidden = !state.primary && !allowed("appointments");
+    btn.setAttribute("aria-label", label);
+    btn.innerHTML = `+<span class="hide-xs"> ${esc(label)}</span>`;
   }
   window.addEventListener("hashchange", route);
 
@@ -249,6 +273,7 @@
         $("#privCount").hidden = !open;
         $("#privCount").textContent = open;
       }).catch(() => {});
+      for (const [elId, n] of [["#refCount", stats.partnersPending], ["#hvCount", stats.homeVisitsNew]]) { $(elId).hidden = !n; $(elId).textContent = n; }
       const ib = $("#inboxCount");
       const inbox = stats.unread + stats.toSend;
       ib.hidden = !inbox;
@@ -602,6 +627,7 @@
 
   // New appointment (phone / walk-in bookings)
   $("#newApptBtn").addEventListener("click", () => {
+    if (state.primary) { state.primary.run(); return; }
     openModal(`
       <h2>New appointment</h2>
       <form class="form" id="newAppt">
@@ -615,6 +641,8 @@
         <div class="field"><label>Time <span class="muted small">(free slots shown; any time allowed)</span></label>
           <div class="slot-select" id="slotPick"></div><input type="time" name="time" step="900" required style="margin-top:.4rem"></div>
         <div class="field"><label>Reason / notes</label><textarea name="reason" rows="2"></textarea></div>
+        <div class="field"><label>Referral ID <span class="muted small">(optional, if a partner referred them)</span></label><input name="referralCode" placeholder="REF-…" autocomplete="off"></div>
+        <details class="more-fields"><summary>About the patient (optional)</summary>${profileFields(state.profileOptions)}</details>
         <label class="check"><input type="checkbox" name="pending"> Keep as pending (not yet confirmed)</label>
         <button class="btn btn--primary btn--block" type="submit">Create appointment</button>
       </form>`);
@@ -634,7 +662,8 @@
     loadPick();
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const body = Object.fromEntries(new FormData(form));
+      const body = Object.fromEntries(["name", "phone", "email", "clinic", "date", "time", "reason", "referralCode", "pending"].map((k) => [k, new FormData(form).get(k)]));
+      body.profile = profileFrom(form);
       body.status = body.pending ? "pending" : "confirmed";
       try {
         const { appointment: a } = await api("/appointments", { method: "POST", body });
@@ -707,8 +736,21 @@
     </svg>`;
   }
 
+  // Optional profile fields (age, gender, work, city…), used on the patient page and in the New appointment dialog.
+  const PROFILE_SELECTS = [["gender", "Gender"], ["occupation_group", "Work"], ["sitting_hours", "Sitting per day"], ["pain_since", "Pain for how long"], ["heard_from", "How they heard of us"]];
+  function profileFields(options, v = {}) {
+    const val = { gender: v.gender, occupation_group: v.occupationGroup, sitting_hours: v.sittingHours, pain_since: v.painSince, heard_from: v.heardFrom };
+    return `<div class="field-row field-row--3">
+        <div class="field"><label>Age</label><input name="age" type="number" min="1" max="110" value="${esc(v.age ?? "")}"></div>
+        <div class="field"><label>City</label><input name="city" value="${esc(v.city || "")}"></div>
+        <div class="field"><label>Occupation</label><input name="occupation" value="${esc(v.occupation || "")}" placeholder="e.g. Software engineer"></div>
+      </div>
+      <div class="field-row field-row--3">${PROFILE_SELECTS.map(([k, label]) => `<div class="field"><label>${label}</label><select name="${k}"><option value="">Not given</option>${Object.entries(options[k] || {}).map(([o, t]) => `<option value="${o}" ${val[k] === o ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></div>`).join("")}</div>`;
+  }
+  const profileFrom = (form) => Object.fromEntries(["age", "city", "occupation", ...PROFILE_SELECTS.map(([k]) => k)].map((k) => [k, form[k]?.value ?? ""]));
+
   async function renderPatient(pid) {
-    const { patient: p, appointments, followups, checkins, consents, storyInvite, documents = [], documentKinds = {} } = await api(`/patients/${Number(pid)}`);
+    const { patient: p, appointments, followups, checkins, consents, storyInvite, documents = [], documentKinds = {}, profile: prof = {}, profileOptions = {}, referrer, ownCode } = await api(`/patients/${Number(pid)}`);
     $("#viewTitle").textContent = `${p.name} · ${p.patient_code || ""}`;
     const first = checkins[0]?.pain_score;
     const last = checkins.at(-1)?.pain_score;
@@ -731,6 +773,20 @@
               <a class="btn btn--ghost btn--sm" target="_blank" rel="noopener" href="${esc(storyInvite)}">Ask for a story</a>
             </div>
           </section>
+          ${p.anonymised_at ? "" : `<section class="panel-card">
+            <div class="panel-card__head"><h2>About the patient</h2><button class="btn btn--ghost btn--sm" id="editProfile">Edit</button></div>
+            <dl class="kv">
+              <dt>Age</dt><dd>${prof.age ?? "–"}</dd>
+              <dt>Gender</dt><dd>${esc(prof.genderLabel || "–")}</dd>
+              <dt>City</dt><dd>${esc(prof.city || "–")}</dd>
+              <dt>Work</dt><dd>${esc([prof.occupationGroupLabel, prof.occupation].filter(Boolean).join(" · ") || "–")}</dd>
+              <dt>Sitting per day</dt><dd>${esc(prof.sittingHoursLabel || "–")}</dd>
+              <dt>Pain for</dt><dd>${esc(prof.painSinceLabel || "–")}</dd>
+              <dt>Heard of us</dt><dd>${esc(prof.heardFromLabel || "–")}</dd>
+              <dt>Referred by</dt><dd>${referrer ? `<a href="#/referrals/${referrer.id}">${esc(referrer.name)}</a> <span class="muted small">${esc(referrer.code)}</span>` : "–"} <button class="linkish small" id="setReferrer" type="button">${referrer ? "Change" : "Add"}</button></dd>
+              ${ownCode ? `<dt>Their referral ID</dt><dd><a href="#/referrals/${ownCode.id}">${esc(ownCode.code)}</a></dd>` : ""}
+            </dl>
+          </section>`}
           <section class="panel-card">
             <h2>Consent & data</h2>
             ${p.anonymised_at ? `<div class="alert alert--ok">Personal data erased on ${esc(day(p.anonymised_at))}. Financial records kept de-identified.</div>` : ""}
@@ -779,6 +835,25 @@
         </div>
       </div>`;
     $("#backBtn").addEventListener("click", () => history.back());
+    $("#editProfile")?.addEventListener("click", () => {
+      openModal(`<h2>About ${esc(p.name.split(" ")[0])}</h2>
+        <p class="muted small">Optional. Used to plan care and, in totals only, in Ads &amp; insights. Leave a field empty to clear it.</p>
+        <form class="form" id="profForm">${profileFields(profileOptions, prof)}<button class="btn btn--primary">Save</button></form>`);
+      $("#profForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try { await api(`/patients/${p.id}`, { method: "PATCH", body: { profile: profileFrom(e.target) } }); closeModal(); toast("Saved."); route(); } catch (ex) { toast(ex.message); }
+      });
+    });
+    $("#setReferrer")?.addEventListener("click", () => {
+      openModal(`<h2>Who referred ${esc(p.name.split(" ")[0])}?</h2>
+        <p class="muted small">Enter the partner's referral ID (e.g. REF-K7Q4M). Their reward for this patient's first booking and treatment visits is worked out again. Leave it empty to remove the referral.</p>
+        <form class="form" id="refForm"><div class="field"><label>Referral ID</label><input name="code" value="${esc(referrer?.code || "")}" placeholder="REF-…"></div>
+        <button class="btn btn--primary">Save</button></form>`);
+      $("#refForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try { await api(`/patients/${p.id}/referrer`, { method: "PUT", body: { code: e.target.code.value.trim() } }); closeModal(); toast("Referral saved."); route(); } catch (ex) { toast(ex.message); }
+      });
+    });
     // ---- Documents ----
     $("#addDoc")?.addEventListener("click", () => {
       openModal(`<h2>Add a document for ${esc(p.name)}</h2>
@@ -849,10 +924,7 @@
     const { stories } = await api(`/stories?status=${state.storyView}`);
     const tabs = { pending: "To review", approved: "Published", rejected: "Rejected" };
     content.innerHTML = `
-      <div class="panel-card__head">
-        <div class="chips">${Object.entries(tabs).map(([k, v]) => `<button class="chip ${state.storyView === k ? "is-active" : ""}" data-sv="${k}">${v}</button>`).join("")}</div>
-        <button class="btn btn--ghost btn--sm" id="addStory">+ Add a story yourself</button>
-      </div>
+      <div class="chips">${Object.entries(tabs).map(([k, v]) => `<button class="chip ${state.storyView === k ? "is-active" : ""}" data-sv="${k}">${v}</button>`).join("")}</div>
       <p class="muted small">Patients submit stories at <a href="/stories.html#share" target="_blank">/stories.html</a>. Nothing goes live until you approve it. Starred stories show first on the homepage. Only the first name and last initial are published.</p>
       <div class="list">${stories.map((s) => `<div class="item" style="grid-template-columns:1fr auto">
         <div class="item__main">
@@ -896,13 +968,13 @@
         try { await api(`/stories/${s.id}`, { method: "PATCH", body: { title, body, city } }); closeModal(); toast("Saved."); route(); } catch (ex) { toast(ex.message); }
       });
     }));
-    $("#addStory").addEventListener("click", () => {
+    state.primary = { label: "Add a story", run: () => {
       openModal(`<h2>Add a story</h2><p class="muted small">For feedback received on WhatsApp, Google or in person. Only add it with the patient's permission.</p>${storyForm()}`);
       $("#storyForm").addEventListener("submit", async (e) => {
         e.preventDefault();
         try { await api("/stories", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); closeModal(); toast("Story published."); state.storyView = "approved"; route(); } catch (ex) { toast(ex.message); }
       });
-    });
+    } };
   }
 
   // ---------- Instagram ----------
@@ -928,6 +1000,7 @@
           <td><button class="btn btn--danger btn--sm" data-mdel="${m.id}">Remove</button></td>
         </tr>`).join("") || '<tr><td colspan="5"><div class="empty">No posts yet. Until you add some, the homepage shows a "Follow on Instagram" card instead.</div></td></tr>'}</tbody>
       </table></div>`;
+    state.primary = { label: "Add a post or reel", run: () => $("#mediaForm [name=url]").focus() };
     $("#mediaForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       try { await api("/media", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); toast("Added to homepage."); route(); } catch (ex) { toast(ex.message); }
@@ -942,13 +1015,27 @@
 
   // ---------- Blog articles ----------
   async function renderBlog() {
-    const { posts } = await api("/blog");
+    const [{ posts }, { articles }] = await Promise.all([api("/blog"), api("/articles")]);
     const hiddenCount = posts.filter((p) => !p.enabled).length;
     const when = (t) => new Date(t.replace(" ", "T") + "Z").toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" });
     content.innerHTML = `
       <section class="panel-card">
-        <p class="muted small" style="margin:0">Untick <strong>Shown</strong> to take an article off the website straight away: it disappears from the blog, search, "Keep reading" links and the Tailbone pain page, and its address shows "no longer available". Tick it again to bring it back. Each article keeps its number for good. To edit or add articles, change the files in <code>content/blog/</code> and publish.</p>
+        <p class="muted small" style="margin:0">Write new articles here with <strong>+ New article</strong>: text, pictures, YouTube or Instagram videos and audio recordings. Untick <strong>Shown</strong> to take any article off the website straight away; tick it again to bring it back. Each article keeps its number for good.</p>
       </section>
+      <section class="panel-card">
+        <h2>Written in the dashboard</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>No.</th><th>Article</th><th>Status</th><th>Shown</th><th>Last saved</th></tr></thead>
+          <tbody>${articles.map((x) => `<tr class="row-link" data-href="#/article/${x.id}">
+            <td class="nowrap"><strong>#${x.id}</strong></td>
+            <td><a href="#/article/${x.id}">${esc(x.title)}</a><br><span class="muted small">${esc(x.tags.join(", "))}</span></td>
+            <td>${x.status === "published" ? '<span class="badge badge--confirmed">Published</span>' : '<span class="badge badge--pending">Draft</span>'}</td>
+            <td>${x.status === "published" ? `<label class="check"><input type="checkbox" data-post="${x.id}" ${x.enabled ? "checked" : ""}> Shown</label>` : "–"}</td>
+            <td class="small muted nowrap">${esc(when(x.updatedAt))}</td>
+          </tr>`).join("") || '<tr><td colspan="5"><div class="empty">None yet. Press <strong>+ New article</strong> at the top to write one.</div></td></tr>'}</tbody>
+        </table></div>
+      </section>
+      <h2 class="settings-subhead">Articles published with the website</h2>
       <div class="toolbar"><div class="field" style="flex:1"><label for="blogFilter">Find an article</label><input id="blogFilter" type="search" placeholder="Number, title or tag"></div>
         <p class="muted small" style="margin:0;align-self:end">${posts.length} articles · ${hiddenCount} hidden</p></div>
       <div class="table-wrap"><table>
@@ -962,6 +1049,7 @@
           <td class="small muted">${p.changedAt ? `${esc(when(p.changedAt))}<br>${esc(p.changedBy || "")}` : "–"}</td>
         </tr>`).join("") || '<tr><td colspan="6"><div class="empty">No articles found. Run the build to publish them.</div></td></tr>'}</tbody>
       </table></div>`;
+    state.primary = { label: "New article", run: () => { location.hash = "#/article/new"; } };
     $("#blogFilter").addEventListener("input", (e) => {
       const q = e.target.value.trim().toLowerCase();
       $$("tr[data-find]").forEach((tr) => { tr.hidden = !!q && !tr.dataset.find.includes(q); });
@@ -972,6 +1060,417 @@
         toast(c.checked ? `Article #${c.dataset.post} is shown on the website.` : `Article #${c.dataset.post} is hidden from the website.`);
         route();
       } catch (ex) { c.checked = !c.checked; toast(ex.message); }
+    }));
+  }
+
+  // ---------- Ads & insights ----------
+  // Who the patients are and which channels bring visits, in totals only. Nothing here is sent to Google or anyone else.
+  async function renderInsights() {
+    const span = state.insightSpan || 90;
+    const d = await api(`/insights?from=${addDays(state.today, -(span - 1))}&to=${state.today}`);
+    const bars = (title, rows, note = "") => {
+      const max = Math.max(1, ...rows.map((r) => r.n));
+      return `<section class="panel-card"><h2>${esc(title)}</h2>${note ? `<p class="muted small">${note}</p>` : ""}
+        ${rows.length ? `<ul class="hbars">${rows.map((r) => `<li class="${r.label === "Not given" ? "is-muted" : ""}"><span>${esc(r.label)}</span><b style="--w:${Math.round((r.n / max) * 100)}%"></b><em>${r.n}</em></li>`).join("")}</ul>` : '<div class="empty">No data yet.</div>'}</section>`;
+    };
+    const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : "–");
+    const adsRow = d.channels.find((c) => c.label === "Google Ads");
+    const refRow = d.channels.find((c) => c.label === "Referral partner");
+    content.innerHTML = `
+      <div class="panel-card__head">
+        <div class="chips">${[[30, "Last 30 days"], [90, "Last 3 months"], [365, "Last 12 months"]].map(([n, t]) => `<button class="chip ${span === n ? "is-active" : ""}" data-span="${n}">${t}</button>`).join("")}</div>
+        <span class="muted small">${esc(day(d.from))} – ${esc(day(d.to))}</span>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><small>Patients seen or booked</small><strong>${d.patients}</strong></div>
+        <div class="kpi"><small>Told us about themselves</small><strong>${pct(d.profilesFilled, d.patients)}</strong></div>
+        <div class="kpi"><small>Bookings from Google Ads</small><strong>${adsRow?.bookings || 0}</strong></div>
+        <div class="kpi"><small>Bookings from referrals</small><strong>${refRow?.bookings || 0}</strong></div>
+      </div>
+      <section class="panel-card">
+        <h2>Where bookings come from</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Channel</th><th>Bookings</th><th>Visits done</th><th>Became a visit</th><th>Cancelled / no-show</th><th>Fees collected</th></tr></thead>
+          <tbody>${d.channels.map((c) => `<tr><td><strong>${esc(c.label)}</strong></td><td>${c.bookings}</td><td>${c.visits}</td><td>${pct(c.visits, c.bookings)}</td><td>${c.lost}</td><td class="nowrap">${rupees(c.revenue)}</td></tr>`).join("") || '<tr><td colspan="6"><div class="empty">No bookings in this period.</div></td></tr>'}</tbody>
+        </table></div>
+        <p class="muted small">"Google Ads" counts bookings from people who arrived by clicking an ad (Google Ads auto-tagging must be on). Add <code>?utm_source=…&amp;utm_campaign=…</code> to links you share elsewhere (Instagram bio, YouTube description, posters) and they appear here by name.</p>
+      </section>
+      ${d.campaigns.length ? `<section class="panel-card"><h2>Ad campaigns and links</h2><div class="table-wrap"><table>
+        <thead><tr><th>Campaign</th><th>Source</th><th>Bookings</th><th>Visits done</th></tr></thead>
+        <tbody>${d.campaigns.map((c) => `<tr><td>${esc(c.campaign)}</td><td>${esc(c.source || "–")}</td><td>${c.bookings}</td><td>${c.visits}</td></tr>`).join("")}</tbody></table></div></section>` : ""}
+      <div class="insight-grid">
+        ${bars("Age", d.age)}
+        ${bars("Gender", d.gender)}
+        ${bars("Work", d.occupation)}
+        ${bars("City", d.city, "Top 12 cities.")}
+        ${bars("Sitting per day", d.sitting)}
+        ${bars("Pain for how long", d.painSince)}
+        ${bars("How they heard of us", d.heardFrom)}
+        ${d.landing.length ? bars("First page they visited", d.landing.map((l) => ({ label: l.page, n: l.bookings }))) : ""}
+      </div>
+      <section class="panel-card">
+        <h2>Using this for ads</h2>
+        <ul class="tips">
+          <li>Aim ads at the age groups, cities and kinds of work that appear most above, for example office workers and drivers in Delhi NCR.</li>
+          <li>Compare "Became a visit" across channels: a channel with many bookings but few visits may need a better landing page or confirmation call.</li>
+          <li>These are totals only. Patients' names and details are never sent to Google or any advertiser, as the privacy notice promises.</li>
+        </ul>
+      </section>`;
+    $$("[data-span]").forEach((b) => b.addEventListener("click", () => { state.insightSpan = Number(b.dataset.span); route(); }));
+  }
+
+  // ---------- Referral partners ----------
+  const PARTNER_STATUS = { pending: ["Waiting for approval", "pending"], active: ["Active", "confirmed"], suspended: ["Paused", "cancelled"] };
+  const partnerBadge = (s) => `<span class="badge badge--${PARTNER_STATUS[s][1]}">${PARTNER_STATUS[s][0]}</span>`;
+
+  function partnerForm(kinds, p = {}) {
+    return `<form class="form" id="partnerForm">
+      <div class="field-row"><div class="field"><label>Type</label><select name="kind" required>${Object.entries(kinds).map(([k, v]) => `<option value="${k}" ${p.kind === k ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></div>
+        <div class="field"><label>Name (person or organisation)</label><input name="name" required value="${esc(p.name || "")}"></div></div>
+      <div class="field-row"><div class="field"><label>Contact person</label><input name="contactName" value="${esc(p.contactName || "")}"></div>
+        <div class="field"><label>City</label><input name="city" value="${esc(p.city || "")}"></div></div>
+      <div class="field-row"><div class="field"><label>Mobile (they log in with it)</label><input name="phone" type="tel" value="${esc(p.phone ? phonePretty(p.phone) : "")}"></div>
+        <div class="field"><label>Email</label><input name="email" type="email" value="${esc(p.email || "")}"></div></div>
+      <div class="field"><label>Pay to (UPI ID or bank details)</label><input name="payoutDetails" value="${esc(p.payoutDetails || "")}" placeholder="e.g. name@okicici"></div>
+      ${p.id ? `<div class="field"><label>Private notes</label><textarea name="notes" rows="2">${esc(p.notes || "")}</textarea></div>` : ""}
+      <button class="btn btn--primary">${p.id ? "Save" : "Add partner"}</button>
+    </form>`;
+  }
+
+  async function renderReferrals(param) {
+    if (param) return renderPartner(Number(param));
+    const d = await api("/referrals");
+    const view = state.partnerView || "";
+    const list = d.partners.filter((p) => !view || p.status === view);
+    const st = d.settings;
+    content.innerHTML = `
+      <div class="kpis">
+        <div class="kpi ${d.totals.due ? "kpi--warn" : ""}"><small>To pay now</small><strong>${rupees(d.totals.due)}</strong></div>
+        <div class="kpi"><small>Partners to pay</small><strong>${d.totals.partnersDue}</strong></div>
+        <div class="kpi"><small>Paid so far</small><strong>${rupees(d.totals.paid)}</strong></div>
+        <div class="kpi"><small>Partners</small><strong>${d.partners.filter((p) => p.status === "active").length}</strong></div>
+      </div>
+      <section class="panel-card">
+        <div class="panel-card__head"><h2>Rewards</h2><a class="btn btn--ghost btn--sm" href="/api/admin/referrals/due.csv" download>Download what to pay (CSV)</a></div>
+        <form class="toolbar" id="refRules">
+          <div class="field"><label>First booking (₹)</label><input name="firstBookingRupees" type="number" min="0" step="1" value="${st.firstBookingRupees}"></div>
+          <div class="field"><label>Each treatment visit (₹)</label><input name="treatmentRupees" type="number" min="0" step="1" value="${st.treatmentRupees}"></div>
+          <div class="field"><label>For visits within (months)</label><input name="months" type="number" min="1" max="60" value="${st.months}"></div>
+          <button class="btn btn--primary btn--sm">Save</button>
+        </form>
+        <p class="muted small">A partner earns the first amount when a new patient they referred has their first booking confirmed (or paid), and the second for every visit that patient completes within the period. Cancelled visits are taken off automatically. Pay once a month by UPI or bank transfer, then press <strong>Pay</strong> on the partner to record it. Changes apply to rewards from now on.</p>
+      </section>
+      <div class="panel-card__head">
+        <div class="chips">${[["", "All"], ["pending", "Waiting for approval"], ["active", "Active"], ["suspended", "Paused"]].map(([k, t]) => `<button class="chip ${view === k ? "is-active" : ""}" data-pv="${k}">${t}</button>`).join("")}</div>
+        <a class="small" href="/refer.html" target="_blank" rel="noopener">Partner sign-up page ↗</a>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Partner</th><th>Referral ID</th><th>Patients</th><th>Visits</th><th>To pay</th><th>Paid</th><th>Status</th><th></th></tr></thead>
+        <tbody>${list.map((p) => `<tr class="row-link" data-href="#/referrals/${p.id}">
+          <td><a href="#/referrals/${p.id}"><strong>${esc(p.name)}</strong></a><br><span class="muted small">${esc(p.kindLabel)}${p.city ? ` · ${esc(p.city)}` : ""}</span></td>
+          <td class="nowrap">${esc(p.code)}</td><td>${p.patients}</td><td>${p.visits}</td>
+          <td class="nowrap">${p.due ? `<strong>${rupees(p.due)}</strong>` : "–"}</td><td class="nowrap">${p.paid ? rupees(p.paid) : "–"}</td>
+          <td>${partnerBadge(p.status)}</td>
+          <td class="nowrap">${p.status === "pending" ? `<button class="btn btn--primary btn--sm" data-approve="${p.id}">Approve</button>` : ""}</td>
+        </tr>`).join("") || '<tr><td colspan="8"><div class="empty">No partners yet. Add one, or share the sign-up page with hospitals, doctors, NGOs and others who see patients with tailbone pain.</div></td></tr>'}</tbody>
+      </table></div>`;
+    $$("[data-pv]").forEach((b) => b.addEventListener("click", () => { state.partnerView = b.dataset.pv; route(); }));
+    $$("[data-approve]").forEach((b) => b.addEventListener("click", () => confirmThen(null, async () => {
+      await api(`/referrals/partners/${b.dataset.approve}`, { method: "PATCH", body: { status: "active" } }); toast("Approved. Their referral ID is now live."); route();
+    })));
+    $("#refRules").addEventListener("submit", (e) => { e.preventDefault(); confirmThen(null, async () => {
+      const f = e.target;
+      await api("/referrals/settings", { method: "PUT", body: { firstBookingRupees: f.firstBookingRupees.value, treatmentRupees: f.treatmentRupees.value, months: Number(f.months.value) } });
+      toast("Reward amounts saved.");
+    }); });
+    state.primary = { label: "Add partner", run: () => {
+      openModal(`<h2>Add a referral partner</h2><p class="muted small">They get a referral ID straight away. Partners who sign up themselves on the Refer page wait for your approval.</p>${partnerForm(d.kinds)}`);
+      $("#partnerForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try { const { partner } = await api("/referrals/partners", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); closeModal(); location.hash = `#/referrals/${partner.id}`; } catch (ex) { toast(ex.message); }
+      });
+    } };
+  }
+
+  async function renderPartner(pid) {
+    const [{ partner: p, patients, rewards, payouts, links }, { kinds }] = await Promise.all([api(`/referrals/partners/${pid}`), api("/referrals")]);
+    $("#viewTitle").textContent = `${p.name} · ${p.code}`;
+    const RW = { earned: ["To pay", "pending"], paid: ["Paid", "confirmed"], void: ["Withdrawn", "cancelled"] };
+    content.innerHTML = `
+      <button class="back" type="button" id="backBtn">← All partners</button>
+      <div class="kpis">
+        <div class="kpi"><small>Patients referred</small><strong>${p.patients}</strong></div>
+        <div class="kpi"><small>Treatment visits</small><strong>${p.visits}</strong></div>
+        <div class="kpi ${p.due ? "kpi--warn" : ""}"><small>To pay now</small><strong>${rupees(p.due)}</strong></div>
+        <div class="kpi"><small>Paid so far</small><strong>${rupees(p.paid)}</strong></div>
+      </div>
+      <div class="profile">
+        <div class="stack">
+          <section class="panel-card">
+            <div class="panel-card__head"><h2>${esc(p.kindLabel)}</h2>${partnerBadge(p.status)}</div>
+            <dl class="kv">
+              <dt>Referral ID</dt><dd>${esc(p.code)}</dd>
+              ${p.contactName ? `<dt>Contact</dt><dd>${esc(p.contactName)}</dd>` : ""}
+              <dt>Mobile</dt><dd>${p.phone ? `<a href="tel:+${esc(p.phone)}">${esc(phonePretty(p.phone))}</a>` : "–"}</dd>
+              <dt>Email</dt><dd>${esc(p.email || "–")}</dd>
+              <dt>City</dt><dd>${esc(p.city || "–")}</dd>
+              <dt>Pay to</dt><dd>${esc(p.payoutDetails || "–")}</dd>
+              <dt>Log-in</dt><dd>${p.hasLogin ? "Yes (partner page)" : p.patientId ? "Through My appointments" : "None yet"}</dd>
+              <dt>Joined</dt><dd>${esc(day(p.createdAt))}</dd>
+              ${p.notes ? `<dt>Notes</dt><dd>${esc(p.notes)}</dd>` : ""}
+            </dl>
+            <div class="row-gap" style="margin-top:1rem">
+              ${p.due ? `<button class="btn btn--primary btn--sm" id="payBtn">Pay ${rupees(p.due)}</button>` : ""}
+              <button class="btn btn--ghost btn--sm" id="editPartner">Edit</button>
+              ${p.status !== "active" ? '<button class="btn btn--ghost btn--sm" data-pstatus="active">Approve / resume</button>' : '<button class="btn btn--ghost btn--sm" data-pstatus="suspended">Pause</button>'}
+              ${p.patientId ? "" : '<button class="btn btn--ghost btn--sm" id="pwBtn">Set a password</button>'}
+            </div>
+          </section>
+          <section class="panel-card">
+            <h2>Share</h2>
+            <p class="small">Booking link: <a href="${esc(links.book)}" target="_blank" rel="noopener">${esc(links.book)}</a></p>
+            <div class="row-gap">
+              <button class="btn btn--ghost btn--sm" id="copyLink" type="button">Copy booking link</button>
+              ${links.whatsapp ? `<a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(links.whatsapp)}">Send them their ID on WhatsApp</a>` : ""}
+            </div>
+          </section>
+          <section class="panel-card">
+            <h2>Payments made</h2>
+            <div class="list">${payouts.map((x) => `<div class="item"><div class="item__time">${esc(day(x.paid_at, { day: "numeric", month: "short" }))}</div>
+              <div class="item__main"><strong>${rupees(x.amount)}</strong><small>${esc([x.method, x.reference, x.notes].filter(Boolean).join(" · "))} · by ${esc(x.paid_by)}</small></div><div></div></div>`).join("") || '<div class="empty">No payments yet.</div>'}</div>
+          </section>
+        </div>
+        <div class="stack">
+          <section class="panel-card">
+            <h2>Patients referred</h2>
+            <div class="list">${patients.map((x) => `<div class="item"><div class="item__time">${esc(day(x.referred_at, { day: "numeric", month: "short" }))}</div>
+              <div class="item__main"><strong>${x.anonymised_at ? "Erased patient" : `<a href="#/patient/${x.id}">${esc(x.name)}</a>`}</strong><small>${esc(x.patient_code || "")} · ${x.visits} visit${x.visits === 1 ? "" : "s"}</small></div><div></div></div>`).join("") || '<div class="empty">No patients yet.</div>'}</div>
+          </section>
+          <section class="panel-card">
+            <h2>Rewards</h2>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Date</th><th>Patient</th><th>For</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+              <tbody>${rewards.map((r) => `<tr>
+                <td class="nowrap">${esc(day(r.date || r.created_at, { day: "numeric", month: "short", year: "2-digit" }))}</td>
+                <td>${esc(r.patient_name || "–")}<br><span class="muted small">${esc(r.appt_no || "")}</span></td>
+                <td>${r.kind === "first_booking" ? "First booking" : "Treatment visit"}${r.note && !/^(First booking|Treatment visit)$/.test(r.note) ? `<br><span class="muted small">${esc(r.note)}</span>` : ""}</td>
+                <td class="nowrap">${rupees(r.amount)}</td>
+                <td><span class="badge badge--${RW[r.status][1]}">${RW[r.status][0]}</span></td>
+                <td>${r.status === "earned" ? `<button class="btn btn--ghost btn--sm" data-rw="${r.id}" data-to="void">Withdraw</button>` : r.status === "void" ? `<button class="btn btn--ghost btn--sm" data-rw="${r.id}" data-to="earned">Restore</button>` : ""}</td>
+              </tr>`).join("") || '<tr><td colspan="6"><div class="empty">No rewards yet.</div></td></tr>'}</tbody>
+            </table></div>
+          </section>
+        </div>
+      </div>`;
+    $("#backBtn").addEventListener("click", () => { location.hash = "#/referrals"; });
+    $("#copyLink").addEventListener("click", async () => { try { await navigator.clipboard.writeText(links.book); toast("Link copied."); } catch { prompt("Copy this link:", links.book); } });
+    $$("[data-pstatus]").forEach((b) => b.addEventListener("click", () => confirmThen(b.dataset.pstatus === "suspended" ? "Pause this partner? Their referral ID stops earning rewards until you resume it." : null, async () => {
+      await api(`/referrals/partners/${p.id}`, { method: "PATCH", body: { status: b.dataset.pstatus } }); toast("Saved."); route();
+    })));
+    $$("[data-rw]").forEach((b) => b.addEventListener("click", () => {
+      const reason = b.dataset.to === "void" ? prompt("Why is this reward being withdrawn? (optional)") : "";
+      if (reason === null) return;
+      confirmThen(null, async () => { await api(`/referrals/rewards/${b.dataset.rw}`, { method: "PATCH", body: { status: b.dataset.to, reason } }); route(); });
+    }));
+    $("#editPartner").addEventListener("click", () => {
+      openModal(`<h2>Edit partner</h2>${partnerForm(kinds, p)}`);
+      $("#partnerForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try { await api(`/referrals/partners/${p.id}`, { method: "PATCH", body: Object.fromEntries(new FormData(e.target)) }); closeModal(); toast("Saved."); route(); } catch (ex) { toast(ex.message); }
+      });
+    });
+    $("#pwBtn")?.addEventListener("click", () => {
+      openModal(`<h2>Set a password for ${esc(p.name)}</h2><p class="muted small">They log in on the partner page with their mobile number and this password, and can change it there. Send it to them privately.</p>
+        <form class="form" id="pwForm"><div class="field"><label>New password (8+ characters)</label><input name="pw" minlength="8" required autocomplete="new-password"></div><button class="btn btn--primary">Save</button></form>`);
+      $("#pwForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try { await api(`/referrals/partners/${p.id}`, { method: "PATCH", body: { newPassword: e.target.pw.value } }); closeModal(); toast("Password set."); route(); } catch (ex) { toast(ex.message); }
+      });
+    });
+    $("#payBtn")?.addEventListener("click", () => {
+      openModal(`<h2>Pay ${esc(p.name)} ${rupees(p.due)}</h2>
+        <p class="muted small">Send the money first (UPI or bank transfer to: <strong>${esc(p.payoutDetails || "ask the partner for their UPI ID")}</strong>), then record it here. All their unpaid rewards are marked paid.</p>
+        <form class="form" id="payForm">
+          <div class="field-row"><div class="field"><label>Paid by</label><select name="method"><option>UPI</option><option>Bank transfer</option><option>Cash</option><option>Cheque</option></select></div>
+          <div class="field"><label>Reference (UTR / cheque no.)</label><input name="reference"></div></div>
+          <div class="field"><label>Note</label><input name="notes" placeholder="e.g. October 2026"></div>
+          <button class="btn btn--primary">Record payment of ${rupees(p.due)}</button>
+        </form>`);
+      $("#payForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try { await api(`/referrals/partners/${p.id}/payout`, { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); closeModal(); toast("Payment recorded."); route(); } catch (ex) { toast(ex.message); }
+      });
+    });
+  }
+
+  // ---------- Doctor at your place ----------
+  async function renderHomeVisits() {
+    const view = state.hvView || "";
+    const { requests, statuses } = await api(`/home-visits${view ? `?status=${view}` : ""}`);
+    const tone = { new: "pending", discussing: "pending", scheduled: "confirmed", done: "completed", declined: "cancelled", cancelled: "cancelled" };
+    content.innerHTML = `
+      <div class="chips">${[["", "All"], ...Object.entries(statuses)].map(([k, t]) => `<button class="chip ${view === k ? "is-active" : ""}" data-hv="${k}">${esc(t)}</button>`).join("")}</div>
+      <p class="muted small">Requests from the <a href="/home-visit.html" target="_blank" rel="noopener">Doctor at your place</a> page. The person asking has agreed to pay the treatment fees plus travel both ways, meals and stay, and asks at least 7 days ahead. Call or WhatsApp them to agree dates and costs, then set the status.</p>
+      <div class="list">${requests.map((v) => `<div class="item hv-item">
+        <div class="item__time">${esc(day(v.date_from, { day: "numeric", month: "short" }))}${v.date_to !== v.date_from ? `<br><small>to ${esc(day(v.date_to, { day: "numeric", month: "short" }))}</small>` : ""}</div>
+        <div class="item__main"><strong>${esc(v.city)} · ${v.patients} patient${v.patients === 1 ? "" : "s"}</strong>
+          <small>${esc(v.ref)} · ${esc(v.name)}${v.organisation ? `, ${esc(v.organisation)}` : ""} · ${esc(phonePretty(v.phone))}${v.email ? ` · ${esc(v.email)}` : ""} · asked ${esc(day(v.created_at))}</small>
+          ${v.details ? `<p class="hv-details">${esc(v.details)}</p>` : ""}
+          ${v.clinic_notes ? `<p class="small muted">Notes: ${esc(v.clinic_notes)}</p>` : ""}
+          <div><span class="badge badge--${tone[v.status]}">${esc(v.statusLabel)}</span></div></div>
+        <div class="item__actions">
+          <a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(v.whatsapp)}">WhatsApp</a>
+          <a class="btn btn--ghost btn--sm" href="tel:+${esc(v.phone)}">Call</a>
+          <button class="btn btn--ghost btn--sm" data-hv-edit="${v.id}">Update</button>
+        </div></div>`).join("") || '<div class="empty">No requests here.</div>'}</div>`;
+    $$("[data-hv]").forEach((b) => b.addEventListener("click", () => { state.hvView = b.dataset.hv; route(); }));
+    const byId = Object.fromEntries(requests.map((v) => [v.id, v]));
+    $$("[data-hv-edit]").forEach((b) => b.addEventListener("click", () => {
+      const v = byId[b.dataset.hvEdit];
+      openModal(`<h2>${esc(v.city)}: ${esc(v.name)}</h2>
+        <form class="form" id="hvForm">
+          <div class="field"><label>Status</label><select name="status">${Object.entries(statuses).map(([k, t]) => `<option value="${k}" ${v.status === k ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></div>
+          <div class="field"><label>Notes (dates agreed, costs, travel)</label><textarea name="notes" rows="4">${esc(v.clinic_notes || "")}</textarea></div>
+          <button class="btn btn--primary">Save</button>
+        </form>`);
+      $("#hvForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try { await api(`/home-visits/${v.id}`, { method: "PATCH", body: Object.fromEntries(new FormData(e.target)) }); closeModal(); toast("Saved."); route(); } catch (ex) { toast(ex.message); }
+      });
+    }));
+  }
+
+  // ---------- Articles written in the dashboard ----------
+  // Text uses simple marks: ## Heading, **bold**, *italic*, - list, [link](https://…), and one line per picture, video or recording.
+  async function renderArticleEditor(param) {
+    const { articles, tags } = await api("/articles");
+    const a = param === "new" ? null : articles.find((x) => x.id === Number(param));
+    if (param !== "new" && !a) throw new Error("Article not found.");
+    $("#viewTitle").textContent = a ? `Article #${a.id}` : "New article";
+    content.innerHTML = `
+      <button class="back" type="button" id="backBtn">← All articles</button>
+      <div class="editor">
+        <form class="form panel-card" id="artForm">
+          <div class="field"><label>Title</label><input name="title" required maxlength="140" value="${esc(a?.title || "")}" placeholder="e.g. Why your tailbone hurts more after a long drive"></div>
+          <div class="field"><label>One-line summary <span class="muted small">(shown on the blog list and in Google)</span></label><input name="summary" maxlength="300" value="${esc(a?.summary || "")}"></div>
+          <fieldset class="field"><legend>Topics <span class="muted small">(up to 4)</span></legend>
+            <div class="tag-picks">${tags.map((t) => `<label class="check"><input type="checkbox" name="tags" value="${esc(t)}" ${a?.tags.includes(t) ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div></fieldset>
+          <div class="field-row"><div class="field"><label>Author</label><input name="author" value="${esc(a?.author || "Dr Rajveer Singh")}"></div>
+            <div class="field"><label>Cover picture <span class="muted small">(optional)</span></label>
+              <div class="row-gap"><input type="hidden" name="coverMediaId" value="${esc(a?.coverMediaId || "")}"><span class="small" id="coverName">${a?.coverMediaId ? "Picture added ✓" : "Uses a topic illustration"}</span>
+              <button type="button" class="btn btn--ghost btn--sm" data-upload="cover">Choose picture</button></div></div></div>
+          <div class="field">
+            <label for="artBody">Article</label>
+            <div class="editor__tools" role="toolbar" aria-label="Formatting">
+              <button type="button" class="btn btn--ghost btn--sm" data-md="## ">Heading</button>
+              <button type="button" class="btn btn--ghost btn--sm" data-md="**" data-wrap="1"><b>B</b></button>
+              <button type="button" class="btn btn--ghost btn--sm" data-md="*" data-wrap="1"><i>I</i></button>
+              <button type="button" class="btn btn--ghost btn--sm" data-md="- ">List</button>
+              <button type="button" class="btn btn--ghost btn--sm" data-link="1">Link</button>
+              <button type="button" class="btn btn--ghost btn--sm" data-upload="image">+ Picture</button>
+              <button type="button" class="btn btn--ghost btn--sm" data-video="1">+ Video</button>
+              <button type="button" class="btn btn--ghost btn--sm" data-upload="audio">+ Audio</button>
+            </div>
+            <textarea id="artBody" name="body" rows="22" placeholder="Write the article here. Leave an empty line between paragraphs.">${esc(a?.body || "")}</textarea>
+            <small class="muted">Videos: paste a YouTube, Vimeo or Instagram link, or upload a short clip (up to 25 MB). Audio: upload an MP3 or a phone recording.</small>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn--primary" type="submit">Save</button>
+            ${a ? `<button class="btn ${a.status === "published" ? "btn--ghost" : "btn--primary"}" type="button" id="pubBtn">${a.status === "published" ? "Unpublish" : "Save and publish"}</button>
+              <a class="btn btn--ghost" href="/api/admin/articles/${a.id}/preview" target="_blank" rel="noopener">Full preview</a>
+              ${a.status === "published" ? `<a class="btn btn--ghost" href="${esc(a.url)}" target="_blank" rel="noopener">View on site</a>` : ""}
+              <button class="btn btn--danger" type="button" id="delArt">Delete</button>` : ""}
+          </div>
+          <p class="muted small" style="margin:0">${a ? `${a.status === "published" ? `Published · ${esc(day(a.publishedAt))}` : "Draft: not on the website yet"} · last saved ${esc(when(a.updatedAt))}` : "Save first, then preview and publish."}</p>
+        </form>
+        <section class="panel-card editor__preview" aria-label="Preview">
+          <h2>Preview</h2>
+          <div class="post-body" id="artPreview"><p class="muted">The preview appears as you type.</p></div>
+        </section>
+      </div>
+      <input type="file" id="artFile" hidden>`;
+    const form = $("#artForm");
+    const body = $("#artBody");
+    $("#backBtn").addEventListener("click", () => { location.hash = "#/blog"; });
+    const insert = (text, { wrap = false, line = false } = {}) => {
+      const [s0, e0] = [body.selectionStart, body.selectionEnd];
+      const sel = body.value.slice(s0, e0);
+      let out;
+      if (wrap) out = `${text}${sel || "text"}${text}`;
+      else if (line) out = `${s0 && body.value[s0 - 1] !== "\n" ? "\n\n" : ""}${text}\n\n`;
+      else out = `${text}${sel}`;
+      body.setRangeText(out, s0, e0, "end");
+      body.focus();
+      body.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    $$("[data-md]").forEach((b) => b.addEventListener("click", () => {
+      if (b.dataset.wrap) return insert(b.dataset.md, { wrap: true });
+      const start = body.value.lastIndexOf("\n", body.selectionStart - 1) + 1;
+      body.setSelectionRange(start, start);
+      insert(b.dataset.md);
+    }));
+    $("[data-link]").addEventListener("click", () => {
+      const url = prompt("Link address (https://… or a page on this site, e.g. /book)");
+      if (url) insert(`[${body.value.slice(body.selectionStart, body.selectionEnd) || "link text"}](${url.trim()})`);
+    });
+    $("[data-video]").addEventListener("click", () => {
+      const url = prompt("Paste a YouTube, Vimeo or Instagram link.\nTo upload a short video file instead, press Cancel.");
+      if (url === null) { upload("video"); return; }
+      if (url.trim()) insert(`::video ${url.trim()} "${prompt("Caption (optional)") || ""}"`.replace(/ ""$/, ""), { line: true });
+    });
+    const file = $("#artFile");
+    let pending = null;
+    const upload = (kind) => {
+      pending = kind;
+      file.accept = { image: "image/jpeg,image/png,image/webp", cover: "image/jpeg,image/png,image/webp", audio: "audio/*", video: "video/mp4,video/webm" }[kind];
+      file.value = "";
+      file.click();
+    };
+    $$("[data-upload]").forEach((b) => b.addEventListener("click", () => upload(b.dataset.upload)));
+    file.addEventListener("change", async () => {
+      const f = file.files[0];
+      if (!f) return;
+      if (f.size > 25 * 1024 * 1024) return toast("Files up to 25 MB can be added. For longer videos, upload to YouTube and paste the link.");
+      toast("Uploading…");
+      try {
+        const res = await fetch(`/api/admin/articles/media?name=${encodeURIComponent(f.name)}`, { method: "POST", credentials: "same-origin", body: f, headers: { "content-type": f.type || "application/octet-stream", "x-requested-with": "fetch" } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Upload failed.");
+        const { media } = data;
+        if (pending === "cover") { form.coverMediaId.value = media.id; $("#coverName").textContent = "Picture added ✓ (save to keep it)"; toast("Cover picture added."); return; }
+        if (media.kind === "image") insert(`![${prompt("Describe the picture in a few words (for people who can't see it)") || ""}](${media.url})`, { line: true });
+        else insert(`::${media.kind === "audio" ? "audio" : "video"} ${media.url} "${prompt("Caption (optional)") || ""}"`.replace(/ ""$/, ""), { line: true });
+        toast("Added.");
+      } catch (ex) { toast(ex.message); }
+    });
+    let timer;
+    const preview = async () => {
+      try { const { html } = await api("/articles/preview", { method: "POST", body: { body: body.value } }); $("#artPreview").innerHTML = html || '<p class="muted">Nothing written yet.</p>'; } catch { /* keep the last preview */ }
+    };
+    body.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(preview, 600); });
+    if (body.value) preview();
+    const payload = () => ({
+      title: form.title.value, summary: form.summary.value, author: form.author.value, body: body.value, coverMediaId: form.coverMediaId.value || null,
+      tags: $$("input[name=tags]:checked", form).map((c) => c.value),
+    });
+    const save = async () => {
+      if ($$("input[name=tags]:checked", form).length > 4) throw new Error("Please choose up to 4 topics.");
+      const { article } = a ? await api(`/articles/${a.id}`, { method: "PUT", body: payload() }) : await api("/articles", { method: "POST", body: payload() });
+      delete modal.dataset.dirty;
+      return article;
+    };
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try { const saved = await save(); toast(a ? "Saved." : "Draft saved. Preview it, then publish."); if (!a) location.hash = `#/article/${saved.id}`; else route(); } catch (ex) { toast(ex.message); }
+    });
+    $("#pubBtn")?.addEventListener("click", () => confirmThen(a.status === "published" ? "Take this article off the website? It stays here as a draft." : null, async () => {
+      if (a.status !== "published") await save();
+      await api(`/articles/${a.id}/publish`, { method: "POST", body: { publish: a.status !== "published" } });
+      toast(a.status === "published" ? "Unpublished." : "Published: it's now on the blog.");
+      route();
+    }));
+    $("#delArt")?.addEventListener("click", () => confirmThen("Delete this article permanently? Its number is not reused.", async () => {
+      await api(`/articles/${a.id}`, { method: "DELETE" }); toast("Deleted."); location.hash = "#/blog";
     }));
   }
 

@@ -7,7 +7,10 @@ import { config } from "./config.js";
 import { hashPassword } from "./auth.js";
 import { publicRoutes } from "./routes/public.js";
 import { adminRoutes } from "./routes/admin.js";
+import { partnerRoutes } from "./routes/partners.js";
 import { hiddenPosts, syncPosts } from "./blog.js";
+import { renderArticle, renderArt, getMedia } from "./articles.js";
+import { versionHtml } from "../scripts/partials.js";
 
 /** Create the first account (the super admin) from ADMIN_EMAIL / ADMIN_PASSWORD if there are none yet. */
 export function seedAdmin(db, { email = config.adminEmail, password = config.adminPassword, name = "Super Admin" } = {}) {
@@ -25,7 +28,7 @@ export const CSP = [
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "img-src 'self' data: https:",
-  "frame-src https://api.razorpay.com https://checkout.razorpay.com https://www.instagram.com https://maps.google.com https://www.google.com https://td.doubleclick.net https://www.googletagmanager.com",
+  "frame-src https://api.razorpay.com https://checkout.razorpay.com https://www.instagram.com https://www.youtube-nocookie.com https://player.vimeo.com https://maps.google.com https://www.google.com https://td.doubleclick.net https://www.googletagmanager.com",
   "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.g.doubleclick.net https://www.google.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com",
   "object-src 'none'",
   "base-uri 'self'",
@@ -69,11 +72,13 @@ export function createApp(db) {
 
   // Razorpay signs the exact raw bytes of the webhook, so it must not be JSON-parsed first.
   app.use("/api/payments/webhook", express.raw({ type: "*/*", limit: "1mb" }));
+  app.use("/api/admin/articles", express.json({ limit: "300kb" })); // article text can be long
   app.use(express.json({ limit: "50kb" }));
 
   app.get("/api/health", (req, res) => res.json({ ok: true }));
   app.use("/api", (req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
   app.use("/api/admin", adminRoutes(db));
+  app.use("/api/partners", partnerRoutes(db));
   app.use("/api", publicRoutes(db));
   app.use("/api", (req, res) => res.status(404).json({ error: "Not found." }));
 
@@ -88,6 +93,33 @@ export function createApp(db) {
     const to = exact.get(bare(req.path)) || prefixes.find(([p]) => req.path.startsWith(p))?.[1];
     if (to && bare(to.split("#")[0]) !== bare(req.path)) return res.redirect(301, to);
     next();
+  });
+
+  // Articles written in the dashboard, their pictures and uploaded media (see articles.js).
+  app.get(/^\/blog\/a\/([a-z0-9-]+)\.svg$/, (req, res, next) => {
+    const svg = renderArt(db, req.params[0]);
+    if (!svg) return next();
+    res.set({ "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400" }).send(svg);
+  });
+  app.get(/^\/blog\/a\/([a-z0-9-]+)\/?$/, (req, res, next) => {
+    const html = renderArticle(db, req.params[0]);
+    if (!html) return next();
+    res.set({ "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" }).send(versionHtml(html, config.publicDir));
+  });
+  app.get(/^\/media\/blog\/(\d+)$/, (req, res, next) => {
+    const m = getMedia(db, Number(req.params[0]));
+    if (!m) return next();
+    res.set({ "Content-Type": m.mime, "Cache-Control": "public, max-age=604800, immutable", "X-Content-Type-Options": "nosniff", "Accept-Ranges": "bytes" });
+    // Range requests let audio and video players seek without downloading the whole file.
+    const range = /^bytes=(\d*)-(\d*)$/.exec(req.get("range") || "");
+    if (range && (range[1] || range[2])) {
+      const size = m.data.length;
+      const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+      const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+      if (start >= size || start > end) return res.status(416).set("Content-Range", `bytes */${size}`).end();
+      return res.status(206).set("Content-Range", `bytes ${start}-${end}/${size}`).send(Buffer.from(m.data).subarray(start, end + 1));
+    }
+    res.send(Buffer.from(m.data));
   });
 
   // Articles the admin has switched off are not served.

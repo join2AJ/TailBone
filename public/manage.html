@@ -19,7 +19,7 @@
   <meta property="og:title" content="My Appointments | Tailbone Treatment">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="assets/css/fonts.css?v=5b80af84ed">
-  <link rel="stylesheet" href="assets/css/styles.css?v=c2db0f6e66">
+  <link rel="stylesheet" href="assets/css/styles.css?v=0ac245e85b">
   <script src="assets/js/theme.js?v=78d8f3c3d4"></script>
 </head>
 <body class="page">
@@ -82,8 +82,21 @@
       <!-- Result -->
       <section class="card" id="resultCard" hidden>
         <div class="alert" id="resultMsg" hidden></div>
-        <span class="eyebrow">Your appointment</span>
-        <h1 id="hello">Your appointment</h1>
+        <div class="home-hero">
+          <span class="eyebrow">My appointments</span>
+          <h1 id="hello">Hi there</h1>
+          <p class="home-hero__line" id="helloLine">We hope you're feeling great today!</p>
+        </div>
+        <section class="home" id="homeBox" hidden aria-label="Your summary">
+          <div class="home-tiles" id="homeTiles"></div>
+          <div class="home-pain" id="homePain" hidden>
+            <h2 class="h4">Your pain over time</h2>
+            <div id="painSpark"></div>
+          </div>
+          <p class="small muted" id="homeReferred" hidden></p>
+        </section>
+        <p class="small muted" id="homeLocked" hidden>Your personal page (progress, documents and more) opens fully once the clinic has confirmed this booking with you, or after your visit.</p>
+        <h2 class="h3 home-sub">Your appointment</h2>
         <div id="apptBox"></div>
         <section class="video-box" id="videoBox" hidden aria-labelledby="videoTitle">
           <h2 class="h3" id="videoTitle">Your video consultation</h2>
@@ -170,6 +183,29 @@
           </form>
         </section>
 
+        <section class="about-box" id="aboutBox" hidden aria-labelledby="aboutTitle">
+          <div class="about-box__head"><h2 class="h3" id="aboutTitle">About you</h2><button class="btn btn--ghost btn--sm" type="button" id="aboutEdit">Update</button></div>
+          <p class="small muted">Optional. It helps Dr Rajveer prepare for your visits.</p>
+          <dl class="kv" id="aboutList"></dl>
+          <form class="form" id="aboutForm" hidden novalidate></form>
+        </section>
+        <section class="refer-box" id="referBox" hidden aria-labelledby="referTitle">
+          <h2 class="h3" id="referTitle">Refer a friend</h2>
+          <p class="small" id="referRules"></p>
+          <div id="referHave" hidden>
+            <p class="refcode refcode--inline"><small>Your referral ID</small><strong class="refcode__id" id="myCode"></strong></p>
+            <div class="row-gap">
+              <a class="btn btn--wa btn--sm" id="myShareWa" target="_blank" rel="noopener" href="#">Share on WhatsApp</a>
+              <button class="btn btn--ghost btn--sm" type="button" id="myCopy">Copy link</button>
+            </div>
+            <p class="small muted" id="myTotals"></p>
+            <form class="form refer-pay" id="payForm" novalidate>
+              <div class="field"><label for="payTo">Pay my rewards to <span class="muted">(UPI ID or bank details)</span></label><input id="payTo" name="payoutDetails" placeholder="e.g. name@okicici"></div>
+              <button class="btn btn--ghost btn--sm" type="submit">Save</button>
+            </form>
+          </div>
+          <button class="btn btn--primary btn--sm" type="button" id="getCode">Get my referral ID</button>
+        </section>
         <div id="othersBox" hidden style="margin-top:2rem">
           <h2 class="h3">Your other upcoming appointments</h2>
           <div id="othersList"></div>
@@ -240,6 +276,8 @@
           <li><a href="/blog/">Blog</a></li>
           <li><a href="/stories.html" data-feature="stories">Patient stories</a></li>
           <li><a href="/press.html">In the news</a></li>
+          <li><a href="/home-visit.html">Doctor at your place</a></li>
+          <li><a href="/refer.html">Refer a patient</a></li>
           <li><a href="/faq">FAQ</a></li>
           <li><a href="/manage.html">My appointments</a></li>
           <li><a href="/policies.html">Terms &amp; refunds</a></li>
@@ -256,8 +294,8 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="/assets/js/receipt.js?v=fb9afe3d88" defer></script>
-  <script src="assets/js/manage.js?v=980010acff" defer></script>
+  <script src="assets/js/manage.js?v=479155781e" defer></script>
   <script src="/assets/js/consent.js?v=64a81c4272" defer></script>
-  <script src="/assets/js/site-nav.js?v=b2b6934193" defer></script>
+  <script src="/assets/js/site-nav.js?v=9220922f94" defer></script>
 </body>
 </html>

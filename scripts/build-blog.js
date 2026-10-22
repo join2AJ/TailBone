@@ -55,7 +55,7 @@ const SLUG_ART = {
 };
 const mainTag = (meta) => meta.tags.find((t) => t !== "Research" && TAG_ART[t]) || meta.tags[0] || "Treatment";
 
-function artSvg(meta) {
+export function artSvg(meta) {
   const [color, icon] = SLUG_ART[meta.slug] || TAG_ART[mainTag(meta)] || TAG_ART.Treatment;
   const seed = [...meta.slug].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 997, 7);
   const dots = Array.from({ length: 9 }, (_, i) => `<circle cx="${420 + (i % 3) * 46 + (seed % 17)}" cy="${70 + Math.floor(i / 3) * 46 + (seed % 11)}" r="${4 + ((seed + i) % 4)}" fill="#fff" opacity=".${2 + ((seed + i) % 3)}"/>`).join("");
@@ -77,12 +77,14 @@ function artSvg(meta) {
  * consistent (the old site's cover photos are banners with text baked in, which cropping cuts off); covers still
  * appear at the top of their articles.
  */
-export const postArt = (meta) => ({ src: `/blog/art/${meta.slug}.svg`, width: 600, height: 340 });
+// Articles written in the dashboard (meta.path set) live under /blog/a/ and their picture comes from the server.
+export const postArt = (meta) => ({ src: meta.cover || (meta.path ? `${meta.path}.svg` : `/blog/art/${meta.slug}.svg`), width: 600, height: 340 });
+const postPath = (meta) => meta.path || `/blog/${meta.slug}.html`;
 
 /** A small linked card (picture + title), used for "Keep reading" and the Tailbone pain page's "Go deeper". */
 export function miniCard(meta) {
   const art = postArt(meta);
-  return `<li><a class="mini-card" href="/blog/${meta.slug}.html"><img src="${esc(art.src)}" alt="" width="${art.width}" height="${art.height}" loading="lazy" decoding="async"><span class="mini-card__body"><small>${esc(mainTag(meta))}</small><strong>${esc(meta.title)}</strong></span></a></li>`;
+  return `<li><a class="mini-card" href="${esc(postPath(meta))}"><img src="${esc(art.src)}" alt="" width="${art.width}" height="${art.height}" loading="lazy" decoding="async"><span class="mini-card__body"><small>${esc(mainTag(meta))}</small><strong>${esc(meta.title)}</strong></span></a></li>`;
 }
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -133,6 +135,28 @@ export function imageSize(webPath) {
   return null;
 }
 
+/**
+ * A video or audio player. Videos: YouTube, Vimeo or an Instagram reel (embedded), or a file uploaded in the dashboard
+ * (/media/blog/…). Audio: an uploaded file. Anything else becomes a plain link, so an article never embeds an unknown site.
+ */
+export function mediaFigure(kind, url, caption = "") {
+  const cap = caption ? `<figcaption>${inline(caption)}</figcaption>` : "";
+  const own = /^\/media\/blog\/\d+$/.test(url);
+  if (kind === "audio") {
+    return own ? `<figure class="post-media post-media--audio"><audio controls preload="none" src="${esc(url)}"></audio>${cap}</figure>`
+      : `<p><a href="${esc(url)}" target="_blank" rel="noopener">Listen: ${esc(caption || url)}</a></p>`;
+  }
+  if (own) return `<figure class="post-media"><video controls preload="metadata" playsinline src="${esc(url)}"></video>${cap}</figure>`;
+  let m;
+  let src = "";
+  if ((m = /^https:\/\/(?:www\.|m\.)?youtube\.com\/(?:watch\?v=|shorts\/|embed\/)([\w-]{6,20})/.exec(url) || /^https:\/\/youtu\.be\/([\w-]{6,20})/.exec(url))) src = `https://www.youtube-nocookie.com/embed/${m[1]}`;
+  else if ((m = /^https:\/\/(?:www\.)?vimeo\.com\/(\d{5,12})/.exec(url))) src = `https://player.vimeo.com/video/${m[1]}`;
+  else if ((m = /^https:\/\/(?:www\.)?instagram\.com\/(?:p|reel|reels)\/([\w-]{5,40})/.exec(url))) src = `https://www.instagram.com/reel/${m[1]}/embed`;
+  if (!src) return /^https?:\/\//.test(url) ? `<p><a href="${esc(url)}" target="_blank" rel="noopener">Watch: ${esc(caption || url)}</a></p>` : "";
+  const tall = src.includes("instagram.com");
+  return `<figure class="post-media${tall ? " post-media--tall" : ""}"><div class="post-media__frame"><iframe src="${esc(src)}" title="${esc(caption || "Video")}" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>${cap}</figure>`;
+}
+
 export function markdown(md) {
   const out = [];
   const usedIds = new Set();
@@ -159,6 +183,7 @@ export function markdown(md) {
     if (table) { if ((m = /^Table:\s*(.+)$/.exec(line.trim()))) { flushTable(m[1]); continue; } flushTable(); }
     if (!line.trim()) { flushPara(); flushList(); continue; }
     if ((m = /^::anim\s+([\w-]+)$/.exec(line.trim()))) { flushPara(); flushList(); out.push(animFigure(m[1])); continue; }
+    if ((m = /^::(video|audio)\s+(\S+)(?:\s+"([^"]*)")?$/.exec(line.trim()))) { flushPara(); flushList(); out.push(mediaFigure(m[1], m[2], m[3] || "")); continue; }
     if ((m = /^!\[([^\]]*)\]\((\/[^)\s]+)(?:\s+"(\d+)x(\d+)")?\)$/.exec(line.trim()))) {
       flushPara(); flushList();
       const size = m[3] ? ` width="${m[3]}" height="${m[4]}"` : "";
@@ -271,9 +296,9 @@ const metaLine = (m) => `<time datetime="${m.date}">${prettyDate(m.date)}</time>
 
 const publisher = { "@type": "MedicalClinic", name: "Tailbone Treatment Clinic", url: `${SITE}/`, logo: `${SITE}/assets/img/icon-512.png` };
 
-function articlePage(post, others) {
+export function articlePage(post, others) {
   const { meta } = post;
-  const url = `${SITE}/blog/${meta.slug}.html`;
+  const url = `${SITE}${postPath(meta)}`;
   // "On this page" list for longer articles (the article's own section headings).
   const heads = [...post.html.matchAll(/<h2 id="([^"]+)">([\s\S]*?)<\/h2>/g)].filter((h) => !/^(Key points|Sources)$/.test(h[2]));
   const toc = heads.length >= 4 ? `<nav class="post-toc" aria-labelledby="toc-${meta.id}">
@@ -358,7 +383,7 @@ function indexPage(posts) {
           <img class="post-card__img" src="${esc(art.src)}" alt="" width="${art.width}" height="${art.height}" loading="lazy" decoding="async">
           <div class="post-card__body">
             ${tagsHtml(meta.tags.slice(0, 2))}
-            <h2><a href="/blog/${meta.slug}.html">${esc(meta.title)}</a></h2>
+            <h2><a href="${esc(postPath(meta))}">${esc(meta.title)}</a></h2>
             <p class="muted small">${metaLine(meta)}</p>
           </div>
         </li>`;
@@ -419,6 +444,8 @@ export function loadPosts(dir = SRC) {
 export function checkIds(posts) {
   const seen = new Map();
   for (const p of posts) {
+    // 1001 and up are kept for articles written in the dashboard.
+    if (p.meta.id > 1000) throw new Error(`Article "${p.meta.slug}" has id ${p.meta.id}: file articles use 1 to 1000 (1001+ are dashboard articles)`);
     if (seen.has(p.meta.id)) throw new Error(`Article id ${p.meta.id} is used by both "${seen.get(p.meta.id)}" and "${p.meta.slug}"`);
     seen.set(p.meta.id, p.meta.slug);
   }

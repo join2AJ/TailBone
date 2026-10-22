@@ -24,7 +24,7 @@
   <meta property="og:site_name" content="Tailbone Treatment Clinic">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="/assets/css/fonts.css?v=5b80af84ed">
-  <link rel="stylesheet" href="/assets/css/styles.css?v=c2db0f6e66">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=0ac245e85b">
   <script src="/assets/js/theme.js?v=78d8f3c3d4"></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://tailbone.netlify.app/#website","url":"https://tailbone.netlify.app/","name":"Tailbone Treatment Clinic","inLanguage":"en-IN","publisher":{"@id":"https://tailbone.netlify.app/#clinic"}},{"@type":["MedicalClinic","Physiotherapy"],"@id":"https://tailbone.netlify.app/#clinic","name":"Tailbone Treatment Clinic","alternateName":"TailboneTreatment.com","url":"https://tailbone.netlify.app/","logo":"https://tailbone.netlify.app/assets/img/icon-512.png","image":"https://tailbone.netlify.app/assets/img/og-image.jpg","description":"Specialist, non-surgical treatment for tailbone (coccyx) pain, also called coccydynia, led by Dr Rajveer Singh. Clinic in Vasant Kunj, New Delhi, and online video consultations.","telephone":"+91-98866-88323","email":"contact@tailbonetreatment.com","priceRange":"₹500–₹800","currenciesAccepted":"INR","paymentAccepted":"Cash, UPI, Card","medicalSpecialty":"Physiotherapy","isAcceptingNewPatients":true,"foundingDate":"2014","address":{"@type":"PostalAddress","streetAddress":"150A/09, Shanti Apartment, Kishangarh, Vasant Kunj","addressLocality":"New Delhi","addressRegion":"Delhi","postalCode":"110070","addressCountry":"IN"},"areaServed":[{"@type":"City","name":"New Delhi"},{"@type":"AdministrativeArea","name":"Delhi NCR"},{"@type":"Country","name":"India"}],"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"10:00","closes":"17:00"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Saturday","opens":"10:00","closes":"15:00"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Sunday","opens":"08:00","closes":"15:00"}],"availableService":[{"@type":"MedicalTherapy","name":"Coccydynia (tailbone pain) assessment and treatment"},{"@type":"MedicalTherapy","name":"Internal Manipulation of the coccyx"},{"@type":"MedicalTherapy","name":"Online video consultation for tailbone pain"}],"employee":{"@id":"https://tailbone.netlify.app/doctor#rajveer-singh"},"sameAs":["https://www.instagram.com/drrajveersingh_9886688323/"]},{"@type":"WebPage","@id":"https://tailbone.netlify.app/book#webpage","url":"https://tailbone.netlify.app/book","name":"Book a Tailbone Pain Appointment · New Delhi or Online","description":"Choose a day and time for a tailbone pain consultation with Dr Rajveer Singh in New Delhi or by video. Instant appointment number and WhatsApp reminders.","inLanguage":"en-IN","isPartOf":{"@id":"https://tailbone.netlify.app/#website"},"about":{"@id":"https://tailbone.netlify.app/#clinic"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tailbone.netlify.app/"},{"@type":"ListItem","position":2,"name":"Book an appointment","item":"https://tailbone.netlify.app/book"}]}}]}</script>
 </head>
@@ -175,6 +175,24 @@
                   <textarea id="msg" name="reason" rows="3" placeholder="How long, how it started, what makes it worse…"></textarea>
                 </div>
                 <label class="check"><input type="checkbox" name="prefersFemale"> I'd prefer to see a female clinician</label>
+                <details class="about-you" id="aboutYou">
+                  <summary><span>About you <span class="muted">(optional, 30 seconds)</span></span><small>Helps the doctor prepare for your visit</small></summary>
+                  <div class="about-you__grid">
+                    <div class="field"><label for="pAge">Age</label><input id="pAge" name="p_age" type="number" inputmode="numeric" min="1" max="110" placeholder="e.g. 34"></div>
+                    <div class="field"><label for="pGender">Gender</label><select id="pGender" name="p_gender"><option value="">Choose…</option><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option><option value="prefer_not">Prefer not to say</option></select></div>
+                    <div class="field"><label for="pCity">City you live in</label><input id="pCity" name="p_city" autocomplete="address-level2" placeholder="e.g. Gurugram"></div>
+                    <div class="field"><label for="pOccGroup">Work</label><select id="pOccGroup" name="p_occupation_group"><option value="">Choose…</option><option value="office">Office / IT / desk job</option><option value="driver">Driver / long commutes</option><option value="homemaker">Homemaker</option><option value="student">Student</option><option value="healthcare">Healthcare</option><option value="business">Business / self-employed</option><option value="field">Field or manual work</option><option value="retired">Retired</option><option value="other">Other</option></select></div>
+                    <div class="field"><label for="pOcc">Occupation <span class="muted">(optional)</span></label><input id="pOcc" name="p_occupation" placeholder="e.g. Software engineer"></div>
+                    <div class="field"><label for="pSit">Sitting per day</label><select id="pSit" name="p_sitting_hours"><option value="">Choose…</option><option value="lt2">Under 2 hours</option><option value="2to5">2–5 hours</option><option value="5to8">5–8 hours</option><option value="gt8">More than 8 hours</option></select></div>
+                    <div class="field"><label for="pSince">Pain for how long?</label><select id="pSince" name="p_pain_since"><option value="">Choose…</option><option value="lt1m">Less than a month</option><option value="1to6m">1–6 months</option><option value="6to12m">6–12 months</option><option value="gt1y">More than a year</option></select></div>
+                    <div class="field"><label for="pHeard">How did you hear about us?</label><select id="pHeard" name="p_heard_from"><option value="">Choose…</option><option value="google">Google search</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option><option value="friend">Friend or family</option><option value="doctor">A doctor or hospital</option><option value="partner">Referral partner</option><option value="coccyx_org">coccyx.org</option><option value="newspaper">Newspaper / TV</option><option value="other">Other</option></select></div>
+                  </div>
+                  <div class="field referral-field">
+                    <label for="refCode">Referral code <span class="muted">(if someone referred you)</span></label>
+                    <input id="refCode" name="referralCode" autocomplete="off" placeholder="e.g. REF-K7Q4M" maxlength="14">
+                    <small class="referral-field__note" id="refNote" aria-live="polite">The person or organisation who referred you will see only your initials and that you visited, so they can be thanked. Never your health details.</small>
+                  </div>
+                </details>
                 <div class="consent">
                   <label class="check check--top"><input type="checkbox" name="consent" required aria-describedby="consentErr"> <span>I agree that Tailbone Treatment Clinic may use my details, including health information I share, to book, provide and follow up my treatment, as described in the <a href="/privacy.html" target="_blank" rel="noopener">privacy notice</a>.</span></label>
                   <span class="err" id="consentErr" role="alert">Tick this box to agree to the privacy notice. We can't book without it.</span>
@@ -276,6 +294,8 @@
           <li><a href="/blog/">Blog</a></li>
           <li><a href="/stories.html" data-feature="stories">Patient stories</a></li>
           <li><a href="/press.html">In the news</a></li>
+          <li><a href="/home-visit.html">Doctor at your place</a></li>
+          <li><a href="/refer.html">Refer a patient</a></li>
           <li><a href="/faq">FAQ</a></li>
           <li><a href="/manage.html">My appointments</a></li>
           <li><a href="/policies.html">Terms &amp; refunds</a></li>
@@ -318,7 +338,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="/assets/js/router.js?v=dc8a77c57a" defer></script>
-  <script src="/assets/js/main.js?v=0e6ddeae08" defer></script>
+  <script src="/assets/js/main.js?v=ec1f584f29" defer></script>
   <script src="/assets/js/anim.js?v=51e2f6bdda" defer></script>
   <script src="/assets/js/consent.js?v=64a81c4272" defer></script>
 </body>

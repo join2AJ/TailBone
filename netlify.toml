@@ -17,6 +17,19 @@
   # visitors' addresses from forged ones (rate limits). Keep this repository private if you set it here.
   # headers = { X-Proxy-Secret = "PUT-THE-SAME-RANDOM-VALUE-HERE" }
 
+# Articles written in the dashboard, and their pictures, audio and video, come from the backend too.
+[[redirects]]
+  from = "/blog/a/*"
+  to = "https://BACKEND_URL/blog/a/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/media/*"
+  to = "https://BACKEND_URL/media/:splat"
+  status = 200
+  force = true
+
 # Each short page is its own pre-built file (npm run build).
 [[redirects]]
   from = "/coccydynia"
@@ -61,7 +74,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://checkout.razorpay.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; frame-src https://api.razorpay.com https://checkout.razorpay.com https://www.instagram.com https://maps.google.com https://www.google.com https://td.doubleclick.net https://www.googletagmanager.com; connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.g.doubleclick.net https://www.google.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://checkout.razorpay.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; frame-src https://api.razorpay.com https://checkout.razorpay.com https://www.instagram.com https://www.youtube-nocookie.com https://player.vimeo.com https://maps.google.com https://www.google.com https://td.doubleclick.net https://www.googletagmanager.com; connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.g.doubleclick.net https://www.google.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "SAMEORIGIN"

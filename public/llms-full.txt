@@ -43,11 +43,12 @@ Online
 7 Days a week, by appointment
 
 As featured in
-[The Times of India](https://tailbone.netlify.app/press.html)
-[Deccan Herald](https://tailbone.netlify.app/press.html)
-[Hindustan](https://tailbone.netlify.app/press.html)
-[Rajasthan Patrika](https://tailbone.netlify.app/press.html)
-[Prajavani](https://tailbone.netlify.app/press.html)
+[The Times of India](https://tailbone.netlify.app/press.html#tailbone-pain-article-in-times-of-india-news-paper)
+[Deccan Herald](https://tailbone.netlify.app/press.html#tailbone-pain-article-in-deccan-herald)
+[Hindustan](https://tailbone.netlify.app/press.html#article-on-tailbone-treatment-in-hindustan-delhi-english)
+[Rajasthan Patrika](https://tailbone.netlify.app/press.html#tailbone-pain-article-in-rajasthan-patrika-news-paper)
+[Prajavani](https://tailbone.netlify.app/press.html#tailbone-article-in-prajavani-news-paper)
+[See the clippings](https://tailbone.netlify.app/press.html)
 
 The problem
 
@@ -420,11 +421,12 @@ Source: https://tailbone.netlify.app/doctor
 # Dr Rajveer Singh, tailbone pain specialist
 
 As featured in
-[The Times of India](https://tailbone.netlify.app/press.html)
-[Deccan Herald](https://tailbone.netlify.app/press.html)
-[Hindustan](https://tailbone.netlify.app/press.html)
-[Rajasthan Patrika](https://tailbone.netlify.app/press.html)
-[Prajavani](https://tailbone.netlify.app/press.html)
+[The Times of India](https://tailbone.netlify.app/press.html#tailbone-pain-article-in-times-of-india-news-paper)
+[Deccan Herald](https://tailbone.netlify.app/press.html#tailbone-pain-article-in-deccan-herald)
+[Hindustan](https://tailbone.netlify.app/press.html#article-on-tailbone-treatment-in-hindustan-delhi-english)
+[Rajasthan Patrika](https://tailbone.netlify.app/press.html#tailbone-pain-article-in-rajasthan-patrika-news-paper)
+[Prajavani](https://tailbone.netlify.app/press.html#tailbone-article-in-prajavani-news-paper)
+[See the clippings](https://tailbone.netlify.app/press.html)
 
 **Coccyx specialist**
 Non-surgical treatment

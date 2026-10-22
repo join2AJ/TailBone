@@ -24,7 +24,7 @@
   <meta property="og:site_name" content="Tailbone Treatment Clinic">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="/assets/css/fonts.css?v=5b80af84ed">
-  <link rel="stylesheet" href="/assets/css/styles.css?v=c2db0f6e66">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=0ac245e85b">
   <script src="/assets/js/theme.js?v=78d8f3c3d4"></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://tailbone.netlify.app/#website","url":"https://tailbone.netlify.app/","name":"Tailbone Treatment Clinic","inLanguage":"en-IN","publisher":{"@id":"https://tailbone.netlify.app/#clinic"}},{"@type":["MedicalClinic","Physiotherapy"],"@id":"https://tailbone.netlify.app/#clinic","name":"Tailbone Treatment Clinic","alternateName":"TailboneTreatment.com","url":"https://tailbone.netlify.app/","logo":"https://tailbone.netlify.app/assets/img/icon-512.png","image":"https://tailbone.netlify.app/assets/img/og-image.jpg","description":"Specialist, non-surgical treatment for tailbone (coccyx) pain, also called coccydynia, led by Dr Rajveer Singh. Clinic in Vasant Kunj, New Delhi, and online video consultations.","telephone":"+91-98866-88323","email":"contact@tailbonetreatment.com","priceRange":"₹500–₹800","currenciesAccepted":"INR","paymentAccepted":"Cash, UPI, Card","medicalSpecialty":"Physiotherapy","isAcceptingNewPatients":true,"foundingDate":"2014","address":{"@type":"PostalAddress","streetAddress":"150A/09, Shanti Apartment, Kishangarh, Vasant Kunj","addressLocality":"New Delhi","addressRegion":"Delhi","postalCode":"110070","addressCountry":"IN"},"areaServed":[{"@type":"City","name":"New Delhi"},{"@type":"AdministrativeArea","name":"Delhi NCR"},{"@type":"Country","name":"India"}],"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"10:00","closes":"17:00"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Saturday","opens":"10:00","closes":"15:00"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Sunday","opens":"08:00","closes":"15:00"}],"availableService":[{"@type":"MedicalTherapy","name":"Coccydynia (tailbone pain) assessment and treatment"},{"@type":"MedicalTherapy","name":"Internal Manipulation of the coccyx"},{"@type":"MedicalTherapy","name":"Online video consultation for tailbone pain"}],"employee":{"@id":"https://tailbone.netlify.app/doctor#rajveer-singh"},"sameAs":["https://www.instagram.com/drrajveersingh_9886688323/"]},{"@type":"WebPage","@id":"https://tailbone.netlify.app/locations#webpage","url":"https://tailbone.netlify.app/locations","name":"Tailbone Pain Clinic in Vasant Kunj, New Delhi · Timings","description":"Address, map and opening hours of the Tailbone Treatment clinic in Vasant Kunj, New Delhi, plus online video consultations. Lucknow clinic opening soon.","inLanguage":"en-IN","isPartOf":{"@id":"https://tailbone.netlify.app/#website"},"about":{"@id":"https://tailbone.netlify.app/#clinic"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tailbone.netlify.app/"},{"@type":"ListItem","position":2,"name":"Clinics","item":"https://tailbone.netlify.app/locations"}]}}]}</script>
 </head>
@@ -114,6 +114,7 @@
         <div class="tabs reveal" role="tablist" aria-label="Clinic locations">
           <button type="button" class="tab tab--open is-active" role="tab" aria-selected="true" aria-controls="loc-del" id="tab-del" data-tab="del" data-note="By appointment, 7 days a week · Mon–Fri 10–5, Sat 10–3, Sun 8–3"><span class="tab__dot" aria-hidden="true"></span>New Delhi</button>
           <button type="button" class="tab tab--open" role="tab" aria-selected="false" aria-controls="loc-onl" id="tab-onl" data-tab="onl" data-note="Video consultations from anywhere in India or abroad, by appointment"><span class="tab__dot" aria-hidden="true"></span>Online</button>
+          <button type="button" class="tab tab--visit" role="tab" aria-selected="false" aria-controls="loc-hv" id="tab-hv" data-tab="hv" data-note="Dr Rajveer travels to patients in your city · request 7 days ahead"><span class="tab__dot" aria-hidden="true"></span>At your place</button>
           <button type="button" class="tab tab--soon" role="tab" aria-selected="false" aria-controls="loc-lko" id="tab-lko" data-tab="lko" data-note="Meanwhile, book an online consultation or visit New Delhi"><span class="tab__dot" aria-hidden="true"></span>Lucknow <small>soon</small></button>
           <button type="button" class="tab tab--closed" role="tab" aria-selected="false" aria-controls="loc-blr" id="tab-blr" data-tab="blr" data-note="Please book New Delhi or an online consultation instead"><span class="tab__dot" aria-hidden="true"></span>Bengaluru <small>closed</small></button>
         </div>
@@ -146,6 +147,22 @@
               <a class="btn btn--primary" href="/book" data-mode="online">Book online consult</a>
             </div>
             <div class="globe" aria-hidden="true">🌏</div>
+          </div>
+        </div>
+
+        <div class="panel" id="loc-hv" role="tabpanel" aria-labelledby="tab-hv" hidden>
+          <div class="loc loc--online">
+            <div class="loc__info">
+              <h3>Doctor at your place</h3>
+              <p>For a family, a group of patients, a company or a hospital in another city or country, Dr Rajveer Singh can travel to you. You cover the treatment fees, travel both ways, meals and stay; we agree the dates and an estimate with you first.</p>
+              <ul class="ticks">
+                <li>Request at least 7 days ahead</li>
+                <li>Examination and treatment as in the clinic</li>
+                <li>Follow-up online afterwards</li>
+              </ul>
+              <a class="btn btn--primary" href="/home-visit.html">Request a visit</a>
+            </div>
+            <div class="globe" aria-hidden="true">✈️</div>
           </div>
         </div>
 
@@ -245,6 +262,8 @@
           <li><a href="/blog/">Blog</a></li>
           <li><a href="/stories.html" data-feature="stories">Patient stories</a></li>
           <li><a href="/press.html">In the news</a></li>
+          <li><a href="/home-visit.html">Doctor at your place</a></li>
+          <li><a href="/refer.html">Refer a patient</a></li>
           <li><a href="/faq">FAQ</a></li>
           <li><a href="/manage.html">My appointments</a></li>
           <li><a href="/policies.html">Terms &amp; refunds</a></li>
@@ -287,7 +306,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="/assets/js/router.js?v=dc8a77c57a" defer></script>
-  <script src="/assets/js/main.js?v=0e6ddeae08" defer></script>
+  <script src="/assets/js/main.js?v=ec1f584f29" defer></script>
   <script src="/assets/js/anim.js?v=51e2f6bdda" defer></script>
   <script src="/assets/js/consent.js?v=64a81c4272" defer></script>
 </body>

@@ -11,6 +11,8 @@ export const FEATURES = {
   patient_documents: { label: "Documents in My appointments", help: "Patients see and download the documents the clinic shares with them (plans, visit summaries, reports).", default: true },
   patient_uploads: { label: "Patients can upload earlier reports", help: "Patients may add PDF or photo reports they already have, before a visit. Off until the clinic decides to use it.", default: false },
   whatsapp_widget: { label: "Floating WhatsApp button", help: "Chat bubble at the bottom-right of every page.", default: true },
+  referrals: { label: "Referral programme", help: "The Refer page, partner sign-up and log-in, referral codes when booking, and 'Refer a friend' in My appointments.", default: true },
+  home_visits: { label: "Doctor at your place", help: "Requests for Dr Rajveer to treat patients in their own city (they pay fees, travel, meals and stay).", default: true },
 };
 
 // Dashboard sections that can be granted to an admin. The super admin always has all of them,
@@ -27,6 +29,9 @@ export const PERMISSIONS = {
   privacy: "Privacy requests, patient data export and erasure",
   settings: "Fees, refund rules and holidays",
   export: "Download appointments (CSV)",
+  insights: "Ads & insights (totals only, no names)",
+  referrals: "Referral partners and their payouts",
+  homevisits: "Doctor at your place requests",
 };
 export const DEFAULT_PERMISSIONS = ["appointments", "followups", "patients", "inbox", "stories", "instagram", "blog"];
 

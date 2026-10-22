@@ -38,7 +38,7 @@ Also choose the admin email and a strong password (12+ characters).
 5. Check it: open `https://tailbone-api.onrender.com/api/health`. It should show `{"ok":true}`.
 
 ## Step 3: Connect Netlify to the backend (3 min)
-1. In the repo, edit **`netlify.toml`** and replace `BACKEND_URL` with your Render host (without `https://`):
+1. In the repo, edit **`netlify.toml`** and replace every `BACKEND_URL` (three places: the API, dashboard articles and their media) with your Render host (without `https://`):
    ```toml
    to = "https://tailbone-api.onrender.com/api/:splat"
    ```

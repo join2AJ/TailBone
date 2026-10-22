@@ -40,6 +40,8 @@
   <url><loc>https://tailbone.netlify.app/blog/psychological-aspect-of-coccydynia-tailbone-pain.html</loc><lastmod>2017-03-31</lastmod><changefreq>yearly</changefreq><priority>0.6</priority></url>
   <url><loc>https://tailbone.netlify.app/press.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://tailbone.netlify.app/stories.html</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://tailbone.netlify.app/home-visit.html</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://tailbone.netlify.app/refer.html</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>
   <url><loc>https://tailbone.netlify.app/policies.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://tailbone.netlify.app/privacy.html</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 </urlset>

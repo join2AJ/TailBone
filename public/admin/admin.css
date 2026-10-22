@@ -24,7 +24,7 @@ body.admin { background: var(--bg-soft); font-size: 15px; padding-bottom: 0; }
 .topbar-admin { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 1rem; padding: .9rem 1.6rem; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .topbar-admin__actions { margin-left: auto; display: flex; gap: .6rem; align-items: center; }
 .side-toggle { display: none; }
-.content { padding: 1.6rem; display: grid; gap: 1.4rem; align-content: start; }
+.content { padding: 1.6rem; display: grid; gap: 1.4rem; align-content: start; width: 100%; max-width: 1240px; margin: 0 auto; }
 .content:focus { outline: none; }
 
 .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
@@ -207,7 +207,7 @@ td .muted { font-size: .8rem; }
 .settings-tabs .chip { text-decoration: none; }
 .settings-pane { gap: 1.4rem; }
 .settings-subhead { margin: 2rem 0 .3rem; padding-top: 1.4rem; border-top: 1px solid var(--line); }
-.form-actions { display: flex; gap: .6rem; margin-top: .4rem; }
+.form-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .4rem; }
 .form-actions .btn { width: auto; }
 .grid-2--even { grid-template-columns: 1fr 1fr; }
 @media (max-width: 1100px) { .grid-2--even { grid-template-columns: 1fr; } }
@@ -221,3 +221,46 @@ td .muted { font-size: .8rem; }
   .item { grid-template-columns: auto 1fr; }
   .item__actions { grid-column: 2 / -1; }
 }
+
+/* Compact tables: columns sit close together instead of spreading across a wide screen. */
+th, td { padding: .6rem .8rem; }
+.list .item { padding: .65rem .85rem; }
+
+/* Ads & insights: horizontal bars */
+.insight-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.4rem; align-items: start; }
+.hbars { list-style: none; margin: 0; padding: 0; display: grid; gap: .45rem; }
+.hbars li { display: grid; grid-template-columns: minmax(90px, 40%) 1fr auto; align-items: center; gap: .6rem; font-size: .85rem; }
+.hbars span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbars b { height: 10px; border-radius: 99px; background: linear-gradient(90deg, var(--brand) var(--w), color-mix(in srgb, var(--brand) 10%, transparent) var(--w)); }
+.hbars em { font-style: normal; font-weight: 700; min-width: 2ch; text-align: right; }
+.hbars li.is-muted { color: var(--muted); }
+.hbars li.is-muted b { background: linear-gradient(90deg, color-mix(in srgb, var(--muted) 45%, transparent) var(--w), transparent var(--w)); }
+.panel-card .tips { margin: 0; padding-left: 1.2rem; display: grid; grid-template-columns: 1fr; gap: .4rem; font-size: .9rem; max-width: 820px; }
+
+/* Forms */
+.field-row--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .field-row--3 { grid-template-columns: 1fr; } }
+.more-fields { border: 1px solid var(--line); border-radius: 12px; padding: .6rem .9rem; }
+.more-fields summary { cursor: pointer; font-weight: 600; font-size: .9rem; }
+.more-fields[open] summary { margin-bottom: .8rem; }
+.linkish.small { font-size: .8rem; margin-left: .3rem; }
+
+/* Doctor at your place */
+.hv-details { margin: .35rem 0; font-size: .88rem; white-space: pre-line; }
+.hv-item .item__main strong { white-space: normal; }
+
+/* Article editor */
+.editor { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.4rem; align-items: start; }
+.editor__tools { display: flex; flex-wrap: wrap; gap: .3rem; margin-bottom: .4rem; }
+.editor .form { min-width: 0; }
+.editor input, .editor textarea { width: 100%; box-sizing: border-box; }
+.editor textarea { font: .92rem/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; min-height: 420px; }
+.editor__preview { position: sticky; top: 80px; max-height: calc(100vh - 100px); overflow: auto; }
+.editor__preview .post-body { font-size: .95rem; }
+.tag-picks { display: flex; flex-wrap: wrap; gap: .3rem .9rem; }
+.tag-picks .check { font-size: .85rem; }
+@media (max-width: 1100px) { .editor { grid-template-columns: minmax(0, 1fr); } .editor__preview { position: static; max-height: none; } }
+
+/* The menu scrolls when it is taller than the screen, so it never covers the account details. */
+.side { overflow-y: auto; }
+.side__nav a { padding: .6rem .8rem; }

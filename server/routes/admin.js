@@ -23,6 +23,9 @@ import { listPosts, setEnabled } from "../blog.js";
 import { addDocument, listDocuments, getDocument, readFile, sendFile, KINDS, MAX_BYTES } from "../documents.js";
 import express from "express";
 import { getVideoSettings, saveVideoSettings, cleanVideoUrl, videoUrlFor } from "../video.js";
+import { growthRoutes } from "./admin-growth.js";
+import { cleanProfile, saveProfile, profileView, PROFILE_OPTIONS } from "../profile.js";
+import { linkReferral, syncRewards } from "../referrals.js";
 import {
   HttpError, parseBooking, createAppointment, getAppointment, rescheduleAppointment, createFollowup,
   defaultFollowupDate, cleanText, normalizePhone, validEmail, siteUrl, waLink, messages, checkinMessage, FOLLOWUP_TYPES,
@@ -137,6 +140,7 @@ export function adminRoutes(db) {
     [/^\/payments/, "payments"], [/^\/privacy/, "privacy"],
     [/^\/settings\/policy$/, "settings", "PUT"], [/^\/settings\/video$/, "settings", "PUT"], [/^\/blocked/, "settings"], [/^\/calendar/, "settings"],
     [/^\/export/, "export"],
+    [/^\/insights/, "insights"], [/^\/referrals/, "referrals"], [/^\/home-visits/, "homevisits"], [/^\/articles/, "blog"],
   ];
   r.use((req, res, next) => {
     req.perms = permissionsOf(req.admin);
@@ -147,12 +151,15 @@ export function adminRoutes(db) {
     next();
   });
 
+  growthRoutes(r, db, { sendCsv });
+
   r.get("/me", (req, res) => res.json({
     demo: config.demo,
     admin: { id: req.admin.id, email: req.admin.email, name: req.admin.name, twoFactor: !!req.admin.totp_enabled, role: req.admin.role, permissions: req.perms },
     features: getFeatures(db),
     clinics: Object.values(CLINICS),
     today: clinicNow().date,
+    profileOptions: PROFILE_OPTIONS,
   }));
 
   r.post("/password", (req, res) => {
@@ -402,6 +409,8 @@ export function adminRoutes(db) {
       collectedMonth: one("SELECT COALESCE(SUM(amount_paid - amount_refunded), 0) n FROM appointments WHERE date BETWEEN ? AND ?", `${today.slice(0, 8)}01`, today),
       // Fees still to collect at the clinic for today's visits.
       toCollectToday: one("SELECT COALESCE(SUM(fee), 0) n FROM appointments WHERE date = ? AND payment_status = 'pay_at_clinic' AND status IN ('pending','confirmed','completed')", today),
+      partnersPending: one("SELECT COUNT(*) n FROM partners WHERE status = 'pending'"),
+      homeVisitsNew: one("SELECT COUNT(*) n FROM home_visits WHERE status = 'new'"),
       toCollectCount: one("SELECT COUNT(*) n FROM appointments WHERE date = ? AND payment_status = 'pay_at_clinic' AND fee > 0 AND status IN ('pending','confirmed','completed')", today),
     };
     stats.collected30Text = rupees(stats.collected30);
@@ -452,8 +461,11 @@ export function adminRoutes(db) {
 
   r.post("/appointments", (req, res) => {
     const data = parseBooking(req.body, { allowAnyTime: true });
+    const profile = cleanProfile(req.body.profile || {});
     const appt = createAppointment(db, data, { source: "admin", status: req.body.status === "pending" ? "pending" : "confirmed", actorName: req.admin.name });
     recordConsent(db, appt.patient_id, ["care", ...(req.body.whatsappConsent ? ["whatsapp_updates"] : [])], "clinic_verbal");
+    saveProfile(db, appt.patient_id, profile);
+    if (linkReferral(db, appt.id, req.body.referralCode)) syncRewards(db, appt.id);
     if (appt.status === "confirmed") notify(db, "confirmed", appt, { base: siteUrl(req) });
     res.status(201).json({ appointment: withLinks(appt, req) });
   });
@@ -750,7 +762,12 @@ export function adminRoutes(db) {
     patient.notes = decrypt(patient.notes);
     const first = patient.name.split(" ")[0];
     const storyInvite = waLink(patient.phone, `Hi ${first}, we're so glad you're feeling better! Would you share a few words about your experience to help others with tailbone pain? It takes 2 minutes: ${siteUrl(req)}/stories.html#share`);
-    res.json({ patient, appointments, followups, checkins, consents, storyInvite, documents: listDocuments(db, pid), documentKinds: KINDS });
+    const referrer = patient.referred_by ? db.prepare("SELECT id, code, name, kind FROM partners WHERE id = ?").get(patient.referred_by) : null;
+    const ownCode = db.prepare("SELECT id, code FROM partners WHERE patient_id = ?").get(pid) || null;
+    res.json({
+      patient, appointments, followups, checkins, consents, storyInvite, documents: listDocuments(db, pid), documentKinds: KINDS,
+      profile: profileView(patient), profileOptions: PROFILE_OPTIONS, referrer, ownCode,
+    });
   });
 
   r.patch("/patients/:id", (req, res) => {
@@ -763,6 +780,14 @@ export function adminRoutes(db) {
     if (!phone) throw new HttpError(400, "Invalid phone number.");
     const email = req.body.email !== undefined ? validEmail(req.body.email) || null : patient.email;
     const notes = req.body.notes !== undefined ? encrypt(cleanText(req.body.notes, 8000)) : patient.notes;
+    // The clinic may correct or clear profile details; an empty field clears it.
+    if (req.body.profile) {
+      const prof = cleanProfile(req.body.profile);
+      const clear = ["gender", "occupation_group", "occupation", "city", "sitting_hours", "pain_since", "heard_from"].filter((k) => k in req.body.profile && !(k in prof));
+      if (req.body.profile.age === "" || req.body.profile.age === null) clear.push("birth_year");
+      for (const k of clear) prof[k] = null;
+      saveProfile(db, pid, prof, { overwrite: true });
+    }
     try {
       db.prepare("UPDATE patients SET name = ?, phone = ?, email = ?, notes = ? WHERE id = ?").run(name, phone, email, notes, pid);
     } catch (err) {
@@ -770,7 +795,7 @@ export function adminRoutes(db) {
       throw err;
     }
     const saved = db.prepare("SELECT * FROM patients WHERE id = ?").get(pid);
-    res.json({ patient: { ...saved, notes: decrypt(saved.notes) } });
+    res.json({ patient: { ...saved, notes: decrypt(saved.notes) }, profile: profileView(saved) });
   });
 
   // ---------- Stories ----------
@@ -865,7 +890,7 @@ export function adminRoutes(db) {
   r.patch("/blog/:id", (req, res) => {
     if (typeof req.body.enabled !== "boolean") return res.status(400).json({ error: "Say whether the article is shown (enabled: true or false)." });
     const pid = id(req.params.id);
-    const post = listPosts(db).find((p) => p.id === pid);
+    const post = listPosts(db).find((p) => p.id === pid) || db.prepare("SELECT id, slug FROM blog_posts WHERE id = ? AND source = 'dashboard'").get(pid);
     if (!post || !setEnabled(db, pid, req.body.enabled, req.admin.email)) return res.status(404).json({ error: "No article with that number." });
     securityLog(db, req, req.body.enabled ? "blog_post_shown" : "blog_post_hidden", `#${pid} ${post.slug}`);
     res.json({ ok: true });

@@ -2,7 +2,7 @@
 
 This is the running record of how the new Tailbone Treatment website and clinic system improves on the old site at **tailbonetreatment.com**, and the plan for what comes next.
 
-**Keep it current:** whenever something is added or changed, add a line to the [change log](#3-change-log) and tick or move items in the [future plan](#4-future-plan). Last updated: **18 October 2026**.
+**Keep it current:** whenever something is added or changed, add a line to the [change log](#3-change-log) and tick or move items in the [future plan](#4-future-plan). Last updated: **22 October 2026**.
 
 ---
 
@@ -94,6 +94,13 @@ Newest first. Add one line per change.
 
 | Date | Change |
 |---|---|
+| 22 Oct 2026 | **Referral programme:** hospitals, doctors, NGOs, health insurers, individuals and patients get a referral ID (e.g. REF-K7Q4M) and a booking link. A new patient who books with it earns the partner ₹50 when their first appointment is confirmed and ₹1,000 for every treatment visit in their first 12 months (amounts and period editable). Cancelled visits are taken off automatically. Partners sign up on the new **Refer a patient** page, are approved in the dashboard, and log in on their own partner page to see their ID, their referrals (initials only) and payments. Patients get their own ID under "Refer a friend" in My appointments. The dashboard's new **Referrals** section shows what to pay each partner, records the monthly payment, and downloads a payment list for the bank. |
+| 22 Oct 2026 | **Doctor at your place:** a new page (and an "At your place" tab beside the clinics) where a family, company or hospital in another city can ask Dr Rajveer to come and treat patients. They cover the fees, travel both ways, meals and stay, and must ask at least 7 days ahead. Requests arrive in the dashboard's new **Doctor at your place** section with WhatsApp and call buttons. |
+| 22 Oct 2026 | **Patients' details and Ads & insights:** the booking form has an optional "About you" part (age, gender, city, work, hours of sitting, how long the pain has lasted, how they heard of us) and a referral code box. The details show on the patient's page in the dashboard, and patients can update them in My appointments. The site now remembers which ad or link brought each booking, and a new **Ads & insights** section shows, in totals only, where bookings come from, how many became visits, and who the patients are (age, city, work…) to aim ads better. Nothing personal is sent to Google. |
+| 22 Oct 2026 | **Personal page for patients:** My appointments now greets the patient by name ("Hi Asha, we hope you're feeling better…"), with their next appointment, number of visits, pain now compared with their first check-in, a small pain chart, their patient ID, who referred them, their details and their referral ID. |
+| 22 Oct 2026 | **Write articles in the dashboard:** a **+ New article** button in Blog opens an editor with a live preview. Articles can include pictures, YouTube, Vimeo or Instagram videos, uploaded video clips and audio recordings. Save as a draft, preview, publish, and switch off like any other article. Numbers start at 1001. |
+| 22 Oct 2026 | **"As featured in":** each newspaper name now goes straight to its own clipping, with a "See the clippings" button. Tapping a clipping opens it full size with a zoom animation; swipe or use the arrows to move between them. The press page also lists independent mentions on coccyx.org. |
+| 22 Oct 2026 | **Dashboard tidy-up:** the green button at the top now does the main job of each section ("New article" in Blog, "Add partner" in Referrals, "Add a story" in Stories); tables and lists are more compact, and the menu scrolls on small screens. Privacy notice updated (version 22 October 2026) for the new details, referrals and home visits. |
 | 18 Oct 2026 | **No waiting for the booking server:** the moment someone opens any page (for example from an ad), the site quietly wakes the booking server in the background, so the booking form is ready by the time they reach it. |
 | 18 Oct 2026 | **Fixes after review:** after an update, browsers sometimes kept the old design for up to a day, so new sections (fact tiles, picture cards, footer) looked broken. Every page now always loads the latest design. The clinic status under the tabs is now one tidy line: a coloured Open / Opening soon / Closed label and a short note. If the privacy box isn't ticked, booking is blocked (as before); the box is now outlined in red with the message right under it. |
 | 18 Oct 2026 | **Dr Rajveer's own advice on the site:** four new articles from his videos (inward vs outward subluxation, when Kegel exercises make it worse, the risks of untrained "bone setting", amusement and water park rides), a new animated diagram of the tailbone shifting inward and outward, and "Dr Rajveer's five rules" on the Tailbone pain page. The cushion and pregnancy articles now include his advice, and the dynamic (sitting and standing) X-ray is explained consistently. |
@@ -138,6 +145,9 @@ Newest first. Add one line per change.
 - [ ] **What to call the doctor's documents:** labels are "Treatment & exercise plan", "Visit summary", "Report" and "Other". Confirm with Dr Rajveer whether "prescription" should ever be used (he is a physiotherapist, BPT).
 - [ ] **Video room:** put the clinic's usual Google Meet or Zoom link in Settings → Online consultations. Use a room where the doctor lets each patient in (waiting room / "ask to join").
 - [ ] **GST on receipts:** receipts say "Payment receipt", not "Tax invoice". Ask the accountant whether GST applies to the clinic's services; if the clinic is registered, add its GSTIN and the wording they advise.
+- [ ] **Referral rewards and professional rules:** paying doctors, hospitals or insurers per patient referred can conflict with medical and physiotherapy codes of ethics (and, for registered doctors, the National Medical Commission's rules on commissions for referrals). Before inviting them, ask a lawyer or the professional body. Options: rewards only for individuals and patients, partners without rewards (set both amounts to ₹0 or pause them), or a fixed fee for awareness work instead of per patient.
+- [ ] **Tax on rewards:** ask the accountant whether TDS applies to referral payments (for example once a partner's total in a year passes the threshold) and whether to collect PAN.
+- [ ] **coccyx.org listing:** its India list still shows the Bengaluru address. Email Jon Miles (via coccyx.org) with the New Delhi address and the new website.
 - [ ] **Storage:** documents are kept in the database and its backups, which is fine for a single clinic. Move them to cloud storage if they grow past a few gigabytes.
 
 ### Next (highest value first)
@@ -149,6 +159,7 @@ Newest first. Add one line per change.
 | 4 | **Clinic day view:** today's list with Arrived, Complete, notes and next visit in one place | Faster on the clinic phone during busy hours | Low |
 | 5 | **Week calendar** in the dashboard, with drag to reschedule | See gaps and clashes at a glance | Medium |
 | 6 | **Symptom check result sent to WhatsApp** with how long the pain has lasted and the city | More bookings from the symptom check | Low |
+| 6a | **Partner log-in with a one-time code** instead of a password, and automatic monthly payment reminders | Easier for partners; nobody forgets to pay | Medium (needs #2) |
 | 7 | **Patient timeline and visit-notes template** (one feed of visits, notes, check-ins, messages and payments) | Quicker review before each visit | Medium |
 | 8 | **No-show and drop-off watchlist** with a one-tap re-engage message | Brings patients back for review | Low |
 | 9 | **Install as an app (PWA)** and new-booking alerts on the doctor's phone | Alerts without checking email | Medium |

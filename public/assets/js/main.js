@@ -9,6 +9,13 @@
       const ping = () => fetch("/api/health", { cache: "no-store" }).catch(() => {});
       ("requestIdleCallback" in window) ? requestIdleCallback(ping, { timeout: 3000 }) : setTimeout(ping, 1500);
     }
+    // Remember which ad or link brought the visitor (this tab only) and any referral code (30 days), for the booking form.
+    const q = new URLSearchParams(location.search);
+    if (!sessionStorage.getItem("tbLanding")) sessionStorage.setItem("tbLanding", location.pathname);
+    if (q.get("utm_source") || q.get("gclid")) {
+      sessionStorage.setItem("tbAttr", JSON.stringify({ source: q.get("utm_source") || "", medium: q.get("utm_medium") || "", campaign: q.get("utm_campaign") || "", gclid: q.get("gclid") ? 1 : 0, landing: location.pathname }));
+    }
+    if (/^[A-Za-z0-9-]{4,12}$/.test(q.get("ref") || "") && !/^TB/i.test(q.get("ref"))) localStorage.setItem("tbRef", JSON.stringify({ code: q.get("ref"), at: Date.now() }));
   } catch { /* storage unavailable */ }
 
   const $ = (s, el = document) => el.querySelector(s);
@@ -292,7 +299,7 @@
     if (note) {
       const status = [...tab.classList].find((c) => c.startsWith("tab--"))?.slice(5) || "open";
       note.dataset.status = status;
-      $(".tab-note__status", note).textContent = { open: "Open", soon: "Opening soon", closed: "Closed" }[status];
+      $(".tab-note__status", note).textContent = { open: "Open", visit: "On request", soon: "Opening soon", closed: "Closed" }[status];
       $(".tab-note__text", note).textContent = tab.dataset.note || "";
     }
   };
@@ -575,6 +582,29 @@
     return ok;
   };
   $$("input[required]:not([type=checkbox]), input[type=email]", form).forEach((i) => i.addEventListener("blur", () => validate(i)));
+  // Referral code: filled in from a referral link (?ref=…, kept 30 days) and checked as the patient types.
+  const refInput = $("#refCode");
+  if (refInput) {
+    try {
+      const saved = JSON.parse(localStorage.getItem("tbRef") || "null");
+      if (saved && Date.now() - saved.at < 30 * 86400_000) { refInput.value = saved.code.toUpperCase(); $("#aboutYou").open = true; }
+    } catch { /* storage unavailable */ }
+    const note = $("#refNote");
+    const defaultNote = note.textContent;
+    const check = async () => {
+      const code = refInput.value.trim();
+      note.classList.remove("is-ok", "is-bad");
+      if (!code || offline) { note.textContent = defaultNote; return; }
+      try {
+        const r = await fetch(`/api/referral/${encodeURIComponent(code)}`);
+        const d = await r.json().catch(() => ({}));
+        if (r.ok) { refInput.value = d.code; note.textContent = `✓ Referred by ${d.name}. They'll see only your initials and that you visited, never your health details.`; note.classList.add("is-ok"); }
+        else if (r.status === 404) { note.textContent = d.error || "We don't recognise that code."; note.classList.add("is-bad"); }
+      } catch { note.textContent = defaultNote; }
+    };
+    refInput.addEventListener("change", check);
+    if (refInput.value) check();
+  }
   form.consent.addEventListener("change", () => {
     if (!form.consent.checked) return;
     $("#consentErr").style.display = "none";
@@ -612,6 +642,8 @@
       if (fd.get("prefersFemale") === "on") lines.push("I'd prefer a female clinician.");
       const reason = String(fd.get("reason") || "").trim();
       if (reason) lines.push(`About my pain: ${reason}`);
+      const refCode = String(fd.get("referralCode") || "").trim();
+      if (refCode) lines.push(`Referral code: ${refCode}`);
       const url = `https://wa.me/919886688323?text=${encodeURIComponent(lines.join("\n"))}`;
       window.open(url, "_blank", "noopener");
       showDone({
@@ -623,11 +655,16 @@
       }, url);
       return;
     }
+    const profile = {};
+    for (const [k, v] of fd) if (k.startsWith("p_") && String(v).trim()) profile[k.slice(2)] = String(v).trim();
+    let attribution = {};
+    try { attribution = { ...JSON.parse(sessionStorage.getItem("tbAttr") || "{}") }; attribution.landing ||= sessionStorage.getItem("tbLanding") || ""; } catch { /* storage unavailable */ }
     const payload = {
       clinic: booking.clinic, date: booking.date, time: booking.time,
       name: fd.get("name"), phone: fd.get("phone"), email: fd.get("email"),
       reason: fd.get("reason"), prefersFemale: fd.get("prefersFemale") === "on", website: fd.get("website"),
       consent: true, whatsappConsent: fd.get("whatsappConsent") === "on",
+      profile, attribution, referralCode: String(fd.get("referralCode") || "").trim(),
     };
     bookBtn.disabled = true;
     bookBtn.classList.add("is-loading");

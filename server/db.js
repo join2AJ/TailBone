@@ -214,6 +214,88 @@ CREATE TABLE IF NOT EXISTS policy_history (
   changes TEXT NOT NULL DEFAULT '[]'     -- JSON list of plain-language changes
 );
 
+-- Referral partners: people and organisations who refer patients (see referrals.js). code is the referral ID.
+CREATE TABLE IF NOT EXISTS partners (
+  id INTEGER PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL CHECK (kind IN ('individual','patient','hospital','consultant','ngo','insurer','other')),
+  name TEXT NOT NULL,
+  contact_name TEXT NOT NULL DEFAULT '',
+  phone TEXT,
+  email TEXT,
+  city TEXT NOT NULL DEFAULT '',
+  payout_details TEXT NOT NULL DEFAULT '',   -- encrypted (UPI ID or bank account)
+  password_hash TEXT,
+  patient_id INTEGER REFERENCES patients(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','active','suspended')),
+  notes TEXT NOT NULL DEFAULT '',            -- encrypted, clinic only
+  session_version INTEGER NOT NULL DEFAULT 1,
+  failed_logins INTEGER NOT NULL DEFAULT 0,
+  locked_until TEXT,
+  approved_at TEXT,
+  approved_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_partner_phone ON partners(phone) WHERE phone IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_partner_patient ON partners(patient_id) WHERE patient_id IS NOT NULL;
+
+-- What each partner has earned: one row per qualifying booking or treatment visit. Paid monthly by hand.
+CREATE TABLE IF NOT EXISTS referral_rewards (
+  id INTEGER PRIMARY KEY,
+  partner_id INTEGER NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
+  patient_id INTEGER REFERENCES patients(id) ON DELETE SET NULL,
+  appointment_id INTEGER REFERENCES appointments(id) ON DELETE SET NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('first_booking','treatment')),
+  amount INTEGER NOT NULL,                   -- paise
+  status TEXT NOT NULL DEFAULT 'earned' CHECK (status IN ('earned','paid','void')),
+  payout_id INTEGER,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (appointment_id, kind)
+);
+CREATE INDEX IF NOT EXISTS idx_rewards_partner ON referral_rewards(partner_id, status);
+
+CREATE TABLE IF NOT EXISTS partner_payouts (
+  id INTEGER PRIMARY KEY,
+  partner_id INTEGER NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,                   -- paise
+  method TEXT NOT NULL DEFAULT '',           -- UPI, bank transfer, cash, cheque
+  reference TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  paid_at TEXT NOT NULL DEFAULT (datetime('now')),
+  paid_by TEXT NOT NULL DEFAULT ''
+);
+
+-- "Doctor at your place": requests for Dr Rajveer to treat patients in their own city (see homevisits.js).
+CREATE TABLE IF NOT EXISTS home_visits (
+  id INTEGER PRIMARY KEY,
+  ref TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  email TEXT,
+  organisation TEXT NOT NULL DEFAULT '',
+  city TEXT NOT NULL,
+  details TEXT NOT NULL DEFAULT '',          -- encrypted: address, patients' conditions, other notes
+  patients INTEGER NOT NULL DEFAULT 1,
+  date_from TEXT NOT NULL,
+  date_to TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','discussing','scheduled','done','declined','cancelled')),
+  clinic_notes TEXT NOT NULL DEFAULT '',     -- encrypted
+  agreed_terms INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Pictures and audio for articles written in the dashboard. Public once the article is published.
+CREATE TABLE IF NOT EXISTS blog_media (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  data BLOB NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS security_log (
   id INTEGER PRIMARY KEY,
   admin_id INTEGER,
@@ -246,6 +328,25 @@ const MIGRATIONS = {
     policy_snapshot: "TEXT",                               // cancellation/reschedule rules in force when booked
     video_url: "TEXT",                                     // video link for this online consultation (else the clinic's usual room)
     receipt_no: "TEXT",                                    // payment receipt number, e.g. TBR-2610-0003 (given when the fee is paid)
+    // Where the booking came from (see profile.js)
+    utm_source: "TEXT",
+    utm_medium: "TEXT",
+    utm_campaign: "TEXT",
+    ad_click: "INTEGER NOT NULL DEFAULT 0",                // arrived from a Google Ads click (gclid)
+    landing_page: "TEXT",
+    referral_partner_id: "INTEGER",                        // partners.id when booked with a referral code
+  },
+  blog_posts: {
+    // Articles written in the dashboard (source = 'dashboard'); file articles keep only id/slug/title/enabled here.
+    source: "TEXT NOT NULL DEFAULT 'file'",
+    status: "TEXT NOT NULL DEFAULT 'published'",           // draft | published
+    summary: "TEXT NOT NULL DEFAULT ''",
+    body: "TEXT NOT NULL DEFAULT ''",                      // Markdown with ::video / ::audio lines
+    tags: "TEXT NOT NULL DEFAULT '[]'",
+    cover_media_id: "INTEGER",
+    author: "TEXT NOT NULL DEFAULT ''",
+    published_at: "TEXT",
+    updated_at: "TEXT",
   },
   data_requests: {
     auto_at: "TEXT",                                       // when it is completed automatically if staff haven't acted
@@ -270,6 +371,17 @@ const MIGRATIONS = {
   patients: {
     anonymised_at: "TEXT",
     patient_code: "TEXT",                                  // unique patient ID, e.g. TBP-00042
+    // Optional profile (see profile.js)
+    gender: "TEXT",
+    birth_year: "INTEGER",
+    occupation_group: "TEXT",
+    occupation: "TEXT",
+    city: "TEXT",
+    sitting_hours: "TEXT",
+    pain_since: "TEXT",
+    heard_from: "TEXT",
+    profile_updated_at: "TEXT",
+    referred_by: "INTEGER",                                // partners.id: who referred this patient (set once, on the first booking)
   },
 };
 
@@ -297,6 +409,7 @@ export function openDb(file = config.dbFile) {
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_patient_code ON patients(patient_code)");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_appt_no ON appointments(appt_no)");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_receipt_no ON appointments(receipt_no)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_appt_partner ON appointments(referral_partner_id); CREATE INDEX IF NOT EXISTS idx_patient_referrer ON patients(referred_by)");
   // There must always be a super admin: promote the first account if none exists (upgrades, first run).
   if (!db.prepare("SELECT 1 FROM admins WHERE role = 'superadmin' AND disabled = 0").get()) {
     db.prepare("UPDATE admins SET role = 'superadmin' WHERE id = (SELECT MIN(id) FROM admins WHERE disabled = 0)").run();
