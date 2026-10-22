@@ -1241,3 +1241,25 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .about-box .kv { display: grid; grid-template-columns: max-content 1fr; gap: .45rem 1.2rem; margin: .8rem 0 0; }
 .about-box .kv dt { color: var(--muted); font-size: .88rem; }
 .about-box .kv dd { margin: 0; font-weight: 600; }
+
+/* Pay an outstanding fee (My appointments) */
+.pay-now { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem 1.2rem; margin: var(--space-4) 0; padding: 1rem 1.2rem; border-radius: var(--radius-sm); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.pay-now p { margin: 0; display: grid; gap: .15rem; }
+.pay-now[hidden] { display: none; }
+
+/* Demo payment window (pay.js) */
+.paydemo { border: 0; padding: 0; border-radius: 16px; width: min(380px, calc(100vw - 24px)); box-shadow: var(--shadow-lg); background: var(--surface); color: var(--text); }
+.paydemo::backdrop { background: rgba(4, 20, 14, .6); backdrop-filter: blur(3px); }
+.paydemo__card { display: grid; gap: .8rem; padding: 0 0 1.2rem; margin: 0; }
+.paydemo__head { background: #0b3d2e; color: #fff; padding: 1rem 1.2rem; display: grid; gap: .2rem; border-radius: 16px 16px 0 0; }
+.paydemo__head span { font-size: .8rem; color: #cfe3d9; }
+.paydemo__badge { margin: 0 1.2rem; padding: .35rem .7rem; border-radius: 999px; background: #fef3c7; color: #7c4a03; font-size: .78rem; font-weight: 700; text-align: center; }
+.paydemo__amount { margin: 0 1.2rem; font-family: var(--display); font-size: 2rem; font-weight: 800; }
+.paydemo__methods { border: 1px solid var(--line); border-radius: 12px; margin: 0 1.2rem; padding: .6rem .9rem; display: grid; gap: .45rem; font-size: .9rem; }
+.paydemo__methods legend { font-size: .78rem; font-weight: 700; color: var(--muted); padding: 0 .3rem; }
+.paydemo__methods label { display: flex; gap: .5rem; align-items: center; }
+.paydemo .btn--block { margin: 0 1.2rem; width: auto; }
+.paydemo__more { display: flex; justify-content: space-between; margin: 0 1.2rem; font-size: .85rem; }
+.paydemo__note { margin: 0 1.2rem; font-size: .75rem; color: var(--muted); text-align: center; }
+.paydemo__methods input { width: auto; flex: none; margin: 0; padding: 0; min-height: 0; box-shadow: none; accent-color: var(--brand); }
+.paydemo__methods label { justify-content: flex-start; text-align: left; cursor: pointer; }

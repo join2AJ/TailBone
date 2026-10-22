@@ -8,7 +8,7 @@ import { rupees } from "../payments.js";
 import { HttpError, cleanText, normalizePhone, validEmail, waLink, siteUrl } from "../services.js";
 import { insights } from "../profile.js";
 import {
-  PARTNER_KINDS, getReferralSettings, saveReferralSettings, newPartnerCode, partnerTotals, recordPayout, syncRewards,
+  PARTNER_KINDS, isKind, getReferralSettings, saveReferralSettings, newPartnerCode, partnerTotals, recordPayout, syncRewards,
 } from "../referrals.js";
 import { listHomeVisits, updateHomeVisit, HOME_VISIT_STATUS } from "../homevisits.js";
 import {
@@ -56,7 +56,7 @@ export function growthRoutes(r, db, { sendCsv }) {
 
   const cleanPartner = (b, existing = {}) => {
     const kind = b.kind ?? existing.kind;
-    if (!PARTNER_KINDS[kind]) throw new HttpError(400, "Please choose the type of partner.");
+    if (!isKind(kind)) throw new HttpError(400, "Please choose the type of partner.");
     const name = cleanText(b.name ?? existing.name, 120);
     if (name.length < 2) throw new HttpError(400, "Please enter the partner's name.");
     const phone = b.phone === undefined ? existing.phone ?? null : b.phone ? normalizePhone(b.phone) : null;
@@ -167,7 +167,9 @@ export function growthRoutes(r, db, { sendCsv }) {
     const patient = db.prepare("SELECT id FROM patients WHERE id = ?").get(pid);
     if (!patient) throw new HttpError(404, "Patient not found.");
     if (!req.body.code) {
-      db.prepare("UPDATE referral_rewards SET status = 'void', note = 'Referral removed by the clinic' WHERE patient_id = ? AND status = 'earned'").run(pid);
+      // Unpaid rewards for this patient go; amounts already paid stay on record.
+      db.prepare("DELETE FROM referral_rewards WHERE patient_id = ? AND status != 'paid'").run(pid);
+      securityLog(db, req, "patient_referrer_removed", `patient #${pid}`);
       db.prepare("UPDATE appointments SET referral_partner_id = NULL WHERE patient_id = ?").run(pid);
       db.prepare("UPDATE patients SET referred_by = NULL WHERE id = ?").run(pid);
       return res.json({ referrer: null });
@@ -176,12 +178,13 @@ export function growthRoutes(r, db, { sendCsv }) {
     const partner = db.prepare("SELECT * FROM partners WHERE code = ?").get(`REF-${code.replace(/^REF/, "")}`);
     if (!partner) throw new HttpError(404, "No partner has that referral code.");
     if (partner.patient_id === pid) throw new HttpError(400, "A patient can't refer themselves.");
+    if (partner.status !== "active") throw new HttpError(409, "That partner isn't active. Approve or resume them first.");
     const first = db.prepare("SELECT id FROM appointments WHERE patient_id = ? AND status != 'cancelled' ORDER BY date, time LIMIT 1").get(pid);
     db.prepare("UPDATE patients SET referred_by = ? WHERE id = ?").run(partner.id, pid);
     db.prepare("UPDATE appointments SET referral_partner_id = NULL WHERE patient_id = ?").run(pid);
     if (first) db.prepare("UPDATE appointments SET referral_partner_id = ? WHERE id = ?").run(partner.id, first.id);
-    // Rewards for visits that already happened follow the new link.
-    db.prepare("UPDATE referral_rewards SET status = 'void', note = 'Referral changed by the clinic' WHERE patient_id = ? AND partner_id != ? AND status = 'earned'").run(pid, partner.id);
+    // Rewards for visits that already happened move to the new partner (unpaid ones only; paid ones stay on record).
+    db.prepare("DELETE FROM referral_rewards WHERE patient_id = ? AND partner_id != ? AND status != 'paid'").run(pid, partner.id);
     for (const a of db.prepare("SELECT id FROM appointments WHERE patient_id = ?").all(pid)) syncRewards(db, a.id);
     securityLog(db, req, "patient_referrer_set", `patient #${pid} → partner #${partner.id}`);
     res.json({ referrer: { id: partner.id, code: partner.code, name: partner.name } });

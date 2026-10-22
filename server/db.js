@@ -336,6 +336,9 @@ const MIGRATIONS = {
     landing_page: "TEXT",
     referral_partner_id: "INTEGER",                        // partners.id when booked with a referral code
   },
+  blog_media: {
+    file_key: "TEXT",                                      // random part of the file's address (/media/blog/<key>), so drafts' files can't be guessed
+  },
   blog_posts: {
     // Articles written in the dashboard (source = 'dashboard'); file articles keep only id/slug/title/enabled here.
     source: "TEXT NOT NULL DEFAULT 'file'",
@@ -409,6 +412,10 @@ export function openDb(file = config.dbFile) {
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_patient_code ON patients(patient_code)");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_appt_no ON appointments(appt_no)");
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_receipt_no ON appointments(receipt_no)");
+  for (const { id } of db.prepare("SELECT id FROM blog_media WHERE file_key IS NULL").all()) {
+    db.prepare("UPDATE blog_media SET file_key = lower(hex(randomblob(12))) WHERE id = ?").run(id);
+  }
+  db.exec("CREATE UNIQUE INDEX IF NOT EXISTS uq_blog_media_key ON blog_media(file_key)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_appt_partner ON appointments(referral_partner_id); CREATE INDEX IF NOT EXISTS idx_patient_referrer ON patients(referred_by)");
   // There must always be a super admin: promote the first account if none exists (upgrades, first run).
   if (!db.prepare("SELECT 1 FROM admins WHERE role = 'superadmin' AND disabled = 0").get()) {

@@ -1,7 +1,7 @@
 import { config } from "./config.js";
 import { openDb } from "./db.js";
 import { createApp, seedAdmin } from "./app.js";
-import { seedStories, getAppointment, releaseExpiredHolds } from "./services.js";
+import { seedStories, getAppointment, releaseExpiredHolds, syncAwaitingPayments } from "./services.js";
 import { runReminderJob } from "./notify.js";
 import { clinicNow, addDays } from "./time.js";
 import { createBackup, listBackups } from "./backup.js";
@@ -36,6 +36,7 @@ let demoSeededAt = Date.now();
 // when the WhatsApp Cloud API is configured. Runs every 10 minutes; each reminder is sent once.
 const jobs = setInterval(async () => {
   try {
+    await syncAwaitingPayments(db); // a payment whose confirmation went missing is recorded before its hold is released
     releaseExpiredHolds(db);
     processDueRequests(db); // data requests nobody handled within 3 days
     await retryPendingSyncs(db, { getAppointment });
@@ -59,6 +60,10 @@ const jobs = setInterval(async () => {
   }
 }, 10 * 60_000);
 jobs.unref();
+// Bookings waiting for payment are checked with Razorpay every 2 minutes, so a patient who paid but closed the page
+// (or whose bank app reloaded it) is confirmed quickly even if Razorpay's notification is late or not set up.
+const payments = setInterval(() => { syncAwaitingPayments(db).catch((err) => console.error("Payment check failed:", err.message)); }, 2 * 60_000);
+payments.unref();
 if (!process.env.ENCRYPTION_KEY && config.isProd) console.warn("WARNING: ENCRYPTION_KEY is not set. A key file in the data folder is being used; set ENCRYPTION_KEY and keep a copy safe.");
 
 for (const sig of ["SIGINT", "SIGTERM"]) {

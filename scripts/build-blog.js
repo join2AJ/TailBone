@@ -141,7 +141,7 @@ export function imageSize(webPath) {
  */
 export function mediaFigure(kind, url, caption = "") {
   const cap = caption ? `<figcaption>${inline(caption)}</figcaption>` : "";
-  const own = /^\/media\/blog\/\d+$/.test(url);
+  const own = /^\/media\/blog\/[a-f0-9]{24}$/.test(url);
   if (kind === "audio") {
     return own ? `<figure class="post-media post-media--audio"><audio controls preload="none" src="${esc(url)}"></audio>${cap}</figure>`
       : `<p><a href="${esc(url)}" target="_blank" rel="noopener">Listen: ${esc(caption || url)}</a></p>`;

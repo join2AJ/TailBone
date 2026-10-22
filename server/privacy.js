@@ -91,6 +91,7 @@ export function erasePatient(db, patientId, { force = false } = {}) {
       WHERE id = ?`).run(placeholder, patientId);
     // Their own referral ID stops; amounts already paid stay on record (de-identified) for the accounts.
     db.prepare("UPDATE partners SET name = 'Erased patient', email = NULL, phone = NULL, payout_details = '', notes = '', status = 'suspended' WHERE patient_id = ?").run(patientId);
+    db.prepare("UPDATE referral_rewards SET status = 'void', note = 'Partner erased' WHERE status = 'earned' AND partner_id IN (SELECT id FROM partners WHERE patient_id = ?)").run(patientId);
     db.prepare("UPDATE home_visits SET name = 'Erased', phone = ?, email = NULL, details = '', clinic_notes = '' WHERE phone = ?").run(placeholder, patient.phone);
     db.prepare("UPDATE appointments SET reason = '', notes = '' WHERE patient_id = ?").run(patientId);
     db.prepare("UPDATE checkins SET notes = '' WHERE patient_id = ?").run(patientId);

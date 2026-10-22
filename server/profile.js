@@ -26,7 +26,7 @@ const titleCase = (s) => s.toLowerCase().replace(/(^|[\s-])\p{L}/gu, (m) => m.to
 export function cleanProfile(input = {}) {
   const out = {};
   for (const k of ["gender", "occupation_group", "sitting_hours", "pain_since", "heard_from"]) {
-    if (input[k] && PROFILE_OPTIONS[k][input[k]]) out[k] = input[k];
+    if (typeof input[k] === "string" && Object.hasOwn(PROFILE_OPTIONS[k], input[k])) out[k] = input[k];
   }
   if (input.age !== undefined && input.age !== null && input.age !== "") {
     const age = Number(input.age);

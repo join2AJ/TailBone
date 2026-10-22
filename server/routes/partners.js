@@ -7,7 +7,7 @@ import { rateLimit, hashPassword, verifyPassword } from "../auth.js";
 import { encrypt } from "../crypto.js";
 import { isOn } from "../features.js";
 import { HttpError, cleanText, normalizePhone, validEmail, siteUrl } from "../services.js";
-import { PARTNER_KINDS, getReferralSettings, newPartnerCode, partnerTotals, partnerReferrals } from "../referrals.js";
+import { PARTNER_KINDS, isKind, getReferralSettings, newPartnerCode, partnerTotals, partnerReferrals } from "../referrals.js";
 import { rupees } from "../payments.js";
 
 const COOKIE = "tb_partner";
@@ -23,7 +23,9 @@ function setCookie(res, partner) {
 function readCookie(req) {
   const raw = (req.headers.cookie || "").split(";").map((c) => c.trim()).find((c) => c.startsWith(`${COOKIE}=`))?.slice(COOKIE.length + 1);
   if (!raw) return null;
-  const [payload, sig] = decodeURIComponent(raw).split(".");
+  let value;
+  try { value = decodeURIComponent(raw); } catch { return null; }
+  const [payload, sig] = value.split(".");
   if (!payload || !sig) return null;
   const a = Buffer.from(sign(payload));
   const b = Buffer.from(sig);
@@ -60,7 +62,7 @@ export function partnerRoutes(db) {
   r.post("/signup", signupLimit, (req, res) => {
     if (req.body.website) throw new HttpError(400, "Invalid submission.");
     const b = req.body;
-    if (!PARTNER_KINDS[b.kind] || b.kind === "patient") throw new HttpError(400, "Please choose who you are.");
+    if (!isKind(b.kind) || b.kind === "patient") throw new HttpError(400, "Please choose who you are.");
     const name = cleanText(b.name, 120);
     if (name.length < 2) throw new HttpError(400, "Please enter your name or your organisation's name.");
     const phone = normalizePhone(b.phone);

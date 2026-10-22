@@ -4,7 +4,7 @@ import { rateLimit } from "../auth.js";
 import { clinicNow } from "../time.js";
 import { encrypt } from "../crypto.js";
 import { getPolicy, policySummary, refundQuote, rescheduleCheck, isClinicOpen, policyUpdatedAt } from "../policy.js";
-import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, verifyWebhookSignature, rupees } from "../payments.js";
+import { paymentsEnabled, publicKeyId, createOrder, verifyCheckoutSignature, verifyWebhookSignature, rupees, isDemoPayments, demoPay } from "../payments.js";
 import { notify } from "../notify.js";
 import { DEMO_PATIENT, DEMO_PARTNER } from "../demo.js";
 import { getFeatures, isOn } from "../features.js";
@@ -28,7 +28,7 @@ import {
 } from "../privacy.js";
 import {
   HttpError, availableSlots, availableDays, parseBooking, createAppointment, findAppointmentForPatient, getAppointment, isVerifiedBooking, receiptFor,
-  rescheduleAppointment, cancelAppointment, markPaid, logEvent, readAppt, APPT_SELECT,
+  rescheduleAppointment, cancelAppointment, markPaid, logEvent, readAppt, APPT_SELECT, syncPayment, confirmPayment, refundFailed,
   cleanText, requireClinic, siteUrl, waLink, prettyDate, prettyTime, normalizePhone, displayName,
 } from "../services.js";
 
@@ -57,6 +57,8 @@ export function publicRoutes(db) {
       fee: a.fee,
       feeText: a.fee ? rupees(a.fee) : "",
       payment: { status: a.payment_status, paid: a.amount_paid, refunded: a.amount_refunded },
+      // A booking with a fee still to pay (e.g. booked by phone, or "pay at the clinic") can be paid online from My appointments.
+      canPay: open && a.fee > 0 && ["pay_at_clinic", "unpaid"].includes(a.payment_status) && canPayOnline(),
       canChange: open && a.payment_status !== "awaiting" && isOn(db, "patient_self_service"),
       selfService: isOn(db, "patient_self_service"),
       cancelQuote: open && a.amount_paid ? refundQuote(a, policy) : null,
@@ -70,6 +72,33 @@ export function publicRoutes(db) {
       googleCalendarUrl: open ? googleCalendarLink(a, siteUrl(req)) : null,
     };
   };
+  const canPayOnline = () => paymentsEnabled() && isOn(db, "online_payments");
+  /** What the browser needs to open the payment window for an order. */
+  const checkout = (appt, order) => ({
+    keyId: publicKeyId(),
+    orderId: order.id,
+    amount: appt.fee,
+    currency: "INR",
+    name: "Tailbone Treatment Clinic",
+    description: `${appt.visit_type === "followup" ? "Follow-up" : "Consultation"} · ${CLINICS[appt.clinic].short} · ${appt.appt_no}`,
+    prefill: { name: appt.patient_name, contact: `+${appt.patient_phone}`, email: appt.patient_email || "" },
+    holdMinutes: getPolicy(db).holdMinutes,
+    // The payment window closes when the slot hold runs out (bookings paid at the time of booking only).
+    expiresAt: appt.payment_status === "awaiting" && appt.hold_until ? `${appt.hold_until.replace(" ", "T")}Z` : null,
+    demo: isDemoPayments(),
+  });
+  // Razorpay's "receipt" is limited to 40 characters and notes to 256 characters each.
+  const newOrder = (appt) => {
+    const policy = getPolicy(db);
+    return createOrder({
+      amount: appt.fee,
+      receipt: String(appt.appt_no || appt.ref).slice(0, 40),
+      notes: { appointment: appt.appt_no || appt.ref, clinic: appt.clinic, date: appt.date, time: appt.time },
+      doctorAccountId: appt.platform_fee > 0 ? policy.commission.doctorAccountId : "",
+      doctorShare: appt.fee - appt.platform_fee,
+    });
+  };
+
   // QR code (SVG) that opens the patient's booking page; shown on confirmations and the appointment card.
   const withQr = async (v) => ({ ...v, qrSvg: await QRCode.toString(v.manageUrl, { type: "svg", margin: 1, errorCorrectionLevel: "M", color: { dark: "#0b3d2e", light: "#ffffff" } }) });
 
@@ -133,16 +162,9 @@ export function publicRoutes(db) {
     const base = siteUrl(req);
 
     if (appt.payment_status === "awaiting") {
-      const policy = getPolicy(db);
       let order;
       try {
-        order = await createOrder({
-          amount: appt.fee,
-          receipt: appt.ref,
-          notes: { ref: appt.ref, clinic: appt.clinic, date: appt.date, time: appt.time },
-          doctorAccountId: appt.platform_fee > 0 ? policy.commission.doctorAccountId : "",
-          doctorShare: appt.fee - appt.platform_fee,
-        });
+        order = await newOrder(appt);
       } catch (err) {
         // Release the slot so the patient can try again.
         db.prepare("UPDATE appointments SET status = 'cancelled', cancelled_by = 'system' WHERE id = ?").run(appt.id);
@@ -150,19 +172,7 @@ export function publicRoutes(db) {
         throw new HttpError(502, "Online payment is temporarily unavailable. Please try again in a minute or WhatsApp us to book.");
       }
       db.prepare("UPDATE appointments SET payment_order_id = ? WHERE id = ?").run(order.id, appt.id);
-      return res.status(201).json({
-        appointment: await withQr(view(appt, req)),
-        payment: {
-          keyId: publicKeyId(),
-          orderId: order.id,
-          amount: appt.fee,
-          currency: "INR",
-          name: "Tailbone Treatment Clinic",
-          description: `${appt.visit_type === "followup" ? "Follow-up" : "Consultation"} · ${CLINICS[appt.clinic].short} · ${appt.appt_no}`,
-          prefill: { name: appt.patient_name, contact: `+${appt.patient_phone}`, email: appt.patient_email || "" },
-          holdMinutes: policy.holdMinutes,
-        },
-      });
+      return res.status(201).json({ appointment: await withQr(view(appt, req)), payment: checkout(appt, order) });
     }
 
     notify(db, "booked", appt, { base });
@@ -177,28 +187,61 @@ export function publicRoutes(db) {
     if (!verifyCheckoutSignature({ orderId, paymentId, signature })) throw new HttpError(400, "Payment could not be verified. If money was deducted it will be refunded automatically.");
     const row = db.prepare(`${APPT_SELECT} WHERE a.payment_order_id = ?`).get(cleanText(orderId, 64));
     if (!row) throw new HttpError(404, "Booking not found for this payment.");
-    const { appointment } = await markPaid(db, readAppt(row), { paymentId: cleanText(paymentId, 64), base: siteUrl(req) });
+    // The signature proves Checkout succeeded; Razorpay itself confirms the amount, and captures it if needed.
+    const { appointment } = await confirmPayment(db, readAppt(row), cleanText(paymentId, 64), { base: siteUrl(req) });
     res.json({ appointment: await withQr(view(appointment, req)) });
   });
 
-  // Server-to-server confirmation from Razorpay (covers closed tabs and dropped connections).
+  // After a page reload or an app switch (UPI) during payment: ask whether the order has been paid yet.
+  r.post("/payments/status", lookupLimit, async (req, res) => {
+    const row = db.prepare(`${APPT_SELECT} WHERE a.payment_order_id = ?`).get(cleanText(req.body.orderId, 64));
+    if (!row) throw new HttpError(404, "Booking not found for this payment.");
+    let appt = readAppt(row);
+    if (appt.payment_status === "awaiting" || appt.payment_status === "pay_at_clinic") {
+      await syncPayment(db, appt, { base: siteUrl(req) }).catch(() => {});
+      appt = getAppointment(db, appt.id);
+    }
+    const paid = appt.amount_paid > 0;
+    res.json({ paid, status: appt.status, appointment: paid ? await withQr(view(appt, req)) : null });
+  });
+
+  // Server-to-server confirmation from Razorpay (covers closed tabs and dropped connections). Errors other than
+  // "already handled / not ours" return 500, so Razorpay tries again later.
   r.post("/payments/webhook", async (req, res) => {
     const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from("");
     if (!verifyWebhookSignature(raw, req.get("x-razorpay-signature"))) return res.status(400).json({ error: "Invalid signature." });
     let event;
     try { event = JSON.parse(raw.toString("utf8")); } catch { return res.status(400).json({ error: "Invalid JSON." }); }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('razorpay_last_webhook', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+      .run(JSON.stringify({ at: new Date().toISOString(), event: String(event.event || "").slice(0, 40) }));
+    const ignore = (err) => { if (!(err instanceof HttpError) || err.status >= 500) throw err; };
     const payment = event?.payload?.payment?.entity;
-    if ((event.event === "payment.captured" || event.event === "order.paid") && payment?.order_id) {
-      const row = db.prepare(`${APPT_SELECT} WHERE a.payment_order_id = ?`).get(payment.order_id);
-      if (row) await markPaid(db, readAppt(row), { paymentId: payment.id, amount: payment.amount }).catch(() => {});
+    if (["payment.captured", "payment.authorized", "order.paid"].includes(event.event) && payment?.order_id) {
+      // Normally the booking holding this order; failing that, the booking named in the order's notes.
+      let row = db.prepare(`${APPT_SELECT} WHERE a.payment_order_id = ?`).get(payment.order_id);
+      const noted = payment.notes?.appointment || event?.payload?.order?.entity?.notes?.appointment;
+      if (!row && noted) row = db.prepare(`${APPT_SELECT} WHERE a.appt_no = ? AND a.amount_paid = 0`).get(String(noted).slice(0, 20));
+      if (row) {
+        const appt = readAppt(row);
+        if (appt.payment_order_id !== payment.order_id) db.prepare("UPDATE appointments SET payment_order_id = ? WHERE id = ?").run(payment.order_id, appt.id);
+        const entity = { status: event.event === "payment.authorized" ? "authorized" : "captured", currency: "INR", ...payment };
+        await confirmPayment(db, { ...appt, payment_order_id: payment.order_id }, entity).catch(ignore);
+      }
     }
     const refund = event?.payload?.refund?.entity;
     if (event.event === "refund.processed" && refund?.id) {
-      db.prepare("UPDATE refunds SET status = 'processed' WHERE provider_refund_id = ?").run(refund.id);
+      const known = db.prepare("UPDATE refunds SET status = 'processed' WHERE provider_refund_id = ?").run(refund.id).changes;
+      // A refund made directly in the Razorpay dashboard: record it against its booking too.
+      const row = !known && refund.payment_id && db.prepare("SELECT * FROM appointments WHERE payment_id = ?").get(refund.payment_id);
+      if (row) {
+        db.prepare("INSERT INTO refunds (appointment_id, amount, reason, provider_refund_id, status) VALUES (?, ?, 'Refunded in the Razorpay dashboard', ?, 'processed')").run(row.id, refund.amount, refund.id);
+        db.prepare(`UPDATE appointments SET amount_refunded = MIN(amount_paid, amount_refunded + ?),
+            payment_status = CASE WHEN amount_refunded + ? >= amount_paid THEN 'refunded' ELSE 'partially_refunded' END, updated_at = datetime('now') WHERE id = ?`)
+          .run(refund.amount, refund.amount, row.id);
+        logEvent(db, row.id, "system", "", "refunded", `${rupees(refund.amount)} (made in the Razorpay dashboard)`);
+      }
     }
-    if (event.event === "refund.failed" && refund?.id) {
-      db.prepare("UPDATE refunds SET status = 'failed', error = 'Refund failed at the bank; please retry from the dashboard.' WHERE provider_refund_id = ?").run(refund.id);
-    }
+    if (event.event === "refund.failed" && refund?.id) refundFailed(db, refund.id);
     res.json({ ok: true });
   });
 
@@ -240,6 +283,10 @@ export function publicRoutes(db) {
 
   r.post("/manage/lookup", lookupLimit, async (req, res) => {
     const found = findOwn(req);
+    // A payment started earlier whose confirmation never arrived (tab closed, webhook missed): ask Razorpay.
+    if (found.payment_order_id && ["awaiting", "pay_at_clinic", "unpaid"].includes(found.payment_status)) {
+      await syncPayment(db, found, { base: siteUrl(req) }).catch(() => {});
+    }
     // Requests the clinic hasn't handled within the automatic period are completed now ("on next login").
     if (processDueRequests(db, new Date(), found.patient_id)) {
       const again = findAppointmentForPatient(db, req.body.ref, req.body.phone);
@@ -308,8 +355,38 @@ export function publicRoutes(db) {
     const patient = db.prepare("SELECT * FROM patients WHERE id = ?").get(appt.patient_id);
     const partner = patientPartner(db, patient);
     if (partner.status !== "active") throw new HttpError(403, "Your referral ID is paused. Please contact the clinic.");
-    if (req.body.payoutDetails !== undefined) db.prepare("UPDATE partners SET payout_details = ? WHERE id = ?").run(encrypt(cleanText(req.body.payoutDetails, 300)), partner.id);
+    const payTo = req.body.payoutDetails === undefined ? null : cleanText(req.body.payoutDetails, 300);
+    if (payTo !== null && payTo !== decrypt(partner.payout_details)) {
+      db.prepare("UPDATE partners SET payout_details = ? WHERE id = ?").run(encrypt(payTo), partner.id);
+      // Where rewards are paid is money: the clinic sees every change before paying.
+      db.prepare("INSERT INTO security_log (actor, action, target, ip) VALUES ('patient', 'payout_details_changed', ?, ?)")
+        .run(`partner #${partner.id} (${partner.code})`, String(req.ip || "").replace(/^::ffff:/, ""));
+      db.prepare("INSERT INTO notifications (appointment_id, audience, event, channel, body, status) VALUES (?, 'doctor', 'payout_changed', 'dashboard', ?, 'sent')")
+        .run(appt.id, encrypt(`${appt.patient_name} (${partner.code}) changed where their referral rewards are paid to: ${payTo || "(removed)"}. Check with them before the next payment if this looks unexpected.`));
+    }
     res.json({ home: homeView(appt, req), payoutDetails: decrypt(db.prepare("SELECT payout_details FROM partners WHERE id = ?").get(partner.id).payout_details) });
+  });
+
+  // Pay an outstanding fee online from My appointments. Paying is not a privacy risk, so it doesn't need a verified booking.
+  r.post("/manage/pay", lookupLimit, async (req, res) => {
+    let appt = findOwn(req);
+    // A payment started earlier may have gone through (UPI can take a minute): check before asking again.
+    if (appt.payment_order_id && await syncPayment(db, appt).catch(() => "unpaid") === "paid") appt = getAppointment(db, appt.id);
+    if (!view(appt, req).canPay) throw new HttpError(409, "There's nothing to pay online for this booking.");
+    // Reuse the booking's order, so a payment that completes late on an earlier try is still matched to it.
+    let order = appt.payment_order_id ? { id: appt.payment_order_id } : null;
+    if (!order) {
+      try { order = await newOrder(appt); } catch { throw new HttpError(502, "Online payment is temporarily unavailable. Please try again in a minute, or pay at the clinic."); }
+      db.prepare("UPDATE appointments SET payment_order_id = ? WHERE id = ?").run(order.id, appt.id);
+    }
+    logEvent(db, appt.id, "patient", appt.patient_name, "payment_started", `Online payment of ${rupees(appt.fee)} started from My appointments`);
+    res.json({ payment: checkout(appt, order) });
+  });
+
+  // Demo only: the pretend payment window's "Pay" button. Returns what Razorpay Checkout would, for /payments/verify.
+  r.post("/payments/demo-pay", lookupLimit, (req, res) => {
+    if (!isDemoPayments()) throw new HttpError(404, "Not found.");
+    res.json(demoPay(cleanText(req.body.orderId, 64), ["upi", "card", "netbanking"].includes(req.body.method) ? req.body.method : "upi"));
   });
 
   r.post("/manage/cancel", lookupLimit, async (req, res) => {

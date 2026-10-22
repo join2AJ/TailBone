@@ -4,7 +4,7 @@ import { tx, patientCode, nextApptNo } from "./db.js";
 import { clinicNow, slotsForDate, isBookableTime, addDays, isDate, isTime } from "./time.js";
 import { encrypt, decryptFields } from "./crypto.js";
 import { getPolicy, priceFor, refundQuote, isClinicOpen, policySnapshot } from "./policy.js";
-import { paymentsEnabled, refundPayment, rupees } from "./payments.js";
+import { paymentsEnabled, refundPayment, rupees, fetchOrderPayments, fetchPayment, capturePayment } from "./payments.js";
 import { notify } from "./notify.js";
 import { isOn } from "./features.js";
 import { syncAppointment, isBusy } from "./gcal.js";
@@ -257,7 +257,20 @@ export function rescheduleAppointment(db, appt, date, time, { allowAnyTime = fal
  * Issue a refund through the gateway (or record a manual one for pay-at-clinic bookings).
  * Never throws for gateway failures: the failure is recorded so the clinic can retry.
  */
-export async function issueRefund(db, appt, amount, { reason = "", actor = "clinic", actorName = "" } = {}) {
+const refunding = new Set(); // appointments with a refund in progress (one at a time, so a double click can't refund twice)
+
+export async function issueRefund(db, appt, amount, opts = {}) {
+  if (refunding.has(appt.id)) throw new HttpError(409, "A refund for this booking is already being processed. Please wait a moment.");
+  refunding.add(appt.id);
+  try {
+    // Read the amounts afresh: another refund may have finished since this booking was loaded.
+    return await refundNow(db, { ...appt, ...db.prepare("SELECT amount_paid, amount_refunded FROM appointments WHERE id = ?").get(appt.id) }, amount, opts);
+  } finally {
+    refunding.delete(appt.id);
+  }
+}
+
+async function refundNow(db, appt, amount, { reason = "", actor = "clinic", actorName = "" } = {}) {
   const refundable = Math.max(0, appt.amount_paid - appt.amount_refunded);
   const value = Math.min(Math.max(0, Math.round(amount)), refundable);
   if (!value) return null;
@@ -274,10 +287,11 @@ export async function issueRefund(db, appt, amount, { reason = "", actor = "clin
     logEvent(db, appt.id, actor, actorName, status === "failed" ? "refund_failed" : "refunded", `${rupees(value)}${error ? ` · ${error}` : ""}`);
     return { id: refundId, amount: value, status, error };
   };
-  if (!appt.payment_id || !paymentsEnabled()) return settle("manual");
+  if (!appt.payment_id || !paymentsEnabled() || String(appt.payment_id).startsWith("clinic-")) return settle("manual");
   try {
-    const r = await refundPayment(appt.payment_id, value, { reason, split: appt.platform_fee > 0 });
-    return settle("processed", r.id);
+    const r = await refundPayment(appt.payment_id, value, { reason, split: appt.platform_fee > 0, idempotencyKey: `tb-refund-${refundId}` });
+    // Normal-speed refunds come back "pending" and are completed by Razorpay's refund.processed notification.
+    return settle(r.status === "processed" ? "processed" : "pending", r.id);
   } catch (err) {
     return settle("failed", null, err.message);
   }
@@ -330,12 +344,68 @@ export async function markPaid(db, appt, { paymentId, amount, base }) {
     `UPDATE appointments SET payment_id = ?, amount_paid = ?, payment_status = 'paid', hold_until = NULL,
        status = CASE WHEN status = 'pending' THEN 'confirmed' ELSE status END, updated_at = datetime('now') WHERE id = ?`,
   ).run(paymentId, paid, appt.id);
-  logEvent(db, appt.id, "patient", appt.patient_name, "paid", `${rupees(paid)} · ${paymentId}`);
+  logEvent(db, appt.id, "patient", appt.patient_name, "paid", `${rupees(paid)} online · ${paymentId}`);
   ensureReceiptNo(db, appt.id);
   calendarSync(db, appt.id);
   const updated = getAppointment(db, appt.id);
-  notify(db, "booked", updated, { base });
+  // A booking paid at the time of booking is now confirmed; a fee paid later (from My appointments) needs no new confirmation.
+  if (appt.payment_status === "awaiting") notify(db, "booked", updated, { base });
   return { appointment: updated };
+}
+
+/**
+ * Ask Razorpay whether the booking's order was paid, and record it if so. Covers a closed browser tab plus a missed
+ * webhook. Returns "paid", "unpaid" or "no-order".
+ */
+export async function syncPayment(db, appt, { base } = {}) {
+  if (!appt?.payment_order_id || !paymentsEnabled()) return "no-order";
+  if (appt.payment_status === "paid" || appt.payment_status.includes("refunded")) return "paid";
+  const payment = (await fetchOrderPayments(appt.payment_order_id)).find((p) => ["captured", "authorized"].includes(p.status));
+  if (!payment) return "unpaid";
+  await confirmPayment(db, appt, payment, { base }).catch(() => {});
+  return "paid";
+}
+
+/**
+ * Check a payment with Razorpay before recording it: it must belong to this booking's order, be in rupees and cover the fee.
+ * An authorised (not yet captured) payment is captured first. `payment` is Razorpay's payment object, or its id.
+ */
+export async function confirmPayment(db, appt, payment, { base } = {}) {
+  const p = typeof payment === "string" ? await fetchPayment(payment) : payment;
+  if (p.order_id && p.order_id !== appt.payment_order_id) throw new HttpError(400, "This payment doesn't belong to this booking.");
+  if (p.currency && p.currency !== "INR") throw new HttpError(400, "Payments must be in rupees.");
+  if (p.amount < appt.fee) {
+    logEvent(db, appt.id, "system", "", "payment_error", `Payment ${p.id} was ${rupees(p.amount)}, less than the fee of ${rupees(appt.fee)}. Please check it in Razorpay.`);
+    throw new HttpError(400, "The amount paid doesn't match the fee. The clinic has been told and will contact you.");
+  }
+  if (p.status === "authorized") await capturePayment(p.id, p.amount);
+  else if (p.status !== "captured") throw new HttpError(402, "The payment hasn't gone through yet. If money was taken, it will show here within a few minutes.");
+  return markPaid(db, appt, { paymentId: p.id, amount: p.amount, base });
+}
+
+/** Razorpay says a refund failed at the bank: put the amount back as still paid, so the clinic can retry, and tell them. */
+export function refundFailed(db, providerRefundId) {
+  const row = db.prepare("SELECT * FROM refunds WHERE provider_refund_id = ?").get(providerRefundId);
+  if (!row || row.status === "failed") return;
+  db.prepare("UPDATE refunds SET status = 'failed', error = 'Refund failed at the bank; please retry from the dashboard.' WHERE id = ?").run(row.id);
+  db.prepare(`UPDATE appointments SET amount_refunded = MAX(0, amount_refunded - ?),
+      payment_status = CASE WHEN amount_refunded - ? <= 0 THEN 'paid' ELSE 'partially_refunded' END, updated_at = datetime('now') WHERE id = ?`)
+    .run(row.amount, row.amount, row.appointment_id);
+  logEvent(db, row.appointment_id, "system", "", "refund_failed", `${rupees(row.amount)} refund failed at the bank. Retry it from the appointment.`);
+  db.prepare("INSERT INTO notifications (appointment_id, audience, event, channel, body, status) VALUES (?, 'doctor', 'refund_failed', 'dashboard', ?, 'sent')")
+    .run(row.appointment_id, encrypt(`A refund of ${rupees(row.amount)} failed at the bank. Open the appointment to retry it.`));
+}
+
+/** Background check of bookings waiting for payment for over 2 minutes (before their slot hold runs out). */
+export async function syncAwaitingPayments(db) {
+  if (!paymentsEnabled()) return 0;
+  const rows = db.prepare(`${APPT_SELECT} WHERE a.payment_status = 'awaiting' AND a.payment_order_id IS NOT NULL
+    AND a.created_at < datetime('now', '-2 minutes') AND a.created_at > datetime('now', '-2 days') ORDER BY a.id LIMIT 50`).all();
+  let paid = 0;
+  for (const row of rows) {
+    try { if (await syncPayment(db, readAppt(row)) === "paid") paid++; } catch { /* try again next time */ }
+  }
+  return paid;
 }
 
 // ---------- Payment receipts ----------

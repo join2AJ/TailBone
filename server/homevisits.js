@@ -35,7 +35,7 @@ export function createHomeVisit(db, body) {
 }
 
 export function listHomeVisits(db, status = "") {
-  const rows = status && HOME_VISIT_STATUS[status]
+  const rows = typeof status === "string" && Object.hasOwn(HOME_VISIT_STATUS, status)
     ? db.prepare("SELECT * FROM home_visits WHERE status = ? ORDER BY date_from").all(status)
     : db.prepare("SELECT * FROM home_visits ORDER BY CASE WHEN status IN ('new','discussing','scheduled') THEN 0 ELSE 1 END, date_from").all();
   return rows.map((v) => ({ ...v, details: decrypt(v.details), clinic_notes: decrypt(v.clinic_notes), statusLabel: HOME_VISIT_STATUS[v.status] }));
@@ -45,7 +45,7 @@ export function updateHomeVisit(db, id, body) {
   const v = db.prepare("SELECT * FROM home_visits WHERE id = ?").get(id);
   if (!v) throw new HttpError(404, "Request not found.");
   const status = body.status === undefined ? v.status : body.status;
-  if (!HOME_VISIT_STATUS[status]) throw new HttpError(400, "Invalid status.");
+  if (typeof status !== "string" || !Object.hasOwn(HOME_VISIT_STATUS, status)) throw new HttpError(400, "Invalid status.");
   const notes = body.notes === undefined ? v.clinic_notes : encrypt(cleanText(body.notes, 4000));
   db.prepare("UPDATE home_visits SET status = ?, clinic_notes = ?, updated_at = datetime('now') WHERE id = ?").run(status, notes, id);
   return listHomeVisits(db).find((x) => x.id === id);

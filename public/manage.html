@@ -19,7 +19,7 @@
   <meta property="og:title" content="My Appointments | Tailbone Treatment">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="assets/css/fonts.css?v=5b80af84ed">
-  <link rel="stylesheet" href="assets/css/styles.css?v=0ac245e85b">
+  <link rel="stylesheet" href="assets/css/styles.css?v=81b4638b1b">
   <script src="assets/js/theme.js?v=78d8f3c3d4"></script>
 </head>
 <body class="page">
@@ -98,6 +98,10 @@
         <p class="small muted" id="homeLocked" hidden>Your personal page (progress, documents and more) opens fully once the clinic has confirmed this booking with you, or after your visit.</p>
         <h2 class="h3 home-sub">Your appointment</h2>
         <div id="apptBox"></div>
+        <div class="pay-now" id="payNow" hidden>
+          <p><strong id="payNowText">Fee to pay</strong><span class="small muted">Pay now by UPI, card or net banking, or at the clinic on the day.</span></p>
+          <button class="btn btn--primary" type="button" id="payNowBtn">Pay online</button>
+        </div>
         <section class="video-box" id="videoBox" hidden aria-labelledby="videoTitle">
           <h2 class="h3" id="videoTitle">Your video consultation</h2>
           <p id="videoStatus" aria-live="polite"></p>
@@ -294,7 +298,8 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="/assets/js/receipt.js?v=fb9afe3d88" defer></script>
-  <script src="assets/js/manage.js?v=479155781e" defer></script>
+  <script src="assets/js/pay.js?v=01649cc018" defer></script>
+  <script src="assets/js/manage.js?v=01274d268c" defer></script>
   <script src="/assets/js/consent.js?v=64a81c4272" defer></script>
   <script src="/assets/js/site-nav.js?v=9220922f94" defer></script>
 </body>

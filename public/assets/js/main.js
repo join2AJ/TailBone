@@ -445,7 +445,8 @@
     const fee = feeFor(booking.clinic);
     bookBtn.textContent = siteCfg?.payOnline && fee ? `Pay ${rupee(fee)} & confirm` : "Confirm booking";
     $("#bookHint").textContent = siteCfg?.payOnline && fee
-      ? "Secure payment by Razorpay (UPI, cards, net banking). You'll get your appointment number instantly."
+      ? (siteCfg.demo ? "Demo site: a pretend payment window opens, and no money is taken. You'll get your appointment number instantly."
+        : "Secure payment by Razorpay (UPI, cards, net banking). You'll get your appointment number instantly.")
       : `You'll get your appointment number instantly.${fee ? ` Consultation fee ${rupee(fee)}, payable at the clinic.` : ""} Our team confirms every appointment on WhatsApp.`;
   };
 
@@ -688,71 +689,62 @@
     }
   });
 
-  // ---- Razorpay Checkout ----
+  // ---- Payment (Razorpay, or the demo's pretend window; see pay.js) ----
   let pendingPayment = null;
   let lastWhatsapp = "";
-  let razorpayLoading = null;
-  const loadRazorpay = () => {
-    if (window.Razorpay) return Promise.resolve();
-    razorpayLoading ??= new Promise((resolve, reject) => {
-      const sc = document.createElement("script");
-      sc.src = "https://checkout.razorpay.com/v1/checkout.js";
-      sc.onload = resolve;
-      sc.onerror = () => { razorpayLoading = null; reject(new Error("Couldn't load the payment window. Check your connection and try again.")); };
-      document.head.appendChild(sc);
-    });
-    return razorpayLoading;
-  };
 
-  function showPayPending(message) {
+  function showPayPending(message, { canRetry = true } = {}) {
     form.hidden = true;
     $("#bookingDone").hidden = true;
     const panel = $("#payPending");
     panel.hidden = false;
+    $("#payRetry").hidden = !canRetry || !pendingPayment;
     $("#payPendingMsg").textContent = message || `Your slot is held for ${pendingPayment.holdMinutes} minutes while you complete the payment.`;
     panel.focus();
   }
 
-  async function startPayment() {
-    const p = pendingPayment;
+  // Remember a payment in progress, so a reload (or a UPI app switching back) can still show the confirmation.
+  const PAYING = "tbPaying";
+  const remember = (p) => { try { p ? sessionStorage.setItem(PAYING, JSON.stringify({ orderId: p.orderId, at: Date.now() })) : sessionStorage.removeItem(PAYING); } catch { /* storage unavailable */ } };
+  (async () => {
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(PAYING) || "null"); } catch { /* storage unavailable */ }
+    if (!saved || Date.now() - saved.at > 60 * 60_000) { remember(null); return; }
     try {
-      await loadRazorpay();
-    } catch (err) {
-      showPayPending(err.message);
-      return;
-    }
-    const rzp = new window.Razorpay({
-      key: p.keyId,
-      amount: p.amount,
-      currency: p.currency,
-      name: p.name,
-      description: p.description,
-      order_id: p.orderId,
-      prefill: p.prefill,
-      theme: { color: "#16a34a" },
-      handler: async (resp) => {
-        try {
-          const { appointment } = await api("/api/payments/verify", {
-            method: "POST",
-            body: JSON.stringify({ orderId: resp.razorpay_order_id, paymentId: resp.razorpay_payment_id, signature: resp.razorpay_signature }),
-          });
-          pendingPayment = null;
-          lastBooking = appointment;
-          $("#payPending").hidden = true;
-          showDone(appointment, lastWhatsapp);
-        } catch (err) {
-          showPayPending(err.message);
-        }
-      },
-      modal: { ondismiss: () => showPayPending() },
-    });
-    rzp.on("payment.failed", (resp) => showPayPending(`Payment failed: ${resp.error?.description || "please try again"}. Your slot is still held for a few minutes.`));
-    rzp.open();
+      const d = await api("/api/payments/status", { method: "POST", body: JSON.stringify({ orderId: saved.orderId }) });
+      if (d.paid) { remember(null); lastBooking = d.appointment; showDone(d.appointment, ""); }
+      else if (d.status === "cancelled") { remember(null); toast("Your earlier payment wasn't completed, so that slot was released. Please choose a time again."); }
+    } catch { /* leave the form as it is */ }
+  })();
+
+  async function startPayment() {
+    remember(pendingPayment);
+    try {
+      await window.TBPay.checkout(pendingPayment, {
+        onSuccess: async (resp) => {
+          try {
+            const { appointment } = await window.TBPay.verify(resp);
+            pendingPayment = null;
+            remember(null);
+            lastBooking = appointment;
+            $("#payPending").hidden = true;
+            showDone(appointment, lastWhatsapp);
+          } catch (err) {
+            // 409: the payment arrived after the slot was released and has been refunded in full. Paying again won't help.
+            if (err.status === 409) { pendingPayment = null; remember(null); showPayPending(err.message, { canRetry: false }); return; }
+            showPayPending(err.message);
+          }
+        },
+        onFailure: (msg) => showPayPending(`Payment failed: ${msg}. Your slot is still held for a few minutes; you can try again.`),
+        onDismiss: () => showPayPending(),
+      });
+    } catch (err) { showPayPending(err.message); }
   }
 
   $("#payRetry").addEventListener("click", () => { if (pendingPayment) startPayment(); });
   $("#payCancel").addEventListener("click", () => {
     pendingPayment = null;
+    remember(null);
     $("#payPending").hidden = true;
     form.hidden = false;
     loadDays();

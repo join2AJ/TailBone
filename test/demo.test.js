@@ -20,7 +20,7 @@ const { config } = await import("../server/config.js");
 const { openDb } = await import("../server/db.js");
 const { createApp } = await import("../server/app.js");
 const { seedDemo, DEMO_PATIENT } = await import("../server/demo.js");
-const { paymentsEnabled } = await import("../server/payments.js");
+const { paymentMode } = await import("../server/payments.js");
 const { whatsappApiEnabled } = await import("../server/notify.js");
 
 const db = openDb();
@@ -46,7 +46,7 @@ after(() => { server.close(); db.close(); fs.rmSync(tmp, { recursive: true, forc
 
 test("demo uses its own database and never sends real payments or messages", () => {
   assert.ok(config.dbFile.endsWith("demo.db"));
-  assert.equal(paymentsEnabled(), false);
+  assert.equal(paymentMode(), "demo", "the demo's pretend gateway, never Razorpay");
   assert.equal(whatsappApiEnabled(), false);
 });
 

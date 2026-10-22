@@ -188,6 +188,8 @@ test("article media: only real pictures, audio and video are accepted, and serve
   const mp3 = Buffer.concat([Buffer.from("ID3"), Buffer.alloc(1000, 1)]);
   const up = await fetch(`${base}/api/admin/articles/media?name=talk.mp3`, { method: "POST", headers: { cookie: jar.admin, "x-requested-with": "fetch", "content-type": "audio/mpeg" }, body: mp3 });
   const { media } = await up.json();
+  assert.match(media.url, /^\/media\/blog\/[a-f0-9]{24}$/, "unguessable address");
+  assert.equal((await fetch(`${base}/media/blog/${media.id}`)).status, 404, "not reachable by number");
   const part = await fetch(`${base}${media.url}`, { headers: { range: "bytes=0-9" } });
   assert.equal(part.status, 206);
   assert.equal(part.headers.get("content-type"), "audio/mpeg");

@@ -8,7 +8,7 @@ import { config } from "../config.js";
 import { exportPatientData, erasePatient, readDataRequest, recordConsent, completeDataRequest, NOTICE_VERSION } from "../privacy.js";
 import { createBackup, listBackups } from "../backup.js";
 import { DEMO_ADMIN } from "../demo.js";
-import { FEATURES, PERMISSIONS, DEFAULT_PERMISSIONS, getFeatures, saveFeatures, permissionsOf, sanitizePermissions } from "../features.js";
+import { FEATURES, PERMISSIONS, DEFAULT_PERMISSIONS, getFeatures, saveFeatures, permissionsOf, sanitizePermissions, isOn } from "../features.js";
 import crypto from "node:crypto";
 import QRCode from "qrcode";
 import { gcalEnabled } from "../gcal.js";
@@ -17,7 +17,7 @@ import fs from "node:fs";
 import { clinicNow, addDays, isDate } from "../time.js";
 import { encrypt, decrypt } from "../crypto.js";
 import { getPolicy, savePolicy, refundQuote, policySummary, policyHistory } from "../policy.js";
-import { paymentsEnabled, rupees } from "../payments.js";
+import { paymentsEnabled, rupees, paymentMode, webhookConfigured } from "../payments.js";
 import { notify, readNotification, whatsappApiEnabled } from "../notify.js";
 import { listPosts, setEnabled } from "../blog.js";
 import { addDocument, listDocuments, getDocument, readFile, sendFile, KINDS, MAX_BYTES } from "../documents.js";
@@ -30,7 +30,7 @@ import {
   HttpError, parseBooking, createAppointment, getAppointment, rescheduleAppointment, createFollowup,
   defaultFollowupDate, cleanText, normalizePhone, validEmail, siteUrl, waLink, messages, checkinMessage, FOLLOWUP_TYPES,
   normalizeInstagramUrl, readAppt, cancelAppointment, issueRefund, logEvent, appointmentEvents, prettyDate, prettyTime,
-  calendarSync, ensureReceiptNo, receiptFor,
+  calendarSync, ensureReceiptNo, receiptFor, syncPayment,
 } from "../services.js";
 
 const STATUSES = ["pending", "confirmed", "completed", "cancelled", "no_show"];
@@ -135,6 +135,7 @@ export function adminRoutes(db) {
     [/^\/superadmin/, "superadmin"], [/^\/backups/, "superadmin"], [/^\/security\/log/, "superadmin"],
     [/^\/appointments\/\d+\/refund$/, "payments"],
     [/^\/patients\/\d+\/(export|erase)$/, "privacy"],
+    [/^\/patients\/\d+\/referrer$/, "referrals"],
     [/^\/appointments/, "appointments"], [/^\/followups/, "followups"], [/^\/patients/, "patients"],
     [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"], [/^\/blog/, "blog"], [/^\/documents/, "patients"],
     [/^\/payments/, "payments"], [/^\/privacy/, "privacy"],
@@ -377,6 +378,10 @@ export function adminRoutes(db) {
         reminder: waLink(a.patient_phone, m.reminder),
         cancelled: waLink(a.patient_phone, m.cancelled),
         chat: `https://wa.me/${a.patient_phone}`,
+        // A fee still to pay can be paid online from My appointments ("Pay online").
+        payLink: a.fee > 0 && ["pay_at_clinic", "unpaid"].includes(a.payment_status) && ["pending", "confirmed"].includes(a.status) && paymentsEnabled() && isOn(db, "online_payments")
+          ? waLink(a.patient_phone, `Hi ${a.patient_name.split(" ")[0]}, you can pay your ${a.visit_type === "followup" ? "follow-up" : "consultation"} fee of ${rupees(a.fee)} online (UPI, card or net banking) here: ${base}/manage.html?ref=${a.appt_no || a.ref}\nEnter the phone number you booked with, then tap "Pay online". You can also pay at the clinic.`)
+          : null,
       },
     };
   };
@@ -465,7 +470,8 @@ export function adminRoutes(db) {
     const appt = createAppointment(db, data, { source: "admin", status: req.body.status === "pending" ? "pending" : "confirmed", actorName: req.admin.name });
     recordConsent(db, appt.patient_id, ["care", ...(req.body.whatsappConsent ? ["whatsapp_updates"] : [])], "clinic_verbal");
     saveProfile(db, appt.patient_id, profile);
-    if (linkReferral(db, appt.id, req.body.referralCode)) syncRewards(db, appt.id);
+    // Linking a referral creates money owed, so it needs the Referrals permission.
+    if (req.perms.includes("referrals") && linkReferral(db, appt.id, req.body.referralCode)) syncRewards(db, appt.id);
     if (appt.status === "confirmed") notify(db, "confirmed", appt, { base: siteUrl(req) });
     res.status(201).json({ appointment: withLinks(appt, req) });
   });
@@ -558,7 +564,16 @@ export function adminRoutes(db) {
       .run(`clinic-${req.body.method}`, appt.id);
     logEvent(db, appt.id, "clinic", req.admin.name, "paid", `${rupees(appt.fee)} received at the clinic (${method})`);
     ensureReceiptNo(db, appt.id);
+    calendarSync(db, appt.id);
     res.json({ appointment: withLinks(getAppointment(db, appt.id), req) });
+  });
+
+  // "Check payment": ask Razorpay whether an online payment for this booking went through.
+  r.post("/appointments/:id/sync-payment", async (req, res) => {
+    const appt = getAppointment(db, id(req.params.id));
+    if (!appt) throw new HttpError(404, "Appointment not found.");
+    const result = await syncPayment(db, appt, { base: siteUrl(req) });
+    res.json({ result, appointment: withLinks(getAppointment(db, appt.id), req) });
   });
 
   r.get("/appointments/:id/receipt", (req, res) => {
@@ -641,7 +656,12 @@ export function adminRoutes(db) {
   r.get("/settings/policy", (req, res) => {
     const policy = getPolicy(db);
     if (req.admin.role !== "superadmin") delete policy.commission;
-    res.json({ policy, summary: policySummary(getPolicy(db)), history: policyHistory(db), paymentsEnabled: paymentsEnabled(), whatsappApi: whatsappApiEnabled() });
+    let lastWebhook = null;
+    try { lastWebhook = JSON.parse(db.prepare("SELECT value FROM settings WHERE key = 'razorpay_last_webhook'").get()?.value || "null"); } catch { /* none yet */ }
+    res.json({
+      policy, summary: policySummary(getPolicy(db)), history: policyHistory(db), paymentsEnabled: paymentsEnabled(), whatsappApi: whatsappApiEnabled(),
+      payments: { mode: paymentMode(), webhook: webhookConfigured(), lastWebhook },
+    });
   });
 
   r.put("/settings/policy", (req, res) => {
@@ -762,11 +782,12 @@ export function adminRoutes(db) {
     patient.notes = decrypt(patient.notes);
     const first = patient.name.split(" ")[0];
     const storyInvite = waLink(patient.phone, `Hi ${first}, we're so glad you're feeling better! Would you share a few words about your experience to help others with tailbone pain? It takes 2 minutes: ${siteUrl(req)}/stories.html#share`);
-    const referrer = patient.referred_by ? db.prepare("SELECT id, code, name, kind FROM partners WHERE id = ?").get(patient.referred_by) : null;
-    const ownCode = db.prepare("SELECT id, code FROM partners WHERE patient_id = ?").get(pid) || null;
+    const seesReferrals = req.perms.includes("referrals");
+    const referrer = seesReferrals && patient.referred_by ? db.prepare("SELECT id, code, name, kind FROM partners WHERE id = ?").get(patient.referred_by) : null;
+    const ownCode = seesReferrals ? db.prepare("SELECT id, code FROM partners WHERE patient_id = ?").get(pid) || null : null;
     res.json({
       patient, appointments, followups, checkins, consents, storyInvite, documents: listDocuments(db, pid), documentKinds: KINDS,
-      profile: profileView(patient), profileOptions: PROFILE_OPTIONS, referrer, ownCode,
+      profile: profileView(patient), profileOptions: PROFILE_OPTIONS, referrer, ownCode, seesReferrals,
     });
   });
 
@@ -961,11 +982,14 @@ export function adminRoutes(db) {
     const from = isDate(req.query.from) ? req.query.from : addDays(clinicNow().date, -30);
     const to = isDate(req.query.to) ? req.query.to : clinicNow().date;
     const rows = db.prepare(
-      `SELECT a.appt_no, a.date, a.time, a.clinic, a.status, a.payment_status, p.patient_code, p.name, a.fee / 100.0 fee, a.amount_paid / 100.0 paid,
-         a.amount_refunded / 100.0 refunded, (a.amount_paid - a.amount_refunded) / 100.0 net, a.platform_fee / 100.0 platform_fee, IFNULL(a.payment_id, '') payment_id
+      `SELECT a.appt_no, a.receipt_no, a.date, a.time, a.clinic, a.status, a.payment_status, p.patient_code, p.name, a.fee / 100.0 fee, a.amount_paid / 100.0 paid,
+         a.amount_refunded / 100.0 refunded, (a.amount_paid - a.amount_refunded) / 100.0 net, a.platform_fee / 100.0 platform_fee,
+         CASE WHEN a.payment_id LIKE 'clinic-%' THEN 'At the clinic: ' || upper(substr(a.payment_id, 8)) ELSE 'Online (Razorpay)' END AS method,
+         (SELECT date(e.created_at, '+330 minutes') FROM appointment_events e WHERE e.appointment_id = a.id AND e.action IN ('paid','paid_late') ORDER BY e.id LIMIT 1) AS paid_on,
+         CASE WHEN a.payment_id LIKE 'clinic-%' THEN '' ELSE IFNULL(a.payment_id, '') END AS payment_id, IFNULL(a.payment_order_id, '') AS order_id
        FROM appointments a JOIN patients p ON p.id = a.patient_id WHERE a.amount_paid > 0 AND a.date BETWEEN ? AND ? ORDER BY a.date, a.time`,
     ).all(from, to);
-    const header = ["appt_no", "date", "time", "clinic", "status", "payment_status", "patient_code", "name", "fee", "paid", "refunded", "net", "platform_fee", "payment_id"];
+    const header = ["appt_no", "receipt_no", "date", "time", "clinic", "status", "payment_status", "patient_code", "name", "fee", "paid", "refunded", "net", "platform_fee", "method", "paid_on", "payment_id", "order_id"];
     securityLog(db, req, "payments_csv_exported", `${from}..${to}, ${rows.length} rows`);
     sendCsv(res, `payments-${from}-to-${to}.csv`, header, rows);
   });

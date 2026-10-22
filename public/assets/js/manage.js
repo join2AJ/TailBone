@@ -89,6 +89,11 @@
     if (data.privacy) renderPrivacy(data.privacy);
     renderVideo(current.video);
     $("#receiptBtn").hidden = !(current.payment && current.payment.paid > 0);
+    $("#payNow").hidden = !current.canPay;
+    if (current.canPay) {
+      $("#payNowText").textContent = `${current.visitType === "followup" ? "Follow-up" : "Consultation"} fee: ${current.feeText}`;
+      $("#payNowBtn").textContent = `Pay ${current.feeText} online`;
+    }
     renderDocuments(data.documents);
     renderHome(data.home, data.others || []);
     const others = data.others || [];
@@ -206,6 +211,26 @@
   $("#payForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     try { await api("/api/manage/referral", { ...creds, payoutDetails: $("#payTo").value }); toast("Saved."); } catch (ex) { toast(ex.message); }
+  });
+
+  // ---- Pay an outstanding fee online ----
+  $("#payNowBtn").addEventListener("click", async () => {
+    const btn = $("#payNowBtn");
+    btn.disabled = true;
+    try {
+      const { payment } = await api("/api/manage/pay", creds);
+      await window.TBPay.checkout(payment, {
+        onSuccess: async (resp) => {
+          try {
+            await window.TBPay.verify(resp);
+            const data = await api("/api/manage/lookup", creds);
+            render(data, "Payment received. Thank you! Your receipt is below.", "ok");
+          } catch (err) { toast(err.message); }
+        },
+        onFailure: (msg) => toast(`Payment failed: ${msg}. You can try again or pay at the clinic.`),
+        onDismiss: () => {},
+      });
+    } catch (err) { toast(err.message); } finally { btn.disabled = false; }
   });
 
   async function lookup(ref, phone) {

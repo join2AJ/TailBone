@@ -66,13 +66,16 @@ Also choose the admin email and a strong password (12+ characters).
 ## Step 6 (when ready): Online payments
 1. Create and activate a Razorpay account. Activation needs the live site pages `/policies.html`, `/privacy.html` and contact details, which already exist.
 2. Razorpay → **Settings → API Keys** → generate **Test** keys first. In Render, set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`.
-3. Razorpay → **Webhooks → Add**:
-   - URL: `https://tailbone.netlify.app/api/payments/webhook`
-   - Events: `payment.captured`, `order.paid`, `refund.processed`, `refund.failed`
+3. Razorpay → **Settings → Payment capture**: choose **Automatic** (capture right away). The site also captures an authorised payment itself, but automatic is simplest.
+4. Razorpay → **Webhooks → Add**:
+   - URL: `https://tailbonetreatment.com/api/payments/webhook` (or your Netlify address until the domain moves)
+   - Events: `payment.authorized`, `payment.captured`, `order.paid`, `refund.processed`, `refund.failed`
    - Put the secret you choose into `RAZORPAY_WEBHOOK_SECRET` in Render.
-4. Book a test appointment with Razorpay's test UPI or card details, cancel it, and check the refund appears in Dashboard → Payments.
-5. Swap to **Live** keys.
-6. **Commission split:** ask Razorpay to enable **Route**, add the doctor as a Linked Account, then turn on *Split payments* in Settings and paste the `acc_…` id. See `docs/PAYMENTS-SECURITY-HOSTING.md`.
+   - Without it, payments are still found by checking Razorpay every 2 minutes, but set it: refunds that fail at the bank are only reported this way.
+5. Dashboard → **Settings → Fees, payments & policies** shows whether you are in **Test** or **Live** mode, whether the webhook secret is set, and when Razorpay last sent a message.
+6. Test: book with Razorpay's test UPI (`success@razorpay`) or test card, pay a "pay at clinic" booking from My appointments ("Pay online"), cancel one, and check the refund in Dashboard → Payments.
+7. Swap to **Live** keys (`rzp_live_…`) and book one real ₹1 consultation if you like (set a fee of ₹1 temporarily), then refund it.
+8. **Commission split:** ask Razorpay to enable **Route**, add the doctor as a Linked Account, then turn on *Split payments* in Settings and paste the `acc_…` id. See `docs/PAYMENTS-SECURITY-HOSTING.md`.
 
 ## Step 7 (optional): Automatic WhatsApp and email
 - **WhatsApp Cloud API:**

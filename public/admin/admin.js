@@ -29,7 +29,7 @@
   const EVENT = {
     booked: "Booked", confirmed: "Confirmed", completed: "Completed", pending: "Set to pending", rescheduled: "Rescheduled", cancelled: "Cancelled",
     no_show: "Marked no-show", paid: "Payment received", refunded: "Refund issued", refund_failed: "Refund failed", hold_expired: "Unpaid hold expired",
-    payment_error: "Payment error", paid_late: "Late payment",
+    payment_error: "Payment error", paid_late: "Late payment", payment_started: "Online payment started",
   };
 
   let toastTimer;
@@ -488,6 +488,8 @@
         ${a.clinic === "online" && a.links.video ? `<a class="btn btn--primary btn--sm" target="_blank" rel="noopener" href="${esc(a.links.video)}">Start call</a>
           <a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(a.links.sendVideo)}">Send link on WhatsApp</a>` : ""}
         ${a.amount_paid > 0 ? '<button class="btn btn--ghost btn--sm" type="button" id="receiptBtn">Receipt</button>' : ""}
+        ${a.links.payLink ? `<a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(a.links.payLink)}">Send payment link</a>` : ""}
+        ${a.payment_order_id && !a.amount_paid ? '<button class="btn btn--ghost btn--sm" type="button" id="syncPayBtn">Check payment</button>' : ""}
         ${refundable > 0 ? '<button class="btn btn--ghost btn--sm" type="button" id="refundBtn">Issue refund</button>' : ""}
       </div>
       <form class="form" id="apptEdit">
@@ -535,6 +537,13 @@
         closeModal();
         toast(res.refund ? `Saved. Refund ${rupees(res.refund.amount)}: ${res.refund.status}.` : "Saved.");
         route();
+      } catch (ex) { toast(ex.message); }
+    });
+    $("#syncPayBtn")?.addEventListener("click", async () => {
+      try {
+        const { result } = await api(`/appointments/${id}/sync-payment`, { method: "POST" });
+        toast(result === "paid" ? "Payment found and recorded. The booking is updated." : "No completed payment yet for this booking.");
+        if (result === "paid") { closeModal(); route(); }
       } catch (ex) { toast(ex.message); }
     });
     $("#receiptBtn")?.addEventListener("click", async () => {
@@ -641,7 +650,7 @@
         <div class="field"><label>Time <span class="muted small">(free slots shown; any time allowed)</span></label>
           <div class="slot-select" id="slotPick"></div><input type="time" name="time" step="900" required style="margin-top:.4rem"></div>
         <div class="field"><label>Reason / notes</label><textarea name="reason" rows="2"></textarea></div>
-        <div class="field"><label>Referral ID <span class="muted small">(optional, if a partner referred them)</span></label><input name="referralCode" placeholder="REF-…" autocomplete="off"></div>
+        ${allowed("referrals") ? '<div class="field"><label>Referral ID <span class="muted small">(optional, if a partner referred them)</span></label><input name="referralCode" placeholder="REF-…" autocomplete="off"></div>' : ""}
         <details class="more-fields"><summary>About the patient (optional)</summary>${profileFields(state.profileOptions)}</details>
         <label class="check"><input type="checkbox" name="pending"> Keep as pending (not yet confirmed)</label>
         <button class="btn btn--primary btn--block" type="submit">Create appointment</button>
@@ -750,7 +759,7 @@
   const profileFrom = (form) => Object.fromEntries(["age", "city", "occupation", ...PROFILE_SELECTS.map(([k]) => k)].map((k) => [k, form[k]?.value ?? ""]));
 
   async function renderPatient(pid) {
-    const { patient: p, appointments, followups, checkins, consents, storyInvite, documents = [], documentKinds = {}, profile: prof = {}, profileOptions = {}, referrer, ownCode } = await api(`/patients/${Number(pid)}`);
+    const { patient: p, appointments, followups, checkins, consents, storyInvite, documents = [], documentKinds = {}, profile: prof = {}, profileOptions = {}, referrer, ownCode, seesReferrals } = await api(`/patients/${Number(pid)}`);
     $("#viewTitle").textContent = `${p.name} · ${p.patient_code || ""}`;
     const first = checkins[0]?.pain_score;
     const last = checkins.at(-1)?.pain_score;
@@ -783,7 +792,7 @@
               <dt>Sitting per day</dt><dd>${esc(prof.sittingHoursLabel || "–")}</dd>
               <dt>Pain for</dt><dd>${esc(prof.painSinceLabel || "–")}</dd>
               <dt>Heard of us</dt><dd>${esc(prof.heardFromLabel || "–")}</dd>
-              <dt>Referred by</dt><dd>${referrer ? `<a href="#/referrals/${referrer.id}">${esc(referrer.name)}</a> <span class="muted small">${esc(referrer.code)}</span>` : "–"} <button class="linkish small" id="setReferrer" type="button">${referrer ? "Change" : "Add"}</button></dd>
+              ${seesReferrals ? `<dt>Referred by</dt><dd>${referrer ? `<a href="#/referrals/${referrer.id}">${esc(referrer.name)}</a> <span class="muted small">${esc(referrer.code)}</span>` : "–"} <button class="linkish small" id="setReferrer" type="button">${referrer ? "Change" : "Add"}</button></dd>` : ""}
               ${ownCode ? `<dt>Their referral ID</dt><dd><a href="#/referrals/${ownCode.id}">${esc(ownCode.code)}</a></dd>` : ""}
             </dl>
           </section>`}
@@ -1594,11 +1603,19 @@
     const P = pol?.policy;
     const C = P?.commission; // only present for the super admin
 
+    // Payment set-up checks, so a missing piece is found before patients pay.
+    const pay = pol?.payments;
+    const payChecks = !pay || pay.mode === "off" || pay.mode === "demo" ? "" : `<div class="pay-checks">
+        <p>${pay.mode === "live" ? "✓ Live keys: patients pay real money." : "⚠ Test keys: payments are pretend. Switch to live keys (rzp_live_…) in Render before going live."}</p>
+        <p>${pay.webhook ? "✓ Webhook secret set." : "⚠ Webhook secret not set: add RAZORPAY_WEBHOOK_SECRET in Render and the webhook in Razorpay (see DEPLOY.md). Payments are still checked every 2 minutes."}</p>
+        <p>${pay.lastWebhook ? `Last message from Razorpay: ${esc(when(pay.lastWebhook.at))} (${esc(pay.lastWebhook.event)}).` : "No message from Razorpay received yet."}</p>
+      </div>`;
     const policyCard = !P ? "" : `
       <section class="panel-card">
         <div class="panel-card__head"><h2>Fees, payments & policies</h2>
-          <span class="small">${pol.paymentsEnabled ? '<span class="badge badge--confirmed">Razorpay connected</span>' : '<span class="badge badge--pending">Razorpay not connected: pay at clinic</span>'}
+          <span class="small">${{ live: '<span class="badge badge--confirmed">Razorpay: live payments</span>', test: '<span class="badge badge--pending">Razorpay: TEST mode, no real money</span>', demo: '<span class="badge badge--pending">Demo payments: no real money</span>', off: '<span class="badge badge--pending">Razorpay not connected: pay at clinic</span>' }[pol.payments?.mode || "off"]}
           ${pol.whatsappApi ? '<span class="badge badge--confirmed">WhatsApp API connected</span>' : '<span class="badge badge--pending">WhatsApp: one-tap manual sending</span>'}</span></div>
+        ${payChecks}
         <form class="form" id="policyForm">
           <h3>Clinics and consultation fees (₹)</h3>
           <p class="muted small">Closed or "opening soon" clinics can't be booked on the website. Existing bookings stay; contact those patients to move them.</p>

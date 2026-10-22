@@ -22,11 +22,19 @@ const { refundQuote, DEFAULT_POLICY, rescheduleCheck } = await import("../server
 
 // Fake Razorpay: records every call.
 const calls = [];
+const orders = new Map();
+const paymentOverride = new Map(); // order id → fields that differ in Razorpay's record of the payment
+const orderPayments = new Map(); // order id → payments Razorpay reports for it
 setPaymentClient(async (method, url, body) => {
   calls.push({ method, url, body });
-  if (url === "/orders") return { id: `order_${calls.length}`, amount: body.amount };
-  if (url.endsWith("/refund")) return { id: `rfnd_${calls.length}` };
-  throw new Error("unexpected call");
+  if (url === "/orders") { const o = { id: `order_${calls.length}`, amount: body.amount }; orders.set(o.id, o); return o; }
+  if (url.endsWith("/refund")) return { id: `rfnd_${calls.length}`, status: "processed" };
+  // Payments the tests make are named pay_<order id> and are captured for the order's full amount.
+  let m;
+  if (method === "GET" && (m = /^\/payments\/pay_(order_\d+)$/.exec(url))) return { id: `pay_${m[1]}`, order_id: m[1], amount: orders.get(m[1])?.amount, currency: "INR", status: "captured", ...paymentOverride.get(m[1]) };
+  if (method === "GET" && (m = /^\/orders\/(order_\d+)\/payments$/.exec(url))) return { items: orderPayments.get(m[1]) || [] };
+  if (method === "POST" && (m = /^\/payments\/([\w]+)\/capture$/.exec(url))) return { id: m[1], status: "captured", amount: body.amount };
+  throw new Error(`unexpected call ${method} ${url}`);
 });
 
 const db = openDb(path.join(tmp, "pay.db"));
@@ -112,7 +120,7 @@ test("payment verification: bad signature rejected, good one confirms and notifi
 test("webhook: signature checked against the raw body", async () => {
   const created = await book(6, 0);
   const { orderId } = created.body.payment;
-  const payload = JSON.stringify({ event: "payment.captured", payload: { payment: { entity: { id: "pay_hook", order_id: orderId, amount: 80000 } } } });
+  const payload = JSON.stringify({ event: "payment.captured", payload: { payment: { entity: { id: "pay_hook", order_id: orderId, amount: 80000, currency: "INR", status: "captured" } } } });
   assert.equal((await api("POST", "/api/payments/webhook", payload, { headers: { "x-razorpay-signature": "bad" } })).status, 400);
   const sig = crypto.createHmac("sha256", "whsec_test").update(payload).digest("hex");
   assert.equal((await api("POST", "/api/payments/webhook", payload, { headers: { "x-razorpay-signature": sig } })).status, 200);
@@ -228,4 +236,60 @@ test("a booking keeps the cancellation and reschedule rules in force when it was
   assert.equal(refundQuote(appt, stricter, { now }).percent, 100, "rules saved with the booking apply");
   assert.equal(rescheduleCheck(appt, stricter, now).allowed, true);
   assert.equal(refundQuote({ ...appt, policy_snapshot: null }, stricter, { now }).percent, 0, "older bookings without a snapshot use current rules");
+});
+
+test("Razorpay's own record decides: a short payment is refused, an authorised one is captured", async () => {
+  const short = await book(8, 0);
+  paymentOverride.set(short.body.payment.orderId, { amount: 100 });
+  assert.equal((await payFor(short)).status, 400);
+  const row = db.prepare("SELECT payment_status FROM appointments WHERE payment_order_id = ?").get(short.body.payment.orderId);
+  assert.equal(row.payment_status, "awaiting");
+
+  const auth = await book(8, 1);
+  paymentOverride.set(auth.body.payment.orderId, { status: "authorized" });
+  assert.equal((await payFor(auth)).status, 200);
+  assert.ok(calls.some((c) => c.url === `/payments/pay_${auth.body.payment.orderId}/capture` && c.body.amount === 80000));
+});
+
+test("a payment whose confirmation went missing is found by checking Razorpay (page reload, background check)", async () => {
+  const created = await book(8, 2);
+  const { orderId } = created.body.payment;
+  assert.equal((await api("POST", "/api/payments/status", { orderId })).body.paid, false);
+  orderPayments.set(orderId, [{ id: `pay_${orderId}`, order_id: orderId, amount: 80000, currency: "INR", status: "captured" }]);
+  const st = await api("POST", "/api/payments/status", { orderId });
+  assert.equal(st.body.paid, true);
+  assert.equal(st.body.appointment.status, "confirmed");
+});
+
+test("a fee to pay at the clinic can be paid online later from My appointments, reusing one order", async () => {
+  const phone = "9711100001";
+  const made = await api("POST", "/api/admin/appointments", { name: "Phone Booking", phone, clinic: "del", ...slot(9, 0) }, { auth: true });
+  const ref = made.body.appointment.appt_no;
+  const look = await api("POST", "/api/manage/lookup", { ref, phone });
+  assert.equal(look.body.appointment.canPay, true);
+  const first = await api("POST", "/api/manage/pay", { ref, phone });
+  const again = await api("POST", "/api/manage/pay", { ref, phone });
+  assert.equal(first.body.payment.orderId, again.body.payment.orderId, "the same order, so a late payment on the first try still counts");
+  const orderId = first.body.payment.orderId;
+  const pay = await api("POST", "/api/payments/verify", { orderId, paymentId: `pay_${orderId}`, signature: sign(orderId, `pay_${orderId}`) });
+  assert.equal(pay.status, 200);
+  assert.equal(pay.body.appointment.payment.status, "paid");
+  assert.equal((await api("POST", "/api/manage/pay", { ref, phone })).status, 409);
+  const outbox = await api("GET", "/api/admin/notifications?audience=patient", null, { auth: true });
+  assert.equal(outbox.body.notifications.filter((n) => n.body.includes(ref)).length, 1, "no second booking confirmation for paying later");
+});
+
+test("a refund that fails at the bank is put back as paid so the clinic can retry", async () => {
+  const created = await book(9, 1);
+  await payFor(created);
+  const appt = db.prepare("SELECT id FROM appointments WHERE payment_order_id = ?").get(created.body.payment.orderId);
+  const r = await api("POST", `/api/admin/appointments/${appt.id}/refund`, { amount: 800, reason: "goodwill" }, { auth: true });
+  assert.equal(r.status, 200);
+  const refundRow = db.prepare("SELECT provider_refund_id, status FROM refunds WHERE appointment_id = ? ORDER BY id DESC").get(appt.id);
+  assert.equal(db.prepare("SELECT payment_status FROM appointments WHERE id = ?").get(appt.id).payment_status, "refunded");
+  const payload = JSON.stringify({ event: "refund.failed", payload: { refund: { entity: { id: refundRow.provider_refund_id, amount: 80000 } } } });
+  const sig = crypto.createHmac("sha256", "whsec_test").update(payload).digest("hex");
+  assert.equal((await api("POST", "/api/payments/webhook", payload, { headers: { "x-razorpay-signature": sig } })).status, 200);
+  const after = db.prepare("SELECT payment_status, amount_refunded FROM appointments WHERE id = ?").get(appt.id);
+  assert.deepEqual([after.payment_status, after.amount_refunded], ["paid", 0]);
 });

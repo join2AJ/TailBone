@@ -1,6 +1,7 @@
 // Articles written in the dashboard. They share the blog's numbering (1001 and up, so they never clash with the article
 // files, which use 1–1000), its look (scripts/build-blog.js renders both), its topics and its show/hide switch.
 // They are served by the server at /blog/a/<slug> and added to the /blog/ list by blog.js.
+import crypto from "node:crypto";
 import { markdown, articlePage, artSvg, TAGS } from "../scripts/build-blog.js";
 import { builtPosts, syncPosts } from "./blog.js";
 import { HttpError, cleanText } from "./services.js";
@@ -35,11 +36,19 @@ export function addMedia(db, name, data) {
   if (data.length > MEDIA_MAX_BYTES) throw new HttpError(413, "Files up to 25 MB can be added. For longer videos, upload to YouTube and paste the link.");
   const mime = sniffMedia(data);
   if (!mime) throw new HttpError(415, "Please add a JPG, PNG or WebP picture, an MP3, M4A, WAV or OGG recording, or an MP4 or WebM video.");
-  const id = Number(db.prepare("INSERT INTO blog_media (name, mime, size, data) VALUES (?, ?, ?, ?)").run(cleanText(name, 120) || "file", mime, data.length, data).lastInsertRowid);
-  return { id, mime, size: data.length, url: `/media/blog/${id}`, kind: mime.split("/")[0] };
+  const key = crypto.randomBytes(12).toString("hex");
+  const id = Number(db.prepare("INSERT INTO blog_media (name, mime, size, data, file_key) VALUES (?, ?, ?, ?, ?)").run(cleanText(name, 120) || "file", mime, data.length, data, key).lastInsertRowid);
+  return { id, mime, size: data.length, url: `/media/blog/${key}`, kind: mime.split("/")[0] };
 }
 
-export const getMedia = (db, id) => db.prepare("SELECT * FROM blog_media WHERE id = ?").get(id);
+/** A file's type and size (not its contents, which can be 25 MB). */
+export const getMedia = (db, key) => db.prepare("SELECT id, mime, length(data) AS size FROM blog_media WHERE file_key = ?").get(key);
+/** Part of a file: `length` bytes from `start` (0-based), read straight from the database. */
+export const readMedia = (db, id, start, length) => Buffer.from(db.prepare("SELECT substr(data, ?, ?) AS part FROM blog_media WHERE id = ?").get(start + 1, length, id).part);
+const mediaUrl = (db, id) => {
+  const key = id && db.prepare("SELECT file_key FROM blog_media WHERE id = ?").get(id)?.file_key;
+  return key ? `/media/blog/${key}` : undefined;
+};
 
 const slugify = (title) => title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70) || "article";
 
@@ -56,14 +65,15 @@ function cleanArticle(input) {
 const readMinutes = (body) => Math.max(1, Math.round(body.split(/\s+/).filter(Boolean).length / 200));
 
 /** A dashboard article in the shape scripts/build-blog.js renders. */
-function toPost(row) {
+function toPost(row, db) {
+  const cover = db ? mediaUrl(db, row.cover_media_id) : undefined;
   const tags = JSON.parse(row.tags || "[]");
   const meta = {
     id: row.id, slug: row.slug, title: row.title, summary: row.summary || row.title, tags,
     date: (row.published_at || row.updated_at || clinicNow().date).slice(0, 10), updated: row.updated_at ? row.updated_at.slice(0, 10) : undefined,
     readMinutes: readMinutes(row.body), author: row.author, path: `/blog/a/${row.slug}`,
-    cover: row.cover_media_id ? `/media/blog/${row.cover_media_id}` : undefined,
-    image: row.cover_media_id ? `/media/blog/${row.cover_media_id}` : undefined,
+    cover,
+    image: cover,
   };
   const srcBlock = (/^## Sources\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m.exec(row.body) || [, ""])[1];
   return { meta, body: row.body, sources: [...srcBlock.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map((x) => x[1]), html: markdown(row.body).replace(/^/gm, "          ") };
@@ -116,7 +126,7 @@ export function deleteArticle(db, id) {
 /** Published, switched-on dashboard articles for the /blog/ list. */
 export function publicArticles(db) {
   return db.prepare("SELECT * FROM blog_posts WHERE source = 'dashboard' AND status = 'published' AND enabled = 1 ORDER BY published_at DESC").all().map((r) => {
-    const { meta } = toPost(r);
+    const { meta } = toPost(r, db);
     return { id: meta.id, slug: meta.slug, title: meta.title, summary: meta.summary, tags: meta.tags, date: meta.date, readMinutes: meta.readMinutes, url: meta.path, art: meta.cover || `${meta.path}.svg` };
   });
 }
@@ -126,7 +136,7 @@ export function renderArticle(db, slug, { preview = false } = {}) {
   const row = db.prepare("SELECT * FROM blog_posts WHERE source = 'dashboard' AND slug = ?").get(slug);
   if (!row || (!preview && (row.status !== "published" || row.enabled === 0))) return null;
   const others = builtPosts().map((p) => ({ meta: { ...p, readMinutes: 3 } }));
-  return articlePage(toPost(row), others);
+  return articlePage(toPost(row, db), others);
 }
 
 export function renderArt(db, slug) {

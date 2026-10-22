@@ -45,6 +45,8 @@ export function saveReferralSettings(db, input = {}) {
 }
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export const isKind = (k) => typeof k === "string" && Object.hasOwn(PARTNER_KINDS, k);
+
 export function newPartnerCode(db) {
   for (;;) {
     const code = `REF-${[...crypto.randomBytes(5)].map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("")}`;
@@ -77,8 +79,10 @@ export function linkReferral(db, appointmentId, code) {
   const appt = db.prepare("SELECT id, patient_id FROM appointments WHERE id = ?").get(appointmentId);
   const patient = db.prepare("SELECT id, phone, referred_by FROM patients WHERE id = ?").get(appt.patient_id);
   if (partner.patient_id === patient.id || (partner.phone && partner.phone === patient.phone)) return null;
-  const earlier = db.prepare("SELECT 1 FROM appointments WHERE patient_id = ? AND id != ? AND status IN ('confirmed','completed')").get(patient.id, appt.id);
-  if (earlier || (patient.referred_by && patient.referred_by !== partner.id)) return null;
+  // Only a patient record created by this very booking counts. Otherwise anyone who knew an existing (or about-to-visit)
+  // patient's phone number could book with their own code and claim that patient's visits.
+  const earlier = db.prepare("SELECT 1 FROM appointments WHERE patient_id = ? AND id != ?").get(patient.id, appt.id);
+  if (earlier || patient.referred_by) return null;
   db.prepare("UPDATE patients SET referred_by = ? WHERE id = ? AND referred_by IS NULL").run(partner.id, patient.id);
   db.prepare("UPDATE appointments SET referral_partner_id = ? WHERE id = ?").run(partner.id, appt.id);
   return partner.id;
@@ -101,8 +105,10 @@ export function syncRewards(db, appointmentId) {
     if (!amount) return;
     db.prepare("INSERT OR IGNORE INTO referral_rewards (partner_id, patient_id, appointment_id, kind, amount, note) VALUES (?, ?, ?, ?, ?, ?)")
       .run(partnerId, a.patient_id, a.id, kind, amount, note);
-    // A reward withdrawn earlier (cancelled, then reinstated) comes back.
-    db.prepare("UPDATE referral_rewards SET status = 'earned' WHERE appointment_id = ? AND kind = ? AND status = 'void' AND note NOT LIKE 'Withdrawn by%'").run(a.id, kind);
+    // A reward withdrawn automatically (visit cancelled or not completed, then reinstated) comes back; one the clinic
+    // withdrew by hand, or another partner's, never does.
+    db.prepare("UPDATE referral_rewards SET status = 'earned', note = ? WHERE appointment_id = ? AND kind = ? AND partner_id = ? AND status = 'void' AND note IN ('Visit cancelled', 'Visit not completed')")
+      .run(note, a.id, kind, partnerId);
   };
   const live = ["confirmed", "completed"].includes(a.status) || ["paid", "partially_refunded"].includes(a.payment_status) && a.status === "pending";
   if (["cancelled", "no_show"].includes(a.status)) {
@@ -113,6 +119,10 @@ export function syncRewards(db, appointmentId) {
   const partner = a.referred_by && db.prepare("SELECT id, status FROM partners WHERE id = ?").get(a.referred_by);
   if (!partner || partner.status !== "active") return;
   if (a.referral_partner_id === partner.id && live) add(partner.id, "first_booking", settings.firstBooking, "First booking");
+  // A visit set back from completed (a slip of the finger) no longer earns its treatment reward.
+  if (a.status !== "completed") {
+    db.prepare("UPDATE referral_rewards SET status = 'void', note = 'Visit not completed' WHERE appointment_id = ? AND kind = 'treatment' AND status = 'earned'").run(a.id);
+  }
   if (a.status === "completed") {
     const until = new Date(`${String(a.referred_at || "").replace(" ", "T")}Z`);
     until.setUTCMonth(until.getUTCMonth() + settings.months);

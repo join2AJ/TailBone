@@ -4,12 +4,12 @@ import zlib from "node:zlib";
 import express from "express";
 import path from "node:path";
 import { config } from "./config.js";
-import { hashPassword } from "./auth.js";
+import { hashPassword, rateLimit } from "./auth.js";
 import { publicRoutes } from "./routes/public.js";
 import { adminRoutes } from "./routes/admin.js";
 import { partnerRoutes } from "./routes/partners.js";
 import { hiddenPosts, syncPosts } from "./blog.js";
-import { renderArticle, renderArt, getMedia } from "./articles.js";
+import { renderArticle, renderArt, getMedia, readMedia } from "./articles.js";
 import { versionHtml } from "../scripts/partials.js";
 
 /** Create the first account (the super admin) from ADMIN_EMAIL / ADMIN_PASSWORD if there are none yet. */
@@ -106,20 +106,22 @@ export function createApp(db) {
     if (!html) return next();
     res.set({ "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" }).send(versionHtml(html, config.publicDir));
   });
-  app.get(/^\/media\/blog\/(\d+)$/, (req, res, next) => {
-    const m = getMedia(db, Number(req.params[0]));
+  const mediaLimit = rateLimit({ windowMs: 15 * 60_000, max: 600 });
+  app.get(/^\/media\/blog\/([a-f0-9]{24})$/, mediaLimit, (req, res, next) => {
+    const m = getMedia(db, req.params[0]);
     if (!m) return next();
     res.set({ "Content-Type": m.mime, "Cache-Control": "public, max-age=604800, immutable", "X-Content-Type-Options": "nosniff", "Accept-Ranges": "bytes" });
-    // Range requests let audio and video players seek without downloading the whole file.
+    // Range requests let audio and video players seek without downloading the whole file. Each answer is at most 2 MB;
+    // players simply ask for the next part.
+    const CHUNK = 2 * 1024 * 1024;
     const range = /^bytes=(\d*)-(\d*)$/.exec(req.get("range") || "");
     if (range && (range[1] || range[2])) {
-      const size = m.data.length;
-      const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
-      const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
-      if (start >= size || start > end) return res.status(416).set("Content-Range", `bytes */${size}`).end();
-      return res.status(206).set("Content-Range", `bytes ${start}-${end}/${size}`).send(Buffer.from(m.data).subarray(start, end + 1));
+      const start = range[1] ? Number(range[1]) : Math.max(0, m.size - Number(range[2]));
+      const end = Math.min(range[1] && range[2] ? Number(range[2]) : m.size - 1, start + CHUNK - 1, m.size - 1);
+      if (start >= m.size || start > end) return res.status(416).set("Content-Range", `bytes */${m.size}`).end();
+      return res.status(206).set("Content-Range", `bytes ${start}-${end}/${m.size}`).send(readMedia(db, m.id, start, end - start + 1));
     }
-    res.send(Buffer.from(m.data));
+    res.send(readMedia(db, m.id, 0, m.size));
   });
 
   // Articles the admin has switched off are not served.
@@ -170,7 +172,7 @@ export function createApp(db) {
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
     if (err.type === "entity.parse.failed") return res.status(400).json({ error: "Invalid JSON." });
-    if (err.type === "entity.too.large") return res.status(413).json({ error: "That file is too large. Please send one under 10 MB." });
+    if (err.type === "entity.too.large") return res.status(413).json({ error: `That is too large. The limit here is ${Math.round(err.limit / 1024 / 1024) >= 1 ? `${Math.round(err.limit / 1024 / 1024)} MB` : `${Math.round(err.limit / 1024)} KB`}.` });
     const status = err.status && err.status < 500 ? err.status : 500;
     if (status === 500) console.error(err);
     res.status(status).json({ error: status === 500 ? "Something went wrong. Please try again." : err.message });

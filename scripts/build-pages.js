@@ -203,6 +203,8 @@ export function renderPage(template, p) {
     .replace(/<html lang="en">/, '<html lang="en-IN">');
   // The article show/hide check (blog.js) is only needed where the page links to articles.
   if (!/href="\/blog\/[a-z0-9-]+\.html"/.test(html)) html = html.replace(/\n\s*<script src="\/assets\/js\/blog\.js" defer><\/script>/, "");
+  // The payment window is only needed on the booking page.
+  if (p.page !== "book") html = html.replace(/\n\s*<script src="\/assets\/js\/pay\.js" defer><\/script>/, "");
   if (p.page === "book") html = html.replace('<a href="/book" class="mbar__primary">Book</a>', '<a href="#appointment" class="mbar__primary">Book</a>');
   if (p.heading) html = html.replace('<main id="main">', `<main id="main">\n    <h1 class="visually-hidden" id="pageTitle">${esc(p.heading)}</h1>`);
   return html;
