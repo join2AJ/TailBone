@@ -2,7 +2,8 @@ import { config } from "./config.js";
 import { openDb } from "./db.js";
 import { createApp, seedAdmin } from "./app.js";
 import { seedStories, getAppointment, releaseExpiredHolds, syncAwaitingPayments } from "./services.js";
-import { runReminderJob } from "./notify.js";
+import { runReminderJob, runSoonReminders, runCheckinJob } from "./notify.js";
+import { isOn } from "./features.js";
 import { clinicNow, addDays } from "./time.js";
 import { createBackup, listBackups } from "./backup.js";
 import { runRetention, processDueRequests } from "./privacy.js";
@@ -45,7 +46,11 @@ const jobs = setInterval(async () => {
       demoSeededAt = Date.now();
     }
     const { minutes, date } = clinicNow();
-    if (minutes >= 9 * 60 && minutes < 21 * 60) await runReminderJob(db, getAppointment, addDays(date, 1));
+    // Automatic WhatsApp messages (only when the WhatsApp Cloud API is connected, and only to patients who agreed):
+    // tomorrow's reminders from 10 AM, same-day reminders about 2 hours before, and follow-up check-ins from 10 AM to 7 PM.
+    if (minutes >= 10 * 60 && minutes < 21 * 60) await runReminderJob(db, getAppointment, addDays(date, 1));
+    await runSoonReminders(db, getAppointment, { date, minutes });
+    if (minutes >= 10 * 60 && minutes < 19 * 60) await runCheckinJob(db, { today: date, base: config.siteUrl || "https://tailbone.netlify.app", checkinsOn: isOn(db, "followup_checkins") });
     // Once a day (after 2 AM IST): encrypted backup, then retention clean-up.
     const dataDir = path.dirname(config.dbFile);
     const last = listBackups(dataDir)[0];

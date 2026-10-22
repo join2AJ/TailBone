@@ -666,6 +666,7 @@
       reason: fd.get("reason"), prefersFemale: fd.get("prefersFemale") === "on", website: fd.get("website"),
       consent: true, whatsappConsent: fd.get("whatsappConsent") === "on",
       profile, attribution, referralCode: String(fd.get("referralCode") || "").trim(),
+      lang: document.documentElement.lang.startsWith("hi") ? "hi" : "en",
     };
     bookBtn.disabled = true;
     bookBtn.classList.add("is-loading");

@@ -11,6 +11,8 @@ import { partnerRoutes } from "./routes/partners.js";
 import { hiddenPosts, syncPosts } from "./blog.js";
 import { renderArticle, renderArt, getMedia, readMedia } from "./articles.js";
 import { versionHtml } from "../scripts/partials.js";
+import { handleWhatsappWebhook } from "./notify.js";
+import { withdrawConsent } from "./privacy.js";
 
 /** Create the first account (the super admin) from ADMIN_EMAIL / ADMIN_PASSWORD if there are none yet. */
 export function seedAdmin(db, { email = config.adminEmail, password = config.adminPassword, name = "Super Admin" } = {}) {
@@ -72,10 +74,29 @@ export function createApp(db) {
 
   // Razorpay signs the exact raw bytes of the webhook, so it must not be JSON-parsed first.
   app.use("/api/payments/webhook", express.raw({ type: "*/*", limit: "1mb" }));
+  app.use("/api/whatsapp/webhook", express.raw({ type: "*/*", limit: "1mb" }));
   app.use("/api/admin/articles", express.json({ limit: "300kb" })); // article text can be long
   app.use(express.json({ limit: "50kb" }));
 
   app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+  // WhatsApp Cloud API webhook (Meta): delivery receipts and patients' replies. Meta checks the address with a GET first.
+  app.get("/api/whatsapp/webhook", (req, res) => {
+    const token = process.env.WHATSAPP_VERIFY_TOKEN;
+    if (token && req.query["hub.mode"] === "subscribe" && req.query["hub.verify_token"] === token) return res.type("text/plain").send(String(req.query["hub.challenge"] || ""));
+    res.sendStatus(403);
+  });
+  app.post("/api/whatsapp/webhook", (req, res) => {
+    const secret = process.env.WHATSAPP_APP_SECRET;
+    const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from("");
+    const given = Buffer.from(String(req.get("x-hub-signature-256") || ""));
+    const expected = Buffer.from(secret ? `sha256=${crypto.createHmac("sha256", secret).update(raw).digest("hex")}` : "");
+    if (!secret || given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) return res.sendStatus(401);
+    let payload;
+    try { payload = JSON.parse(raw.toString("utf8")); } catch { return res.sendStatus(400); }
+    handleWhatsappWebhook(db, payload, { withdraw: withdrawConsent });
+    res.sendStatus(200);
+  });
   app.use("/api", (req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
   app.use("/api/admin", adminRoutes(db));
   app.use("/api/partners", partnerRoutes(db));

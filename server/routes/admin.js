@@ -18,7 +18,7 @@ import { clinicNow, addDays, isDate } from "../time.js";
 import { encrypt, decrypt } from "../crypto.js";
 import { getPolicy, savePolicy, refundQuote, policySummary, policyHistory } from "../policy.js";
 import { paymentsEnabled, rupees, paymentMode, webhookConfigured } from "../payments.js";
-import { notify, readNotification, whatsappApiEnabled } from "../notify.js";
+import { notify, readNotification, whatsappApiEnabled, getWhatsappSettings, saveWhatsappSettings, sendTest } from "../notify.js";
 import { listPosts, setEnabled } from "../blog.js";
 import { addDocument, listDocuments, getDocument, readFile, sendFile, KINDS, MAX_BYTES } from "../documents.js";
 import express from "express";
@@ -139,7 +139,7 @@ export function adminRoutes(db) {
     [/^\/appointments/, "appointments"], [/^\/followups/, "followups"], [/^\/patients/, "patients"],
     [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"], [/^\/blog/, "blog"], [/^\/documents/, "patients"],
     [/^\/payments/, "payments"], [/^\/privacy/, "privacy"],
-    [/^\/settings\/policy$/, "settings", "PUT"], [/^\/settings\/video$/, "settings", "PUT"], [/^\/blocked/, "settings"], [/^\/calendar/, "settings"],
+    [/^\/settings\/policy$/, "settings", "PUT"], [/^\/settings\/video$/, "settings", "PUT"], [/^\/settings\/whatsapp/, "settings", "PUT"], [/^\/settings\/whatsapp\/test$/, "settings"], [/^\/blocked/, "settings"], [/^\/calendar/, "settings"],
     [/^\/export/, "export"],
     [/^\/insights/, "insights"], [/^\/referrals/, "referrals"], [/^\/home-visits/, "homevisits"], [/^\/articles/, "blog"],
   ];
@@ -389,7 +389,7 @@ export function adminRoutes(db) {
     ...f,
     notes: decrypt(f.notes),
     checkinUrl: `${siteUrl(req)}/checkin.html?t=${f.token}`,
-    whatsappUrl: waLink(f.patient_phone, checkinMessage(f.patient_name, f.token, siteUrl(req))),
+    whatsappUrl: waLink(f.patient_phone, checkinMessage(f.patient_name, f.token, siteUrl(req), f.patient_lang)),
   });
 
   // ---------- Dashboard ----------
@@ -421,15 +421,15 @@ export function adminRoutes(db) {
     stats.collected30Text = rupees(stats.collected30);
     for (const k of ["collectedToday", "collectedMonth", "toCollectToday"]) stats[`${k}Text`] = rupees(stats[k]);
     const schedule = db.prepare(
-      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code FROM appointments a JOIN patients p ON p.id = a.patient_id
+      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code, p.lang patient_lang FROM appointments a JOIN patients p ON p.id = a.patient_id
        WHERE a.date = ? AND a.status != 'cancelled' ORDER BY a.time`,
     ).all(today).map((a) => withLinks(readAppt(a), req));
     const tomorrow = db.prepare(
-      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code FROM appointments a JOIN patients p ON p.id = a.patient_id
+      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code, p.lang patient_lang FROM appointments a JOIN patients p ON p.id = a.patient_id
        WHERE a.date = ? AND a.status IN ('pending','confirmed') ORDER BY a.time`,
     ).all(addDays(today, 1)).map((a) => withLinks(readAppt(a), req));
     const due = db.prepare(
-      `SELECT f.*, p.name patient_name, p.phone patient_phone FROM followups f JOIN patients p ON p.id = f.patient_id
+      `SELECT f.*, p.name patient_name, p.phone patient_phone, p.lang patient_lang FROM followups f JOIN patients p ON p.id = f.patient_id
        WHERE f.status = 'pending' AND f.due_date <= ? ORDER BY f.due_date LIMIT 20`,
     ).all(today).map((f) => followupView(f, req));
     const alerts = db.prepare(
@@ -458,7 +458,7 @@ export function adminRoutes(db) {
     }
     const order = req.query.order === "desc" ? "DESC" : "ASC";
     const rows = db.prepare(
-      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code FROM appointments a JOIN patients p ON p.id = a.patient_id
+      `SELECT a.*, p.name patient_name, p.phone patient_phone, p.email patient_email, p.patient_code, p.lang patient_lang FROM appointments a JOIN patients p ON p.id = a.patient_id
        ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY a.date ${order}, a.time ${order} LIMIT 500`,
     ).all(...params);
     res.json({ appointments: rows.map((a) => withLinks(readAppt(a), req)) });
@@ -470,6 +470,7 @@ export function adminRoutes(db) {
     const appt = createAppointment(db, data, { source: "admin", status: req.body.status === "pending" ? "pending" : "confirmed", actorName: req.admin.name });
     recordConsent(db, appt.patient_id, ["care", ...(req.body.whatsappConsent ? ["whatsapp_updates"] : [])], "clinic_verbal");
     saveProfile(db, appt.patient_id, profile);
+    if (req.body.lang === "en" || req.body.lang === "hi") { db.prepare("UPDATE patients SET lang = ? WHERE id = ?").run(req.body.lang, appt.patient_id); appt.patient_lang = req.body.lang; }
     // Linking a referral creates money owed, so it needs the Referrals permission.
     if (req.perms.includes("referrals") && linkReferral(db, appt.id, req.body.referralCode)) syncRewards(db, appt.id);
     if (appt.status === "confirmed") notify(db, "confirmed", appt, { base: siteUrl(req) });
@@ -646,6 +647,31 @@ export function adminRoutes(db) {
   });
 
   // ---------- Fees & policies ----------
+  // ---------- WhatsApp: which automatic messages are sent, and a test message ----------
+  const whatsappStatus = () => {
+    const last = db.prepare("SELECT delivery, delivery_at FROM notifications WHERE channel = 'whatsapp_api' AND delivery IS NOT NULL ORDER BY id DESC LIMIT 1").get();
+    const week = db.prepare(`SELECT COUNT(*) AS sent, SUM(delivery IN ('delivered','read')) AS delivered, SUM(delivery = 'read') AS read, SUM(status = 'failed') AS failed
+      FROM notifications WHERE channel = 'whatsapp_api' AND audience = 'patient' AND created_at >= datetime('now','-7 days')`).get();
+    return {
+      connected: whatsappApiEnabled(),
+      webhook: !!(process.env.WHATSAPP_VERIFY_TOKEN && process.env.WHATSAPP_APP_SECRET),
+      template: process.env.WHATSAPP_TEMPLATE || "clinic_update",
+      last, week,
+    };
+  };
+  r.get("/settings/whatsapp", (req, res) => res.json({ settings: getWhatsappSettings(db), status: whatsappStatus() }));
+  r.put("/settings/whatsapp", (req, res) => {
+    const settings = saveWhatsappSettings(db, req.body);
+    securityLog(db, req, "whatsapp_settings_changed", JSON.stringify(settings));
+    res.json({ settings, status: whatsappStatus() });
+  });
+  r.post("/settings/whatsapp/test", async (req, res) => {
+    const to = normalizePhone(req.body.phone);
+    if (!to) throw new HttpError(400, "Please enter a valid WhatsApp number.");
+    await sendTest(db, to, req.body.lang === "hi" ? "hi" : "en");
+    res.json({ ok: true });
+  });
+
   r.get("/settings/video", (req, res) => res.json(getVideoSettings(db)));
   r.put("/settings/video", (req, res) => {
     const saved = saveVideoSettings(db, req.body || {});
@@ -706,7 +732,7 @@ export function adminRoutes(db) {
     };
     const [where, params, order] = filters[view] || filters.due;
     const rows = db.prepare(
-      `SELECT f.*, p.name patient_name, p.phone patient_phone,
+      `SELECT f.*, p.name patient_name, p.phone patient_phone, p.lang patient_lang,
          (SELECT pain_score FROM checkins c WHERE c.followup_id = f.id) AS pain_score,
          (SELECT trend FROM checkins c WHERE c.followup_id = f.id) AS trend
        FROM followups f JOIN patients p ON p.id = f.patient_id WHERE ${where} ORDER BY ${order} LIMIT 300`,
@@ -772,10 +798,10 @@ export function adminRoutes(db) {
     const pid = id(req.params.id);
     const patient = db.prepare("SELECT * FROM patients WHERE id = ?").get(pid);
     if (!patient) throw new HttpError(404, "Patient not found.");
-    const appointments = db.prepare("SELECT a.*, ? patient_name, ? patient_phone FROM appointments a WHERE patient_id = ? ORDER BY date DESC, time DESC")
-      .all(patient.name, patient.phone, pid).map((a) => withLinks(readAppt(a), req));
-    const followups = db.prepare("SELECT f.*, ? patient_name, ? patient_phone FROM followups f WHERE patient_id = ? ORDER BY due_date DESC")
-      .all(patient.name, patient.phone, pid).map((f) => followupView(f, req));
+    const appointments = db.prepare("SELECT a.*, ? patient_name, ? patient_phone, ? patient_lang FROM appointments a WHERE patient_id = ? ORDER BY date DESC, time DESC")
+      .all(patient.name, patient.phone, patient.lang, pid).map((a) => withLinks(readAppt(a), req));
+    const followups = db.prepare("SELECT f.*, ? patient_name, ? patient_phone, ? patient_lang FROM followups f WHERE patient_id = ? ORDER BY due_date DESC")
+      .all(patient.name, patient.phone, patient.lang, pid).map((f) => followupView(f, req));
     securityLog(db, req, "patient_viewed", `patient #${pid}`);
     const checkins = db.prepare("SELECT * FROM checkins WHERE patient_id = ? ORDER BY created_at ASC").all(pid).map((c) => ({ ...c, notes: decrypt(c.notes) }));
     const consents = db.prepare("SELECT purpose, notice_version, source, given_at, withdrawn_at FROM consents WHERE patient_id = ? ORDER BY id").all(pid);
@@ -802,6 +828,7 @@ export function adminRoutes(db) {
     const email = req.body.email !== undefined ? validEmail(req.body.email) || null : patient.email;
     const notes = req.body.notes !== undefined ? encrypt(cleanText(req.body.notes, 8000)) : patient.notes;
     // The clinic may correct or clear profile details; an empty field clears it.
+    if (req.body.lang === "en" || req.body.lang === "hi") db.prepare("UPDATE patients SET lang = ? WHERE id = ?").run(req.body.lang, pid);
     if (req.body.profile) {
       const prof = cleanProfile(req.body.profile);
       const clear = ["gender", "occupation_group", "occupation", "city", "sitting_hours", "pain_since", "heard_from"].filter((k) => k in req.body.profile && !(k in prof));

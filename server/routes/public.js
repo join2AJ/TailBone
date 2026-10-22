@@ -155,6 +155,11 @@ export function publicRoutes(db) {
     recordConsent(db, appt.patient_id, ["care", ...(req.body.whatsappConsent ? ["whatsapp_updates"] : [])], "web");
     // Optional details and where the visitor came from. A website booking only fills blanks (it can't prove who owns the phone).
     saveProfile(db, appt.patient_id, profile);
+    // Messages go in the language of the site the patient booked on (English or Hindi).
+    if (req.body.lang === "hi" || req.body.lang === "en") {
+      db.prepare("UPDATE patients SET lang = ? WHERE id = ?").run(req.body.lang, appt.patient_id);
+      appt.patient_lang = req.body.lang;
+    }
     const attr = cleanAttribution(req.body.attribution || {});
     db.prepare("UPDATE appointments SET utm_source = ?, utm_medium = ?, utm_campaign = ?, ad_click = ?, landing_page = ? WHERE id = ?")
       .run(attr.utm_source, attr.utm_medium, attr.utm_campaign, attr.ad_click, attr.landing_page, appt.id);

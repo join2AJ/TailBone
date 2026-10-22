@@ -78,10 +78,19 @@ Also choose the admin email and a strong password (12+ characters).
 8. **Commission split:** ask Razorpay to enable **Route**, add the doctor as a Linked Account, then turn on *Split payments* in Settings and paste the `acc_…` id. See `docs/PAYMENTS-SECURITY-HOSTING.md`.
 
 ## Step 7 (optional): Automatic WhatsApp and email
-- **WhatsApp Cloud API:**
-  1. In Meta Business Suite → WhatsApp Manager, add a number (ideally a second clinic number).
-  2. Create the template `clinic_update` (Utility category) with the body `{{1}}`, and get it approved.
-  3. In Render, set `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID` and optionally `DOCTOR_WHATSAPP`.
+- **WhatsApp Cloud API (automatic confirmations, reminders and check-ins, in English and Hindi):**
+  1. Create a Meta Business account (business.facebook.com) and verify the business. In **WhatsApp Manager**, add a phone number that is **not** already used in the WhatsApp app (ideally a second clinic number). Set the display name to "Tailbone Treatment Clinic".
+  2. Create one message template named `clinic_update`, category **Utility**, in two languages:
+     - **English**: `Update from Tailbone Treatment Clinic: {{1}} Reply here if you have any questions.`
+     - **Hindi**: `टेलबोन ट्रीटमेंट क्लिनिक से जानकारी: {{1}} कोई सवाल हो तो यहीं जवाब दें।`
+     - Sample for `{{1}}`: `Hi Asha, a reminder of your appointment TBA-2610-0007 tomorrow at 10:30 AM.`
+     Approval usually takes minutes to a day.
+  3. In **Meta for Developers → your app → WhatsApp → API setup**, create a **permanent** access token (System user → Generate token with `whatsapp_business_messaging`), and copy the **Phone number ID**.
+  4. In Render, set `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, and optionally `DOCTOR_WHATSAPP` (the doctor's number, to get new-booking alerts).
+  5. **Webhook** (delivery ticks and replies such as STOP): in the app → WhatsApp → **Configuration**, set the callback URL to `https://tailbonetreatment.com/api/whatsapp/webhook` and a verify token of your choice. In Render, set the same value as `WHATSAPP_VERIFY_TOKEN`, and the app's **App secret** (App settings → Basic) as `WHATSAPP_APP_SECRET`. Subscribe to the **messages** field.
+  6. Dashboard → **Settings → WhatsApp**: choose which automatic messages to send (day-before reminder, 2-hour reminder, check-ins) and send yourself a test message in each language.
+  - Messages go only to patients who ticked "Send me appointment updates…". A patient who replies **STOP** (or "बंद") is taken off at once, and the clinic sees it in the Inbox. Other replies also appear in the Inbox.
+  - Cost: Meta charges a small fee for each Utility message; see the current rates for India in WhatsApp Manager → Billing before going live.
 - **Email alerts to the doctor:** create a Resend account, verify the domain, and set `RESEND_API_KEY`, `EMAIL_FROM` and `DOCTOR_EMAIL`.
 
 ## Step 7b (recommended): Google Calendar

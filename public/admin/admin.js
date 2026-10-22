@@ -651,6 +651,7 @@
           <div class="slot-select" id="slotPick"></div><input type="time" name="time" step="900" required style="margin-top:.4rem"></div>
         <div class="field"><label>Reason / notes</label><textarea name="reason" rows="2"></textarea></div>
         ${allowed("referrals") ? '<div class="field"><label>Referral ID <span class="muted small">(optional, if a partner referred them)</span></label><input name="referralCode" placeholder="REF-…" autocomplete="off"></div>' : ""}
+        <div class="field"><label>Messages in</label><select name="lang"><option value="en">English</option><option value="hi">Hindi</option></select></div>
         <details class="more-fields"><summary>About the patient (optional)</summary>${profileFields(state.profileOptions)}</details>
         <label class="check"><input type="checkbox" name="pending"> Keep as pending (not yet confirmed)</label>
         <button class="btn btn--primary btn--block" type="submit">Create appointment</button>
@@ -671,7 +672,7 @@
     loadPick();
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const body = Object.fromEntries(["name", "phone", "email", "clinic", "date", "time", "reason", "referralCode", "pending"].map((k) => [k, new FormData(form).get(k)]));
+      const body = Object.fromEntries(["name", "phone", "email", "clinic", "date", "time", "reason", "referralCode", "pending", "lang"].map((k) => [k, new FormData(form).get(k)]));
       body.profile = profileFrom(form);
       body.status = body.pending ? "pending" : "confirmed";
       try {
@@ -792,6 +793,7 @@
               <dt>Sitting per day</dt><dd>${esc(prof.sittingHoursLabel || "–")}</dd>
               <dt>Pain for</dt><dd>${esc(prof.painSinceLabel || "–")}</dd>
               <dt>Heard of us</dt><dd>${esc(prof.heardFromLabel || "–")}</dd>
+              <dt>Messages in</dt><dd>${p.lang === "hi" ? "Hindi" : "English"}</dd>
               ${seesReferrals ? `<dt>Referred by</dt><dd>${referrer ? `<a href="#/referrals/${referrer.id}">${esc(referrer.name)}</a> <span class="muted small">${esc(referrer.code)}</span>` : "–"} <button class="linkish small" id="setReferrer" type="button">${referrer ? "Change" : "Add"}</button></dd>` : ""}
               ${ownCode ? `<dt>Their referral ID</dt><dd><a href="#/referrals/${ownCode.id}">${esc(ownCode.code)}</a></dd>` : ""}
             </dl>
@@ -847,10 +849,10 @@
     $("#editProfile")?.addEventListener("click", () => {
       openModal(`<h2>About ${esc(p.name.split(" ")[0])}</h2>
         <p class="muted small">Optional. Used to plan care and, in totals only, in Ads &amp; insights. Leave a field empty to clear it.</p>
-        <form class="form" id="profForm">${profileFields(profileOptions, prof)}<button class="btn btn--primary">Save</button></form>`);
+        <form class="form" id="profForm"><div class="field"><label>Messages in</label><select name="lang"><option value="en">English</option><option value="hi" ${p.lang === "hi" ? "selected" : ""}>Hindi</option></select></div>${profileFields(profileOptions, prof)}<button class="btn btn--primary">Save</button></form>`);
       $("#profForm").addEventListener("submit", async (e) => {
         e.preventDefault();
-        try { await api(`/patients/${p.id}`, { method: "PATCH", body: { profile: profileFrom(e.target) } }); closeModal(); toast("Saved."); route(); } catch (ex) { toast(ex.message); }
+        try { await api(`/patients/${p.id}`, { method: "PATCH", body: { profile: profileFrom(e.target), lang: e.target.lang.value } }); closeModal(); toast("Saved."); route(); } catch (ex) { toast(ex.message); }
       });
     });
     $("#setReferrer")?.addEventListener("click", () => {
@@ -1504,7 +1506,7 @@
           : "Automatic WhatsApp isn't connected yet, so each message below is ready to send with one tap. It opens WhatsApp with the text filled in and marks the message as sent."}</p>
         <div class="table-wrap"><table><thead><tr><th>Status</th><th>To</th><th>Message</th><th></th></tr></thead><tbody>
         ${notifications.map((n) => `<tr>
-          <td>${n.status === "sent" ? badge("confirmed").replace("Confirmed", "Sent") : n.status === "failed" ? badge("cancelled").replace("Cancelled", "Failed") : badge("pending").replace("Pending", "To send")}</td>
+          <td>${n.status === "sent" && n.delivery === "read" ? '<span class="badge badge--confirmed">Read ✓✓</span>' : n.status === "sent" && n.delivery === "delivered" ? '<span class="badge badge--confirmed">Delivered ✓✓</span>' : n.status === "sent" ? badge("confirmed").replace("Confirmed", "Sent") : n.status === "failed" ? badge("cancelled").replace("Cancelled", "Failed") : badge("pending").replace("Pending", "To send")}</td>
           <td class="nowrap">${esc(phonePretty(n.recipient))}<br><span class="muted">${esc(n.ref || "")}</span></td>
           <td style="max-width:460px">${esc(n.body)}${n.error ? `<br><span class="muted small">${esc(n.error)}</span>` : ""}</td>
           <td><div class="item__actions">${n.status !== "sent" && n.sendUrl ? `<a class="btn btn--wa-sm btn--sm" target="_blank" rel="noopener" href="${esc(n.sendUrl)}" data-sent="${n.id}">Send on WhatsApp</a>` : ""}</div></td>
@@ -1600,6 +1602,7 @@
     const blocked = can("settings") ? (await api("/blocked")).blocked : [];
     const pol = can("settings") ? await api("/settings/policy") : null;
     const video = can("settings") ? await api("/settings/video") : null;
+    const wa = can("settings") ? await api("/settings/whatsapp") : null;
     const P = pol?.policy;
     const C = P?.commission; // only present for the super admin
 
@@ -1689,6 +1692,29 @@
         <p class="muted small">Keep this link private: anyone with it can see appointment times and first names. "Change link" stops the old one working.</p>
       </section>`;
     // Settings are grouped into tabs (each has its own address, e.g. #/settings/account) instead of one long page.
+    const W = wa?.settings;
+    const ws = wa?.status;
+    const whatsappCard = !wa ? "" : `<section class="panel-card">
+        <div class="panel-card__head"><h2>Automatic WhatsApp messages</h2>
+          ${ws.connected ? '<span class="badge badge--confirmed">WhatsApp connected</span>' : '<span class="badge badge--pending">Not connected: one-tap sending</span>'}</div>
+        <p class="muted small">${ws.connected
+          ? "Messages go out by themselves, in English or Hindi (the language of the page the patient booked on), only to patients who agreed to WhatsApp updates. Patients who reply STOP are taken off straight away."
+          : "Until the WhatsApp Business (Cloud) API is connected, messages wait in the Inbox with a one-tap Send button. To connect, follow DEPLOY.md step 7: a Meta Business account, a WhatsApp number, and the clinic_update template in English and Hindi."}</p>
+        <form class="form" id="waForm">
+          <label class="check"><input type="checkbox" name="dayBefore" ${W.dayBefore ? "checked" : ""}> Reminder the day before (sent from 10 AM)</label>
+          <label class="check"><input type="checkbox" name="twoHours" ${W.twoHours ? "checked" : ""}> Reminder about 2 hours before (with directions, or the Join call link for online)</label>
+          <label class="check"><input type="checkbox" name="checkins" ${W.checkins ? "checked" : ""}> Follow-up check-in link on its due day (10 AM to 7 PM)</label>
+          <p class="small muted" style="margin:0">Booking confirmations, changes, cancellations and refunds are always sent.</p>
+          <div class="form-actions"><button class="btn btn--primary btn--sm">Save</button></div>
+        </form>
+        ${ws.connected ? `<h3 class="settings-subhead">Last 7 days</h3>
+          <p class="small">${ws.week.sent || 0} sent · ${ws.week.delivered || 0} delivered · ${ws.week.read || 0} read · ${ws.week.failed || 0} failed${ws.webhook ? "" : " · <span class=\"trend-worse\">Delivery receipts and STOP replies need the WhatsApp webhook (DEPLOY.md step 7).</span>"}</p>
+          <form class="toolbar" id="waTest">
+            <div class="field"><label>Send a test message to</label><input name="phone" type="tel" placeholder="+91 98xxx xxxxx" required></div>
+            <div class="field"><label>Language</label><select name="lang"><option value="en">English</option><option value="hi">Hindi</option></select></div>
+            <button class="btn btn--ghost btn--sm">Send test</button>
+          </form>` : ""}
+      </section>`;
     const videoCard = video ? `<section class="panel-card">
         <h2>Online consultations</h2>
         <p class="muted small">The clinic's usual video room: a Google Meet, Zoom or similar link. Patients get a <strong>Join call</strong> button in My appointments from 15 minutes before their time, and the link is never shown earlier. Choose a room where you let each patient in (Google Meet and Zoom do this), so nobody joins during another consultation. You can set a different link on any single appointment.</p>
@@ -1735,6 +1761,7 @@
       ["fees", "Fees & policies", policyCard],
       ["holidays", "Holidays", holidaysCard],
       ["video", "Online consultations", videoCard],
+      ["whatsapp", "WhatsApp", whatsappCard],
       ["calendar", "Calendar", calendarCard],
       ["account", "My account", accountCard],
       ["data", "Data & backups", dataCard.trim()],
@@ -1761,6 +1788,15 @@
     });
     $$("[data-unblock]").forEach((b) => b.addEventListener("click", () => confirmThen("Open this day for bookings again?", async () => { await api(`/blocked/${b.dataset.unblock}`, { method: "DELETE" }); toast("Day reopened for bookings."); route(); })));
 
+    on("#waForm", "submit", (e) => { e.preventDefault(); confirmThen(null, async () => {
+      const f = e.target;
+      await api("/settings/whatsapp", { method: "PUT", body: { dayBefore: f.dayBefore.checked, twoHours: f.twoHours.checked, checkins: f.checkins.checked } });
+      toast("Saved.");
+    }); });
+    on("#waTest", "submit", (e) => { e.preventDefault(); confirmThen(null, async () => {
+      await api("/settings/whatsapp/test", { method: "POST", body: Object.fromEntries(new FormData(e.target)) });
+      toast("Test message sent. Check the phone.");
+    }); });
     on("#copyFeed", "click", async () => { try { await navigator.clipboard.writeText($("#feedUrl").value); toast("Link copied."); } catch { $("#feedUrl").select(); } });
     on("#rotateFeed", "click", async () => {
       if (!confirm("Create a new private link? Calendars subscribed with the old link will stop updating.")) return;

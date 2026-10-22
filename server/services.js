@@ -121,7 +121,7 @@ export function appointmentEvents(db, appointmentId) {
 // ---------- Patients & appointments ----------
 
 const APPT_SECRET_FIELDS = ["reason", "notes"];
-const APPT_SELECT = `SELECT a.*, p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email, p.patient_code
+const APPT_SELECT = `SELECT a.*, p.name AS patient_name, p.phone AS patient_phone, p.email AS patient_email, p.patient_code, p.lang AS patient_lang
   FROM appointments a JOIN patients p ON p.id = a.patient_id`;
 
 /** Decrypt the sensitive fields of an appointment row read with APPT_SELECT. */
@@ -483,6 +483,7 @@ export function waLink(phone, text) {
 }
 
 export function messages(appt, base, videoUrl = "") {
+  if (appt.patient_lang === "hi") return messagesHi(appt, base, videoUrl);
   const first = appt.patient_name.split(" ")[0];
   const when = `${prettyDate(appt.date)} at ${prettyTime(appt.time)}`;
   const where = CLINICS[appt.clinic];
@@ -498,8 +499,26 @@ export function messages(appt, base, videoUrl = "") {
   };
 }
 
-export function checkinMessage(patientName, token, base) {
+function messagesHi(appt, base, videoUrl) {
+  const first = appt.patient_name.split(" ")[0];
+  const d = new Date(`${appt.date}T00:00:00Z`).toLocaleDateString("hi-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const when = `${d}, ${prettyTime(appt.time)}`;
+  const where = CLINICS[appt.clinic];
+  const no = appt.appt_no || appt.ref;
+  const manage = `${base}/manage.html?ref=${no}`;
+  const online = appt.clinic === "online";
+  const joinHow = `वीडियो कॉल My appointments से जुड़ें (बटन 15 मिनट पहले दिखेगा): ${manage}`;
+  return {
+    confirm: `नमस्ते ${first}, टेलबोन ट्रीटमेंट क्लिनिक में आपकी अपॉइंटमेंट ${when} के लिए पक्की है।\n${online ? joinHow : where.address}\nअपॉइंटमेंट नंबर: ${no}${online ? "" : `\nबदलाव या रद्द करने के लिए: ${manage}`}`,
+    reminder: `नमस्ते ${first}, याद दिला दें: कल ${when} आपकी अपॉइंटमेंट है, ${online ? `ऑनलाइन। ${joinHow}` : "क्लिनिक में।"} अपॉइंटमेंट नंबर: ${no}। समय बदलना हो तो यहीं जवाब दें।`,
+    cancelled: `नमस्ते ${first}, ${when} की आपकी अपॉइंटमेंट (नंबर ${no}) रद्द कर दी गई है। नया समय चुनने के लिए ${base}/hi/book पर जाएँ या इस संदेश का जवाब दें।`,
+    video: online ? `नमस्ते ${first}, ${when} पर डॉ. राजवीर सिंह के साथ आपकी ऑनलाइन कंसल्टेशन का लिंक: ${videoUrl || manage}\nकृपया किसी शांत और रोशनी वाली जगह से जुड़ें। आप My appointments से भी जुड़ सकते हैं: ${manage}` : "",
+  };
+}
+
+export function checkinMessage(patientName, token, base, lang = "en") {
   const first = patientName.split(" ")[0];
+  if (lang === "hi") return `नमस्ते ${first}, डॉ. राजवीर सिंह की टीम से। आपका टेलबोन अब कैसा है? 30 सेकंड में बताएँ: ${base}/checkin.html?t=${token}`;
   return `Hi ${first}, it's Dr Rajveer Singh's team from Tailbone Treatment Clinic. How is your tailbone feeling? Please take 30 seconds to tell us: ${base}/checkin.html?t=${token}`;
 }
 

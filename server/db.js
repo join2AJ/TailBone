@@ -385,6 +385,15 @@ const MIGRATIONS = {
     heard_from: "TEXT",
     profile_updated_at: "TEXT",
     referred_by: "INTEGER",                                // partners.id: who referred this patient (set once, on the first booking)
+    lang: "TEXT NOT NULL DEFAULT 'en'",                    // language for messages: en | hi (from the site they booked on)
+  },
+  notifications: {
+    provider_id: "TEXT",                                   // WhatsApp message id (wamid…), to match delivery updates
+    delivery: "TEXT",                                      // sent | delivered | read | failed, as reported by WhatsApp
+    delivery_at: "TEXT",
+  },
+  followups: {
+    sent_at: "TEXT",                                       // when the check-in link was sent automatically
   },
 };
 
@@ -401,6 +410,7 @@ export function openDb(file = config.dbFile) {
   db.exec("CREATE INDEX IF NOT EXISTS idx_appt_order ON appointments(payment_order_id)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_checkin_followup ON checkins(followup_id); CREATE INDEX IF NOT EXISTS idx_checkin_patient ON checkins(patient_id, created_at)");
   db.exec("CREATE INDEX IF NOT EXISTS idx_notif_recipient ON notifications(recipient); CREATE INDEX IF NOT EXISTS idx_notif_appt ON notifications(appointment_id)");
+  db.exec("CREATE INDEX IF NOT EXISTS idx_notif_provider ON notifications(provider_id)");
   allowClinic(db, "lko");
   // Backfill IDs for records created before they existed, then enforce uniqueness.
   for (const { id } of db.prepare("SELECT id FROM patients WHERE patient_code IS NULL").all()) {
