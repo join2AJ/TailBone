@@ -48,7 +48,10 @@
     banner.className = "cookie-bar";
     banner.setAttribute("role", "region");
     banner.setAttribute("aria-label", "Cookie choices");
-    banner.innerHTML = `<p>May we use Google cookies to see which of our ads and pages help patients find us? No health details are shared. <a href="/privacy.html#cookies">Learn more</a></p>
+    banner.innerHTML = document.documentElement.lang.startsWith("hi")
+      ? `<p>क्या हम Google कुकीज़ से यह जान सकते हैं कि हमारे कौन-से विज्ञापन और पेज मरीज़ों को हम तक पहुँचाते हैं? कोई स्वास्थ्य जानकारी साझा नहीं होती। <a href="/privacy.html#cookies">और जानें</a></p>
+      <div class="cookie-bar__actions"><button type="button" class="btn btn--primary btn--sm" data-consent="granted">हाँ, ठीक है</button><button type="button" class="btn btn--ghost btn--sm" data-consent="denied">नहीं, धन्यवाद</button></div>`
+      : `<p>May we use Google cookies to see which of our ads and pages help patients find us? No health details are shared. <a href="/privacy.html#cookies">Learn more</a></p>
       <div class="cookie-bar__actions"><button type="button" class="btn btn--primary btn--sm" data-consent="granted">Accept</button><button type="button" class="btn btn--ghost btn--sm" data-consent="denied">No thanks</button></div>`;
     banner.addEventListener("click", (e) => {
       const b = e.target.closest("[data-consent]");

@@ -255,8 +255,8 @@ export function buildPages() {
   const en = PAGES.map((p) => ({ ...p, hasHindi: hi.length > 0 }));
   for (const p of en) fs.writeFileSync(path.join(root, "public", p.file), renderPage(template, p));
   if (hi.length) {
-    const tHi = injectPosts(injectAnims(fs.readFileSync(TEMPLATE_HI, "utf8")));
-    fs.writeFileSync(TEMPLATE_HI, tHi);
+    // The Hindi template keeps its own (translated) animations and article cards; it is used as written.
+    const tHi = fs.readFileSync(TEMPLATE_HI, "utf8");
     fs.mkdirSync(path.join(root, "public/hi"), { recursive: true });
     for (const p of hi) fs.writeFileSync(path.join(root, "public", p.file), renderPage(tHi, p));
   } else {

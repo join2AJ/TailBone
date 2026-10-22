@@ -799,7 +799,8 @@
     const dl = $("#doneDetails");
     dl.innerHTML = "";
     const paid = a.payment?.status === "paid";
-    const rows = [[t("Patient", "मरीज़"), a.name], [t("When", "कब"), a.when], [t("Where", "कहाँ"), a.clinicName], [t("Address", "पता"), a.address]];
+    const whenText = HI && a.date && a.time ? `${prettyDay(a.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}, ${prettyTime(a.time)}` : a.when;
+    const rows = [[t("Patient", "मरीज़"), a.name], [t("When", "कब"), whenText], [t("Where", "कहाँ"), HI ? CLINIC_NAMES[a.clinic] || a.clinicName : a.clinicName], [t("Address", "पता"), a.address]];
     const payLater = a.clinic === "online" ? t("pay online before or after the call", "कॉल से पहले ऑनलाइन या बाद में दें") : t("pay at the clinic", "क्लिनिक पर दें");
     if (a.feeText) rows.push([t("Fee", "फ़ीस"), paid ? t(`${a.feeText} paid ✓`, `${a.feeText} भुगतान हो गया ✓`) : `${a.feeText} (${payLater})`]);
     rows.push([t("Status", "स्थिति"), a.status === "confirmed" ? t("Confirmed ✓", "पक्की ✓") : a.status === "requested" ? t("Request sent on WhatsApp", "WhatsApp पर अनुरोध भेजा गया") : t("Awaiting confirmation", "पुष्टि का इंतज़ार")]);

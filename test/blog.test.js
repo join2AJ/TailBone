@@ -41,7 +41,7 @@ test("every short page is its own file with a unique title, canonical link, head
   const { injectAnims } = await import("../scripts/partials.js");
   const template = injectAnims(fs.readFileSync(TEMPLATE, "utf8"));
   const hi = hindiPages();
-  const templateHi = hi.length ? injectAnims(fs.readFileSync(TEMPLATE_HI, "utf8")) : "";
+  const templateHi = hi.length ? fs.readFileSync(TEMPLATE_HI, "utf8") : "";
   const titles = new Set();
   for (const p of [...PAGES.map((x) => ({ ...x, hasHindi: hi.length > 0 })), ...hi]) {
     const html = fs.readFileSync(`public/${p.file}`, "utf8");
