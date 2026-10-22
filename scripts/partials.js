@@ -51,6 +51,8 @@ export function siteHeader(active) {
   const m = /<header class="header" id="header">[\s\S]*?<\/header>/.exec(html);
   if (!m) throw new Error("No header in content/site.html");
   let header = m[0].replace(/\n\s*<div class="progress" id="progress"><\/div>/, "");
+  // The English/Hindi switch leads to the Hindi home page, once the Hindi pages exist.
+  if (!fs.existsSync(path.join(root, "content/hi.enabled"))) header = header.replace(/\n\s*<a class="lang-switch"[^>]*>[^<]*<\/a>/, "");
   if (active) {
     header = header.replace(new RegExp(`<a href="${active.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"( class="([^"]*)")?>`), (all, _c, cls = "") =>
       `<a href="${active}" class="${[cls, "is-active"].filter(Boolean).join(" ")}" aria-current="page">`);

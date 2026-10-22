@@ -57,8 +57,10 @@ export const PAGES = [
 ];
 
 /** The Hindi pages, if the Hindi template exists: same pages, /hi/ addresses and Hindi titles. */
+// The Hindi pages are published only once content/hi.enabled exists (created after the translation has been checked).
+export const hindiEnabled = () => fs.existsSync(path.join(root, "content/hi.enabled")) && fs.existsSync(TEMPLATE_HI) && fs.existsSync(META_HI);
 export function hindiPages() {
-  if (!fs.existsSync(TEMPLATE_HI) || !fs.existsSync(META_HI)) return [];
+  if (!hindiEnabled()) return [];
   const meta = JSON.parse(fs.readFileSync(META_HI, "utf8"));
   return PAGES.map((p) => ({ ...p, ...meta[p.page], lang: "hi", en: p.slug, slug: p.slug === "/" ? "/hi/" : `/hi${p.slug}`, file: `hi/${p.file}` }));
 }
@@ -222,6 +224,8 @@ export function renderPage(template, p) {
     .replace(/<html lang="hi">/, '<html lang="hi-IN">')
     // The language switch points to this same page in the other language.
     .replace(/(<a class="lang-switch" href=")[^"]*"/, (m, a) => `${a}${p.lang === "hi" ? p.en : p.hasHindi ? hiSlug(p.slug) : "/hi/"}"`);
+  // No Hindi pages yet: no switch to them.
+  if (!p.lang && !p.hasHindi) html = html.replace(/\n\s*<a class="lang-switch"[^>]*>[^<]*<\/a>/, "");
   // The article show/hide check (blog.js) is only needed where the page links to articles.
   if (!/href="\/blog\/[a-z0-9-]+\.html"/.test(html)) html = html.replace(/\n\s*<script src="\/assets\/js\/blog\.js" defer><\/script>/, "");
   // The payment window is only needed on the booking page.
