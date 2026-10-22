@@ -30,6 +30,37 @@
   status = 200
   force = true
 
+# Hindi pages (/hi/…), the same way.
+[[redirects]]
+  from = "/hi/coccydynia"
+  to = "/hi/coccydynia.html"
+  status = 200
+
+[[redirects]]
+  from = "/hi/treatment"
+  to = "/hi/treatment.html"
+  status = 200
+
+[[redirects]]
+  from = "/hi/doctor"
+  to = "/hi/doctor.html"
+  status = 200
+
+[[redirects]]
+  from = "/hi/locations"
+  to = "/hi/locations.html"
+  status = 200
+
+[[redirects]]
+  from = "/hi/faq"
+  to = "/hi/faq.html"
+  status = 200
+
+[[redirects]]
+  from = "/hi/book"
+  to = "/hi/book.html"
+  status = 200
+
 # Each short page is its own pre-built file (npm run build).
 [[redirects]]
   from = "/coccydynia"
