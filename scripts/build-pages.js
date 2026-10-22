@@ -8,6 +8,9 @@ import { root, SITE, injectAnims } from "./partials.js";
 import { loadPosts, miniCard } from "./build-blog.js";
 
 export const TEMPLATE = path.join(root, "content/site.html");
+// The Hindi version: the same pages from a translated template, at /hi/… (titles and descriptions in pages.hi.json).
+export const TEMPLATE_HI = path.join(root, "content/site.hi.html");
+const META_HI = path.join(root, "content/pages.hi.json");
 
 export const PAGES = [
   {
@@ -52,6 +55,14 @@ export const PAGES = [
     description: "Choose a day and time for a tailbone pain consultation with Dr Rajveer Singh in New Delhi or by video. Instant appointment number and WhatsApp reminders.",
   },
 ];
+
+/** The Hindi pages, if the Hindi template exists: same pages, /hi/ addresses and Hindi titles. */
+export function hindiPages() {
+  if (!fs.existsSync(TEMPLATE_HI) || !fs.existsSync(META_HI)) return [];
+  const meta = JSON.parse(fs.readFileSync(META_HI, "utf8"));
+  return PAGES.map((p) => ({ ...p, ...meta[p.page], lang: "hi", en: p.slug, slug: p.slug === "/" ? "/hi/" : `/hi${p.slug}`, file: `hi/${p.file}` }));
+}
+const hiSlug = (slug) => (slug === "/" ? "/hi/" : `/hi${slug}`);
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const text = (html) => html.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
@@ -149,13 +160,14 @@ function faqFrom(html) {
 
 function graphFor(p, html) {
   const pageUrl = url(p.slug);
+  const inLanguage = p.lang === "hi" ? "hi-IN" : "en-IN";
   const graph = [
     { "@type": "WebSite", "@id": `${SITE}/#website`, url: `${SITE}/`, name: "Tailbone Treatment Clinic", inLanguage: "en-IN", publisher: { "@id": CLINIC_ID } },
     clinic,
   ];
   const webPage = {
     "@type": ["coccydynia", "treatment"].includes(p.page) ? "MedicalWebPage" : p.page === "faq" ? ["WebPage", "FAQPage"] : "WebPage",
-    "@id": `${pageUrl}#webpage`, url: pageUrl, name: p.title, description: p.description, inLanguage: "en-IN",
+    "@id": `${pageUrl}#webpage`, url: pageUrl, name: p.title, description: p.description, inLanguage,
     isPartOf: { "@id": `${SITE}/#website` }, about: { "@id": p.page === "doctor" ? DOCTOR_ID : p.page === "coccydynia" ? condition["@id"] : CLINIC_ID },
   };
   if (["coccydynia", "treatment"].includes(p.page)) {
@@ -165,7 +177,7 @@ function graphFor(p, html) {
   if (p.page === "faq") webPage.mainEntity = faqFrom(html);
   if (p.slug !== "/") {
     webPage.breadcrumb = { "@type": "BreadcrumbList", itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` },
+      { "@type": "ListItem", position: 1, name: p.lang === "hi" ? "होम" : "Home", item: p.lang === "hi" ? `${SITE}/hi/` : `${SITE}/` },
       { "@type": "ListItem", position: 2, name: p.crumb, item: pageUrl },
     ] };
   }
@@ -193,19 +205,28 @@ export function renderPage(template, p) {
     `<meta property="og:description" content="${esc(p.description)}">`,
     `<meta property="og:url" content="${pageUrl}">`,
     `<meta property="og:type" content="website">`,
-    `<meta property="og:locale" content="en_IN">`,
+    `<meta property="og:locale" content="${p.lang === "hi" ? "hi_IN" : "en_IN"}">`,
+    // The same page in the other language, so search engines show each reader the right one.
+    ...(p.hasHindi || p.lang === "hi" ? [
+      `<link rel="alternate" hreflang="en-IN" href="${url(p.en || p.slug)}">`,
+      `<link rel="alternate" hreflang="hi-IN" href="${url(p.lang === "hi" ? p.slug : hiSlug(p.slug))}">`,
+      `<link rel="alternate" hreflang="x-default" href="${url(p.en || p.slug)}">`,
+    ] : []),
   ].join("\n  ");
   html = html
     // The template's own og: tags go first, so they don't duplicate (or remove) this page's ones.
     .replace(/\s*<meta property="og:(title|description|type|url|locale)"[^>]*>/g, "")
     .replace(/<title>[\s\S]*?<\/title>\s*<meta name="description"[^>]*>/, head)
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${JSON.stringify(graphFor(p, html)).replace(/</g, "\\u003c")}</script>`)
-    .replace(/<html lang="en">/, '<html lang="en-IN">');
+    .replace(/<html lang="en">/, '<html lang="en-IN">')
+    .replace(/<html lang="hi">/, '<html lang="hi-IN">')
+    // The language switch points to this same page in the other language.
+    .replace(/(<a class="lang-switch" href=")[^"]*"/, (m, a) => `${a}${p.lang === "hi" ? p.en : p.hasHindi ? hiSlug(p.slug) : "/hi/"}"`);
   // The article show/hide check (blog.js) is only needed where the page links to articles.
   if (!/href="\/blog\/[a-z0-9-]+\.html"/.test(html)) html = html.replace(/\n\s*<script src="\/assets\/js\/blog\.js" defer><\/script>/, "");
   // The payment window is only needed on the booking page.
   if (p.page !== "book") html = html.replace(/\n\s*<script src="\/assets\/js\/pay\.js" defer><\/script>/, "");
-  if (p.page === "book") html = html.replace('<a href="/book" class="mbar__primary">Book</a>', '<a href="#appointment" class="mbar__primary">Book</a>');
+  if (p.page === "book") html = html.replace(/<a href="(?:\/hi)?\/book" class="mbar__primary">([^<]*)<\/a>/, '<a href="#appointment" class="mbar__primary">$1</a>');
   if (p.heading) html = html.replace('<main id="main">', `<main id="main">\n    <h1 class="visually-hidden" id="pageTitle">${esc(p.heading)}</h1>`);
   return html;
 }
@@ -226,6 +247,16 @@ function injectPosts(html) {
 export function buildPages() {
   const template = injectPosts(injectAnims(fs.readFileSync(TEMPLATE, "utf8")));
   fs.writeFileSync(TEMPLATE, template);
-  for (const p of PAGES) fs.writeFileSync(path.join(root, "public", p.file), renderPage(template, p));
-  return PAGES;
+  const hi = hindiPages();
+  const en = PAGES.map((p) => ({ ...p, hasHindi: hi.length > 0 }));
+  for (const p of en) fs.writeFileSync(path.join(root, "public", p.file), renderPage(template, p));
+  if (hi.length) {
+    const tHi = injectPosts(injectAnims(fs.readFileSync(TEMPLATE_HI, "utf8")));
+    fs.writeFileSync(TEMPLATE_HI, tHi);
+    fs.mkdirSync(path.join(root, "public/hi"), { recursive: true });
+    for (const p of hi) fs.writeFileSync(path.join(root, "public", p.file), renderPage(tHi, p));
+  } else {
+    fs.rmSync(path.join(root, "public/hi"), { recursive: true, force: true });
+  }
+  return [...en, ...hi];
 }

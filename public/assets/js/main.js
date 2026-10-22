@@ -1,6 +1,11 @@
 (() => {
   "use strict";
 
+  // English or Hindi (the /hi/ pages): t("English", "हिंदी") picks the page's language.
+  const HI = document.documentElement.lang.startsWith("hi");
+  const t = (en, hi) => (HI ? hi : en);
+  const LOCALE = HI ? "hi-IN" : "en-IN";
+
   // Wake the booking server while the visitor reads, so booking is instant even if the server was idle.
   // Once per browser tab; sends nothing about the visitor.
   try {
@@ -36,7 +41,7 @@
   const setNav = (open) => {
     nav.classList.toggle("is-open", open);
     burger.setAttribute("aria-expanded", String(open));
-    burger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    burger.setAttribute("aria-label", open ? t("Close menu", "मेन्यू बंद करें") : t("Open menu", "मेन्यू खोलें"));
   };
   burger.addEventListener("click", () => setNav(!nav.classList.contains("is-open")));
   $$("a", nav).forEach((a) => a.addEventListener("click", () => setNav(false)));
@@ -97,7 +102,7 @@
 
   // ---- Open / closed status (clinic time, IST) ----
   const HOURS = { 0: [8, 15], 1: [10, 17], 2: [10, 17], 3: [10, 17], 4: [10, 17], 5: [10, 17], 6: [10, 15] };
-  const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const DAY_NAMES = HI ? ["रविवार", "सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार"] : ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const istNow = () => {
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: "Asia/Kolkata", weekday: "short", hour: "numeric", minute: "numeric", hourCycle: "h23",
@@ -116,12 +121,12 @@
     status.classList.toggle("is-closed", !isOpen);
     let text;
     if (isOpen) {
-      text = `Open now · until ${fmtHour(close)} IST · by appointment`;
+      text = t(`Open now · until ${fmtHour(close)} IST · by appointment`, `अभी खुला है · ${fmtHour(close)} तक · अपॉइंटमेंट से`);
     } else if (minutes < open * 60) {
-      text = `Closed · opens today at ${fmtHour(open)} IST`;
+      text = t(`Closed · opens today at ${fmtHour(open)} IST`, `अभी बंद · आज ${fmtHour(open)} बजे खुलेगा`);
     } else {
       const next = (day + 1) % 7;
-      text = `Closed · opens ${DAY_NAMES[next]} at ${fmtHour(HOURS[next][0])} IST`;
+      text = t(`Closed · opens ${DAY_NAMES[next]} at ${fmtHour(HOURS[next][0])} IST`, `अभी बंद · ${DAY_NAMES[next]} ${fmtHour(HOURS[next][0])} बजे खुलेगा`);
     }
     $(".status__text", status).textContent = text;
     $$("#hoursList li").forEach((li) => li.classList.toggle("is-today", Number(li.dataset.day) === day));
@@ -145,16 +150,16 @@
     const result = $("#checkerResult");
     const cta = $("#checkerCta");
     if (score === 0) {
-      result.textContent = "Select the symptoms that apply to you.";
+      result.textContent = t("Select the symptoms that apply to you.", "जो लक्षण आप पर लागू होते हैं, उन्हें चुनें।");
       cta.hidden = true;
     } else if (score <= 3) {
-      result.textContent = "A few signs of coccyx irritation. Try the self-care tips below, and get checked if it lasts more than a few weeks.";
+      result.textContent = t("A few signs of coccyx irritation. Try the self-care tips below, and get checked if it lasts more than a few weeks.", "कॉक्सिक्स में हल्की तकलीफ़ के कुछ संकेत हैं। नीचे दिए घरेलू उपाय आज़माएँ, और कुछ हफ़्तों से ज़्यादा रहे तो जाँच करवाएँ।");
       cta.hidden = false;
     } else if (score <= 6) {
-      result.textContent = "Your symptoms are typical of coccydynia. A specialist assessment can pinpoint the cause.";
+      result.textContent = t("Your symptoms are typical of coccydynia. A specialist assessment can pinpoint the cause.", "आपके लक्षण कॉक्सीडाइनिया जैसे हैं। विशेषज्ञ की जाँच से सही कारण पता चल सकता है।");
       cta.hidden = false;
     } else {
-      result.textContent = "Many classic coccydynia signs. We'd recommend booking a consultation soon, in person or online.";
+      result.textContent = t("Many classic coccydynia signs. We'd recommend booking a consultation soon, in person or online.", "कॉक्सीडाइनिया के कई आम लक्षण हैं। हमारी सलाह है कि जल्द ही क्लिनिक में या ऑनलाइन परामर्श लें।");
       cta.hidden = false;
     }
   });
@@ -299,7 +304,7 @@
     if (note) {
       const status = [...tab.classList].find((c) => c.startsWith("tab--"))?.slice(5) || "open";
       note.dataset.status = status;
-      $(".tab-note__status", note).textContent = { open: "Open", visit: "On request", soon: "Opening soon", closed: "Closed" }[status];
+      $(".tab-note__status", note).textContent = (HI ? { open: "बुकिंग जारी", visit: "अनुरोध पर", soon: "जल्द खुलेगा", closed: "बंद" } : { open: "Taking bookings", visit: "On request", soon: "Opening soon", closed: "Closed" })[status];
       $(".tab-note__text", note).textContent = tab.dataset.note || "";
     }
   };
@@ -348,7 +353,11 @@
       if (glance && cfg.fees) {
         const open = (cfg.clinics || []).filter((c) => c.status === "open").map((c) => c.id);
         const fee = Math.min(...open.map((id) => cfg.fees[id]).filter(Boolean));
-        if (Number.isFinite(fee)) glance.textContent = `Consultation ₹${fee} (in clinic or online).${cfg.followup?.windowDays ? ` Follow-up within ${cfg.followup.windowDays} days of a visit ₹${cfg.followup.fee}.` : ""}`;
+        if (Number.isFinite(fee)) {
+          glance.textContent = HI
+            ? `परामर्श ₹${fee} (क्लिनिक में या ऑनलाइन)।${cfg.followup?.windowDays ? ` विज़िट के ${cfg.followup.windowDays} दिनों के अंदर फ़ॉलो-अप ₹${cfg.followup.fee}।` : ""}`
+            : `Consultation ₹${fee} (in clinic or online).${cfg.followup?.windowDays ? ` Follow-up within ${cfg.followup.windowDays} days of a visit ₹${cfg.followup.fee}.` : ""}`;
+        }
       }
     }).catch(() => { /* static hosting */ });
   }
@@ -360,7 +369,9 @@
   const slotGrid = $("#slotGrid");
   const bookBtn = $("#bookBtn");
   const summary = $("#bookingSummary");
-  const CLINIC_NAMES = { del: "New Delhi clinic", online: "Online consultation", lko: "Lucknow clinic", blr: "Bengaluru clinic" };
+  const CLINIC_NAMES = HI
+    ? { del: "नई दिल्ली क्लिनिक", online: "ऑनलाइन परामर्श", lko: "लखनऊ क्लिनिक", blr: "बेंगलुरु क्लिनिक" }
+    : { del: "New Delhi clinic", online: "Online consultation", lko: "Lucknow clinic", blr: "Bengaluru clinic" };
   const booking = { clinic: "del", date: null, time: null };
   const firstOpenClinic = () => ($('input[name="clinic"]:not(:disabled)', form) || {}).value || "online";
 
@@ -390,10 +401,10 @@
   const api = async (url, options = {}) => {
     const res = await fetch(url, { headers: { "content-type": "application/json" }, ...options });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw Object.assign(new Error(data.error || "Something went wrong."), { status: res.status });
+    if (!res.ok) throw Object.assign(new Error(data.error || t("Something went wrong.", "कुछ गड़बड़ हो गई। कृपया फिर कोशिश करें।")), { status: res.status });
     return data;
   };
-  const prettyDay = (date, opts) => new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", opts);
+  const prettyDay = (date, opts) => new Date(`${date}T00:00:00`).toLocaleDateString(LOCALE, opts);
   const prettyTime = (t) => { const [h, m] = t.split(":").map(Number); return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
 
   // ---- Request mode: used when the booking server isn't reachable (e.g. static hosting) ----
@@ -438,16 +449,18 @@
 
   const updateButton = () => {
     if (offline) {
-      bookBtn.textContent = "Send booking request on WhatsApp";
-      $("#bookHint").textContent = "Your request goes straight to Dr Rajveer on WhatsApp with these details. The clinic will confirm your time.";
+      bookBtn.textContent = t("Send booking request on WhatsApp", "WhatsApp पर बुकिंग अनुरोध भेजें");
+      $("#bookHint").textContent = t("Your request goes straight to Dr Rajveer on WhatsApp with these details. The clinic will confirm your time.", "आपका अनुरोध इन जानकारियों के साथ सीधे डॉ. राजवीर को WhatsApp पर जाएगा। क्लिनिक आपका समय पक्का करेगा।");
       return;
     }
     const fee = feeFor(booking.clinic);
-    bookBtn.textContent = siteCfg?.payOnline && fee ? `Pay ${rupee(fee)} & confirm` : "Confirm booking";
+    bookBtn.textContent = siteCfg?.payOnline && fee ? t(`Pay ${rupee(fee)} & confirm`, `${rupee(fee)} भरें और पक्का करें`) : t("Confirm booking", "बुकिंग पक्की करें");
     $("#bookHint").textContent = siteCfg?.payOnline && fee
-      ? (siteCfg.demo ? "Demo site: a pretend payment window opens, and no money is taken. You'll get your appointment number instantly."
-        : "Secure payment by Razorpay (UPI, cards, net banking). You'll get your appointment number instantly.")
-      : `You'll get your appointment number instantly.${fee ? ` Consultation fee ${rupee(fee)}, payable at the clinic.` : ""} Our team confirms every appointment on WhatsApp.`;
+      ? (siteCfg.demo ? t("Demo site: a pretend payment window opens, and no money is taken. You'll get your appointment number instantly.", "डेमो साइट: नकली भुगतान विंडो खुलेगी, कोई पैसा नहीं कटेगा। अपॉइंटमेंट नंबर तुरंत मिलेगा।")
+        : t("Secure payment by Razorpay (UPI, cards, net banking). You'll get your appointment number instantly.", "Razorpay से सुरक्षित भुगतान (UPI, कार्ड, नेट बैंकिंग)। अपॉइंटमेंट नंबर तुरंत मिलेगा।"))
+      : HI
+        ? `अपॉइंटमेंट नंबर तुरंत मिलेगा।${fee ? ` परामर्श फ़ीस ${rupee(fee)}, ${booking.clinic === "online" ? "कॉल से पहले ऑनलाइन या बाद में" : "क्लिनिक पर"} दें।` : ""} हमारी टीम हर अपॉइंटमेंट WhatsApp पर पक्की करती है।`
+        : `You'll get your appointment number instantly.${fee ? ` Consultation fee ${rupee(fee)}, payable ${booking.clinic === "online" ? "online before or after the call" : "at the clinic"}.` : ""} Our team confirms every appointment on WhatsApp.`;
   };
 
   const updateSummary = () => {
@@ -456,7 +469,7 @@
     summary.hidden = false;
     summary.innerHTML = "";
     const parts = [CLINIC_NAMES[booking.clinic], prettyDay(booking.date, { weekday: "long", day: "numeric", month: "long" }), prettyTime(booking.time)];
-    summary.append("Your slot: ");
+    summary.append(t("Your slot: ", "आपका समय: "));
     const strong = document.createElement("strong");
     strong.textContent = parts.join(" · ");
     summary.append(strong);
@@ -464,7 +477,9 @@
     if (fee) {
       const small = document.createElement("div");
       small.className = "small muted";
-      small.textContent = `Consultation fee ${rupee(fee)}${siteCfg.followup?.windowDays ? `. Returning within ${siteCfg.followup.windowDays} days of a visit? The ${rupee(siteCfg.followup.fee)} follow-up rate applies automatically.` : ""}`;
+      small.textContent = HI
+        ? `परामर्श फ़ीस ${rupee(fee)}${siteCfg.followup?.windowDays ? `। विज़िट के ${siteCfg.followup.windowDays} दिनों के अंदर दोबारा आ रहे हैं? ${rupee(siteCfg.followup.fee)} की फ़ॉलो-अप फ़ीस अपने आप लगेगी।` : ""}`
+        : `Consultation fee ${rupee(fee)}${siteCfg.followup?.windowDays ? `. Returning within ${siteCfg.followup.windowDays} days of a visit? The ${rupee(siteCfg.followup.fee)} follow-up rate applies automatically.` : ""}`;
       summary.append(small);
     }
   };
@@ -495,7 +510,7 @@
   async function loadSlots() {
     booking.time = null;
     updateSummary();
-    slotGrid.innerHTML = '<p class="muted small">Loading times…</p>';
+    slotGrid.innerHTML = `<p class="muted small">${t("Loading times…", "समय लोड हो रहे हैं…")}</p>`;
     try {
       const { slots, closed } = offline
         ? { slots: localSlots(booking.date), closed: false }
@@ -503,7 +518,7 @@
       slotGrid.innerHTML = "";
       const open = slots.filter((s) => s.available);
       if (closed || !open.length) {
-        slotGrid.innerHTML = '<p class="muted small">No times left on this day. Please pick another day.</p>';
+        slotGrid.innerHTML = `<p class="muted small">${t("No times left on this day. Please pick another day.", "इस दिन कोई समय खाली नहीं है। कृपया दूसरा दिन चुनें।")}</p>`;
         return;
       }
       slots.forEach((s) => {
@@ -531,7 +546,7 @@
     booking.time = null;
     updateSummary();
     dayStrip.innerHTML = '<span class="skeleton"></span>'.repeat(6);
-    slotGrid.innerHTML = '<p class="muted small">Choose a day to see open times.</p>';
+    slotGrid.innerHTML = `<p class="muted small">${t("Choose a day to see open times.", "खाली समय देखने के लिए दिन चुनें।")}</p>`;
     try {
       const { days } = offline
         ? { days: localDays() }
@@ -543,8 +558,11 @@
         b.className = "day";
         b.disabled = d.free === 0;
         b.setAttribute("aria-pressed", "false");
-        b.setAttribute("aria-label", `${prettyDay(d.date, { weekday: "long", day: "numeric", month: "long" })}, ${d.free ? `${d.free} times free` : "fully booked"}`);
-        b.innerHTML = `<small>${prettyDay(d.date, { weekday: "short" })}</small><strong>${prettyDay(d.date, { day: "numeric" })}</strong><em>${d.free ? (offline ? "Open" : `${d.free} free`) : (offline ? "Closed" : "Full")}</em>`;
+        // A day with no times left only because they're past (today, late in the day) is "Closed", not "Full".
+        const over = !d.free && d.date === istToday() && istNow().minutes >= (HOURS[istNow().day][1] - 1) * 60;
+        const label = d.free ? (offline ? t("Open", "खुला") : t(`${d.free} free`, `${d.free} खाली`)) : (offline || over ? t("Closed", "बंद") : t("Full", "भरा"));
+        b.setAttribute("aria-label", `${prettyDay(d.date, { weekday: "long", day: "numeric", month: "long" })}, ${d.free ? t(`${d.free} times free`, `${d.free} समय खाली`) : over || offline ? t("closed", "बंद") : t("fully booked", "पूरा भरा")}`);
+        b.innerHTML = `<small>${prettyDay(d.date, { weekday: "short" })}</small><strong>${prettyDay(d.date, { day: "numeric" })}</strong><em>${label}</em>`;
         b.addEventListener("click", () => {
           booking.date = d.date;
           selectIn(dayStrip, b);
@@ -599,8 +617,8 @@
       try {
         const r = await fetch(`/api/referral/${encodeURIComponent(code)}`);
         const d = await r.json().catch(() => ({}));
-        if (r.ok) { refInput.value = d.code; note.textContent = `✓ Referred by ${d.name}. They'll see only your initials and that you visited, never your health details.`; note.classList.add("is-ok"); }
-        else if (r.status === 404) { note.textContent = d.error || "We don't recognise that code."; note.classList.add("is-bad"); }
+        if (r.ok) { refInput.value = d.code; note.textContent = t(`✓ Referred by ${d.name}. They'll see only your initials and that you visited, never your health details.`, `✓ ${d.name} ने रेफ़र किया है। उन्हें केवल आपके नाम के पहले अक्षर और आपकी विज़िट दिखेगी, स्वास्थ्य जानकारी कभी नहीं।`); note.classList.add("is-ok"); }
+        else if (r.status === 404) { note.textContent = HI ? "यह कोड पहचाना नहीं गया। कृपया जाँचें या खाली छोड़ दें।" : d.error || "We don't recognise that code."; note.classList.add("is-bad"); }
       } catch { note.textContent = defaultNote; }
     };
     refInput.addEventListener("change", check);
@@ -623,11 +641,16 @@
     $("#consentErr").style.display = consentOk ? "none" : "block";
     form.consent.closest(".check").classList.toggle("check--error", !consentOk);
     if (!slotOk || results.includes(false) || !consentOk) {
-      const missing = [!slotOk && "a day and time", results.includes(false) && "your details", !consentOk && "agreement to the privacy notice"].filter(Boolean);
-      if (!slotOk) slotGrid.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
-      else if (results.includes(false)) inputs[results.indexOf(false)].focus();
+      const missing = HI
+        ? [!slotOk && "दिन और समय", results.includes(false) && "आपकी जानकारी", !consentOk && "गोपनीयता सूचना पर सहमति"].filter(Boolean)
+        : [!slotOk && "a day and time", results.includes(false) && "your details", !consentOk && "agreement to the privacy notice"].filter(Boolean);
+      // Take keyboard and screen-reader users to the first thing to fix, not just scroll there.
+      if (!slotOk) {
+        slotGrid.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+        ($(".slot:not(:disabled)", slotGrid) || $(".day:not(:disabled)", dayStrip))?.focus({ preventScroll: true });
+      } else if (results.includes(false)) inputs[results.indexOf(false)].focus();
       else form.consent.focus();
-      toast(`Please add ${missing.join(", ").replace(/, ([^,]*)$/, " and $1")}.`);
+      toast(HI ? `कृपया ${missing.join(", ").replace(/, ([^,]*)$/, " और $1")} भरें।` : `Please add ${missing.join(", ").replace(/, ([^,]*)$/, " and $1")}.`);
       return;
     }
     const fd = new FormData(form);
@@ -700,7 +723,7 @@
     const panel = $("#payPending");
     panel.hidden = false;
     $("#payRetry").hidden = !canRetry || !pendingPayment;
-    $("#payPendingMsg").textContent = message || `Your slot is held for ${pendingPayment.holdMinutes} minutes while you complete the payment.`;
+    $("#payPendingMsg").textContent = message || t(`Your slot is held for ${pendingPayment.holdMinutes} minutes while you complete the payment.`, `भुगतान पूरा करने के लिए आपका समय ${pendingPayment.holdMinutes} मिनट तक रोका गया है।`);
     panel.focus();
   }
 
@@ -714,7 +737,7 @@
     try {
       const d = await api("/api/payments/status", { method: "POST", body: JSON.stringify({ orderId: saved.orderId }) });
       if (d.paid) { remember(null); lastBooking = d.appointment; showDone(d.appointment, ""); }
-      else if (d.status === "cancelled") { remember(null); toast("Your earlier payment wasn't completed, so that slot was released. Please choose a time again."); }
+      else if (d.status === "cancelled") { remember(null); toast(t("Your earlier payment wasn't completed, so that slot was released. Please choose a time again.", "आपका पिछला भुगतान पूरा नहीं हुआ, इसलिए वह समय छोड़ दिया गया। कृपया फिर से समय चुनें।")); }
     } catch { /* leave the form as it is */ }
   })();
 
@@ -736,7 +759,7 @@
             showPayPending(err.message);
           }
         },
-        onFailure: (msg) => showPayPending(`Payment failed: ${msg}. Your slot is still held for a few minutes; you can try again.`),
+        onFailure: (msg) => showPayPending(t(`Payment failed: ${msg}. Your slot is still held for a few minutes; you can try again.`, `भुगतान नहीं हुआ: ${msg}। आपका समय कुछ मिनट और रोका गया है; फिर कोशिश करें।`)),
         onDismiss: () => showPayPending(),
       });
     } catch (err) { showPayPending(err.message); }
@@ -762,7 +785,7 @@
     const done = $("#bookingDone");
     done.hidden = false;
     // The appointment number is the patient's reference; the old code line only shows for WhatsApp requests.
-    $("#doneRef").textContent = a.ref && !a.apptNo ? `Reference ${a.ref}` : "";
+    $("#doneRef").textContent = a.ref && !a.apptNo ? t(`Reference ${a.ref}`, `संदर्भ ${a.ref}`) : "";
     $("#doneRef").hidden = !$("#doneRef").textContent;
     // Appointment number, patient ID and QR code (server bookings only)
     $("#doneIds").hidden = !a.apptNo;
@@ -776,16 +799,17 @@
     const dl = $("#doneDetails");
     dl.innerHTML = "";
     const paid = a.payment?.status === "paid";
-    const rows = [["Patient", a.name], ["When", a.when], ["Where", a.clinicName], ["Address", a.address]];
-    if (a.feeText) rows.push(["Fee", paid ? `${a.feeText} paid ✓` : `${a.feeText} (pay at clinic)`]);
-    rows.push(["Status", a.status === "confirmed" ? "Confirmed ✓" : a.status === "requested" ? "Request sent on WhatsApp" : "Awaiting confirmation"]);
-    $("#bookingDone h3").textContent = a.status === "confirmed" ? "You're confirmed!" : a.status === "requested" ? "Request ready on WhatsApp" : "You're booked in!";
+    const rows = [[t("Patient", "मरीज़"), a.name], [t("When", "कब"), a.when], [t("Where", "कहाँ"), a.clinicName], [t("Address", "पता"), a.address]];
+    const payLater = a.clinic === "online" ? t("pay online before or after the call", "कॉल से पहले ऑनलाइन या बाद में दें") : t("pay at the clinic", "क्लिनिक पर दें");
+    if (a.feeText) rows.push([t("Fee", "फ़ीस"), paid ? t(`${a.feeText} paid ✓`, `${a.feeText} भुगतान हो गया ✓`) : `${a.feeText} (${payLater})`]);
+    rows.push([t("Status", "स्थिति"), a.status === "confirmed" ? t("Confirmed ✓", "पक्की ✓") : a.status === "requested" ? t("Request sent on WhatsApp", "WhatsApp पर अनुरोध भेजा गया") : t("Awaiting confirmation", "पुष्टि का इंतज़ार")]);
+    $("#bookingDone h3").textContent = a.status === "confirmed" ? t("You're confirmed!", "आपकी अपॉइंटमेंट पक्की है!") : a.status === "requested" ? t("Request ready on WhatsApp", "WhatsApp पर अनुरोध तैयार है") : t("You're booked in!", "आपकी बुकिंग हो गई!");
     const requested = a.status === "requested";
     $("#doneRef").hidden = requested || !$("#doneRef").textContent;
     $("#doneIcs").hidden = requested;
     $("#doneManage").hidden = requested;
-    $("#bookingDone .muted").textContent = requested ? "WhatsApp opened with your details. Just press send, and the clinic will confirm your time." : "Keep this reference to manage your appointment.";
-    $("#doneWa").textContent = requested ? "Open WhatsApp again" : "Send to the clinic on WhatsApp";
+    $("#bookingDone .muted").textContent = requested ? t("WhatsApp opened with your details. Just press send, and the clinic will confirm your time.", "आपकी जानकारी के साथ WhatsApp खुल गया है। बस भेजें दबाएँ, क्लिनिक आपका समय पक्का करेगा।") : t("Keep this reference to manage your appointment.", "अपॉइंटमेंट बदलने या रद्द करने के लिए यह नंबर संभालकर रखें।");
+    $("#doneWa").textContent = requested ? t("Open WhatsApp again", "WhatsApp फिर से खोलें") : t("Send to the clinic on WhatsApp", "क्लिनिक को WhatsApp पर भेजें");
     rows.forEach(([k, v]) => {
       const dt = document.createElement("dt"); dt.textContent = k;
       const dd = document.createElement("dd"); dd.textContent = v;

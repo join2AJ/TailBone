@@ -37,15 +37,17 @@ test("shared footer and animations are up to date (run npm run build)", async ()
 });
 
 test("every short page is its own file with a unique title, canonical link, heading and structured data", async () => {
-  const { PAGES, renderPage, TEMPLATE } = await import("../scripts/build-pages.js");
+  const { PAGES, renderPage, TEMPLATE, TEMPLATE_HI, hindiPages } = await import("../scripts/build-pages.js");
   const { injectAnims } = await import("../scripts/partials.js");
   const template = injectAnims(fs.readFileSync(TEMPLATE, "utf8"));
+  const hi = hindiPages();
+  const templateHi = hi.length ? injectAnims(fs.readFileSync(TEMPLATE_HI, "utf8")) : "";
   const titles = new Set();
-  for (const p of PAGES) {
+  for (const p of [...PAGES.map((x) => ({ ...x, hasHindi: hi.length > 0 })), ...hi]) {
     const html = fs.readFileSync(`public/${p.file}`, "utf8");
     // The build adds ?v=<hash> to stylesheet and script links afterwards (versionAssets), so compare without it.
     const plain = (h) => h.replace(/"dateModified":"[^"]*"/, "").replace(/(\.(?:css|js))\?v=\w+"/g, '$1"');
-    assert.equal(plain(html), plain(renderPage(template, p)), `${p.file} is stale: run npm run build`);
+    assert.equal(plain(html), plain(renderPage(p.lang === "hi" ? templateHi : template, p)), `${p.file} is stale: run npm run build`);
     const title = /<title>(.*?)<\/title>/.exec(html)[1];
     assert.ok(!titles.has(title), `duplicate title ${title}`); titles.add(title);
     assert.ok(html.includes(`<link rel="canonical" href="https://tailbone.netlify.app${p.slug}">`), p.file);

@@ -1263,3 +1263,30 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .paydemo__note { margin: 0 1.2rem; font-size: .75rem; color: var(--muted); text-align: center; }
 .paydemo__methods input { width: auto; flex: none; margin: 0; padding: 0; min-height: 0; box-shadow: none; accent-color: var(--brand); }
 .paydemo__methods label { justify-content: flex-start; text-align: left; cursor: pointer; }
+
+/* English / हिंदी switch in the header */
+.lang-switch { display: inline-flex; align-items: center; min-height: 40px; padding: 0 .75rem; border-radius: 999px; border: 1px solid var(--line); font-weight: 700; font-size: .9rem; color: var(--ink); text-decoration: none; white-space: nowrap; }
+.lang-switch:hover { background: color-mix(in srgb, var(--brand) 10%, transparent); text-decoration: none; }
+:lang(hi) body { line-height: 1.75; }
+
+/* Review fixes */
+/* A hidden toast stays fully off screen (it used to peek over the phone bottom bar). */
+.toast { transform: translate(-50%, calc(100% + 140px)); visibility: hidden; transition: transform .35s cubic-bezier(.2,.8,.2,1), visibility 0s linear .35s; }
+.toast.is-show { transform: translate(-50%, 0); visibility: visible; transition: transform .35s cubic-bezier(.2,.8,.2,1), visibility 0s; }
+@media (max-width: 760px) { .toast { bottom: calc(70px + env(safe-area-inset-bottom, 0px)); } }
+/* Big tip numbers no longer sit under the text. */
+.tip h3, .tip p { padding-right: 2.6rem; }
+/* Wide tables on phones: a soft edge and a hint that they scroll sideways. */
+.post-body .table-wrap, .table-wrap.evidence { position: relative; }
+@media (max-width: 640px) {
+  .table-wrap[tabindex] { background: linear-gradient(to right, var(--surface) 30%, transparent), linear-gradient(to left, var(--surface) 30%, transparent) 100% 0, radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.18), transparent) 100% 0; background-repeat: no-repeat; background-size: 40px 100%, 40px 100%, 14px 100%; background-attachment: local, local, scroll; }
+  .table-wrap[tabindex]::before { content: "Swipe to see more →"; display: block; font-size: .72rem; color: var(--muted); padding: .3rem .6rem 0; text-align: right; }
+  :lang(hi) .table-wrap[tabindex]::before { content: "और देखने के लिए स्वाइप करें →"; }
+}
+/* "About you": the + stays on the heading's line. */
+.about-you > summary { display: grid; grid-template-columns: 1fr auto; align-items: center; }
+.about-you > summary > span { grid-column: 1; grid-row: 1; }
+.about-you > summary::after { grid-column: 2; grid-row: 1 / span 2; margin-left: .8rem; }
+.about-you > summary small { grid-column: 1; grid-row: 2; width: auto; }
+/* Partner log-in: space between the two buttons. */
+#loginCard form + .btn { margin-top: .6rem; }

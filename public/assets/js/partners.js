@@ -111,6 +111,7 @@
     e.preventDefault();
     const err = $("#loginErr");
     err.hidden = true;
+    if (!e.target.phone.value.trim() || !e.target.password.value) { showErr(err, "Please enter your mobile number and password."); (e.target.phone.value.trim() ? e.target.password : e.target.phone).focus(); return; }
     try { await api("/login", Object.fromEntries(new FormData(e.target))); e.target.reset(); load(); } catch (ex) { showErr(err, ex.message); }
   });
   $("#logoutBtn").addEventListener("click", async () => { await api("/logout", {}).catch(() => {}); load(); });

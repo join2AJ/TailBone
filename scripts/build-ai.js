@@ -62,7 +62,8 @@ export function pageToMarkdown(html) {
     .join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
-export function writeLlms(pages, posts) {
+export function writeLlms(allPages, posts) {
+  const pages = allPages.filter((p) => p.lang !== "hi"); // the English pages (the Hindi ones say the same)
   const page = (p) => fs.readFileSync(path.join(root, "public", p.file), "utf8");
   const link = (p) => `${SITE}${p.slug}`;
   const short = `# Tailbone Treatment Clinic

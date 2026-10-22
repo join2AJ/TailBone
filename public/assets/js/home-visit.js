@@ -26,11 +26,26 @@
     const body = Object.fromEntries(new FormData(form));
     body.agree = form.agree.checked;
     body.consent = form.consent.checked;
-    if (!body.name.trim() || !body.phone.trim() || !body.city.trim()) return showErr("Please fill in your name, mobile number and the city.");
-    if (!body.dateFrom || !body.dateTo) return showErr("Please choose the dates you'd like.");
-    if (form.dateFrom.min && body.dateFrom < form.dateFrom.min) return showErr(`Please choose a first date of ${pretty(form.dateFrom.min)} or later, so the doctor can plan.`);
-    if (!body.agree) return showErr("Please tick to confirm you'll cover the fees, travel, meals and stay.");
-    if (!body.consent) return showErr("Please tick to agree to the privacy notice so we can contact you.");
+    // Check everything at once, mark each problem, and go to the first one.
+    const problems = [];
+    const mark = (el, bad, label) => {
+      (el.closest(".field") || el.closest(".check"))?.classList.toggle(el.type === "checkbox" ? "check--error" : "has-error", bad);
+      el.setAttribute("aria-invalid", String(bad));
+      if (bad) problems.push({ el, label });
+    };
+    mark(form.name, body.name.trim().length < 2, "your name");
+    mark(form.phone, String(body.phone).replace(/\D/g, "").length < 10, "a mobile number");
+    mark(form.city, body.city.trim().length < 2, "the city");
+    mark(form.dateFrom, !body.dateFrom || (form.dateFrom.min && body.dateFrom < form.dateFrom.min), form.dateFrom.min ? `a first date of ${pretty(form.dateFrom.min)} or later` : "the first date");
+    mark(form.dateTo, !body.dateTo || body.dateTo < body.dateFrom, "the last date");
+    mark(form.agree, !body.agree, "agreement to cover the costs");
+    mark(form.consent, !body.consent, "agreement to the privacy notice");
+    if (problems.length) {
+      const list = problems.map((x) => x.label);
+      showErr(`Please add ${list.join(", ").replace(/, ([^,]*)$/, " and $1")}.`);
+      problems[0].el.focus({ preventScroll: true });
+      return;
+    }
     if (form.dataset.offline) {
       const text = `Hi Dr Rajveer, I'd like to request a visit to ${body.city} from ${body.dateFrom} to ${body.dateTo} for ${body.patients} patient(s). Name: ${body.name}. Phone: ${body.phone}.${body.details ? ` ${body.details}` : ""}`;
       window.open(`https://wa.me/919886688323?text=${encodeURIComponent(text)}`, "_blank", "noopener");

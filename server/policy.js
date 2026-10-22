@@ -192,7 +192,7 @@ export function rescheduleCheck(appt, currentPolicy, now = new Date()) {
   const policy = rulesFor(appt, currentPolicy);
   const hours = hoursUntil(appt, now);
   if ((appt.reschedule_count || 0) >= policy.reschedule.maxTimes) {
-    return { allowed: false, reason: `Online rescheduling is limited to ${policy.reschedule.maxTimes} time(s) per booking. Please call the clinic.` };
+    return { allowed: false, reason: `Online rescheduling is limited to ${policy.reschedule.maxTimes === 1 ? "once" : `${policy.reschedule.maxTimes} times`} per booking. Please call the clinic.` };
   }
   if (hours < policy.reschedule.minHoursBefore) {
     return { allowed: false, reason: `This appointment is less than ${policy.reschedule.minHoursBefore} hours away, so it can't be moved online. Please call or WhatsApp the clinic on +91 98866 88323.` };
@@ -213,7 +213,7 @@ export function policySummary(policy) {
   return {
     cancellation: lines,
     reschedule: policy.reschedule.maxTimes
-      ? `Free rescheduling up to ${policy.reschedule.minHoursBefore} hours before, up to ${policy.reschedule.maxTimes} time(s) per booking.`
+      ? `Free rescheduling up to ${policy.reschedule.minHoursBefore} hours before, ${policy.reschedule.maxTimes === 1 ? "once" : `up to ${policy.reschedule.maxTimes} times`} per booking.`
       : "Online rescheduling is not available. Please call the clinic.",
     followup: policy.followup.windowDays
       ? `Review visits within ${policy.followup.windowDays} days of a completed visit are charged at ₹${policy.followup.fee}.`

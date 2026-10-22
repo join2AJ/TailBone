@@ -68,7 +68,10 @@
       const inactive = ["cancelled", "no_show"].includes(current.status);
       card.classList.toggle("is-cancelled", inactive);
       $("#cardQr").hidden = inactive;
-      card.querySelector(".appt-card__foot").hidden = inactive;
+      const foot = card.querySelector(".appt-card__foot");
+      foot.hidden = inactive;
+      // A video consultation has nothing to arrive at: say when to join instead.
+      foot.lastChild.textContent = current.clinic === "online" ? " · Join from this page 15 minutes before." : " · Please arrive 10 minutes early.";
       $("#cardGcal").hidden = !current.googleCalendarUrl || inactive;
       if (current.googleCalendarUrl) $("#cardGcal").href = current.googleCalendarUrl;
     }
@@ -210,7 +213,7 @@
   });
   $("#payForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    try { await api("/api/manage/referral", { ...creds, payoutDetails: $("#payTo").value }); toast("Saved."); } catch (ex) { toast(ex.message); }
+    try { await api("/api/manage/referral", { ...creds, payoutDetails: $("#payTo").value }); toast($("#payTo").value.trim() ? "Saved. Rewards will be paid there." : "Removed. Add your UPI ID or bank details before the next payment."); } catch (ex) { toast(ex.message); }
   });
 
   // ---- Pay an outstanding fee online ----
