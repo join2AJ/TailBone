@@ -163,7 +163,7 @@ test("a fee paid at the clinic can be recorded, and appears in the payments CSV"
   const res = await fetch(`${base}/api/admin/payments/export.csv?from=${date}&to=${date}`, { headers: { cookie: jar.super, "x-requested-with": "fetch" } });
   const csv = await res.text();
   assert.equal(res.status, 200);
-  assert.ok(csv.includes(appt.appt_no) && csv.includes("clinic-upi"));
+  assert.ok(csv.includes(appt.appt_no) && csv.includes("At the clinic: UPI"));
   const dash = (await api("super", "GET", "/api/admin/dashboard")).body.stats;
   assert.ok("collectedMonth" in dash && "toCollectToday" in dash);
 });
