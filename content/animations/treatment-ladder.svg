@@ -21,6 +21,6 @@
       <text x="568" y="96" text-anchor="middle" class="a-num">6</text>
       <text x="568" y="116" text-anchor="middle" class="a-lbl a-lbl--sm">Surgery</text></g>
   <rect x="20" y="352" width="250" height="36" rx="10" class="a-tag-green"/>
-  <text x="145" y="375" text-anchor="middle" class="a-t3 a-t3--green">about 9 in 10 get better here</text>
-  <text x="620" y="375" text-anchor="end" class="a-t3">Higher steps only if lower ones fail</text>
+  <text x="145" y="375" text-anchor="middle" class="a-t3 a-t3--green">9 in 10 get better here</text>
+  <text x="620" y="375" text-anchor="end" class="a-t3">Next steps only if needed</text>
 </svg>

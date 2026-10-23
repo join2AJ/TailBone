@@ -1291,3 +1291,13 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .about-you > summary small { grid-column: 1; grid-row: 2; width: auto; }
 /* Partner log-in: space between the two buttons. */
 #loginCard form + .btn { margin-top: .6rem; }
+/* Doctor section on phones: a smaller photo, so his name and credentials show without a long scroll */
+@media (max-width: 920px) {
+  #doctor .doctor__photo { max-width: 260px; aspect-ratio: auto; padding: 1rem 1rem 3.4rem; border-radius: 22px; }
+  #doctor .doctor__img { width: 100%; max-width: 200px; }
+  #doctor .doctor__badge { bottom: 12px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: .55rem .9rem; }
+  #doctor .two-col { gap: 1.5rem; }
+}
+/* Treatment-ladder labels were hard to read on phones */
+[data-anim="treatment-ladder"] .a-lbl--sm { font-size: 17px; }
+[data-anim="treatment-ladder"] .a-t3 { font-size: 20px; }
