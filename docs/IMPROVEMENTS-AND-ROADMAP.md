@@ -2,7 +2,7 @@
 
 This is the running record of how the new Tailbone Treatment website and clinic system improves on the old site at **tailbonetreatment.com**, and the plan for what comes next.
 
-**Keep it current:** whenever something is added or changed, add a line to the [change log](#3-change-log) and tick or move items in the [future plan](#4-future-plan). Last updated: **22 October 2026**.
+**Keep it current:** whenever something is added or changed, add a line to the [change log](#3-change-log) and tick or move items in the [future plan](#4-future-plan). Last updated: **23 October 2026**.
 
 ---
 
@@ -94,6 +94,7 @@ Newest first. Add one line per change.
 
 | Date | Change |
 |---|---|
+| 23 Oct 2026 | **New visual guide, "Tailbone pain explained in pictures":** one article that walks through the whole story with moving diagrams: why sitting loads the tailbone (the "tripod"), coccyx shapes, how it gets injured, how to tell it from pelvic floor and lower back pain, what sitting and standing X-rays show, and the treatment steps. Three new diagrams were drawn for it, based on the three slide sets the clinic shared: the sitting tripod, the standing vs sitting X-ray, and a chart of what those X-rays found in 208 patients. The slides themselves weren't published because they carry another company's watermark and some spelling mistakes; their numbers were checked against the original research first. The X-ray diagrams were also added to the "shape and movement of your tailbone" article, and the guide is first in "What the research shows" on the Tailbone pain page. |
 | 22 Oct 2026 | **Hindi website:** the main pages (home, tailbone pain, treatment, doctor, clinics, questions and booking) are now in Hindi at /hi/, with an English ⇄ हिंदी switch at the top of every page. Booking in Hindi works end to end, and patients who book in Hindi get their WhatsApp messages in Hindi. Google is told which page is which language, so Hindi searchers can find the Hindi pages. Articles, My appointments and the check-in page are still in English. |
 | 22 Oct 2026 | **Payments, finished:** the demo site now has a practice payment window (no money moves) so the whole booking can be tried. Patients can pay a fee still due from My appointments ("Pay online"), and the clinic can send that link on WhatsApp. Every payment is checked with Razorpay itself before a booking is marked paid; a payment whose confirmation went missing (page closed, phone switched to the UPI app) is found within 2 minutes, when the patient looks up the booking, or with "Check payment". Refunds can't be issued twice, show as pending until Razorpay confirms, and a refund that fails at the bank is put back so it can be retried. Settings shows whether payments are live, test or demo. The accountant's payments file now has the receipt number, how it was paid and the date. |
 | 22 Oct 2026 | **Automatic WhatsApp (ready to connect):** once the WhatsApp Business account is connected, patients who agreed get their confirmation, a reminder the day before, a reminder about 2 hours before, and their follow-up check-in link, automatically, in English or Hindi. Delivered and read ticks show in the Inbox; a patient who replies STOP is taken off at once; other replies appear in the Inbox. Settings → WhatsApp chooses which reminders to send and sends a test message. |
@@ -171,6 +172,7 @@ Newest first. Add one line per change.
 ### Content (ongoing)
 - Two articles a month, reviewed and signed by Dr Rajveer. Topics are listed in [SEO-AND-AI-VISIBILITY.md](SEO-AND-AI-VISIBILITY.md).
 - Add new research as it is shared, with checked sources.
+- Owner action: Dr Rajveer to read the new visual guide (23 Oct) and say if anything should be worded differently.
 - Short YouTube videos answering common questions, each linking to its article.
 - New press coverage goes into `content/press.json`.
 

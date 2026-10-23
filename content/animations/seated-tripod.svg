@@ -1,0 +1,48 @@
+<svg class="anim__svg" viewBox="0 0 640 396" aria-hidden="true" focusable="false">
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;.06;.44;.5;1" dur="10s" repeatCount="indefinite"/>
+    <text x="320" y="32" text-anchor="middle" class="a-t1 a-t1--green">Sitting upright:</text>
+    <text x="320" y="60" text-anchor="middle" class="a-t2">your weight rests on the two sitting bones</text>
+  </g>
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.5;.56;.94;1" dur="10s" repeatCount="indefinite"/>
+    <text x="320" y="32" text-anchor="middle" class="a-t1 a-t1--red">Leaning back:</text>
+    <text x="320" y="60" text-anchor="middle" class="a-t2">the coccyx becomes the third leg of a tripod</text>
+  </g>
+  <g transform="translate(0 20)">
+    <!-- pelvis seen from the front -->
+    <path d="M300 112 C262 82 196 70 152 92 C120 110 120 160 150 196 C172 222 206 240 232 262" class="a-bone" style="fill:none"/>
+    <path d="M340 112 C378 82 444 70 488 92 C520 110 520 160 490 196 C468 222 434 240 408 262" class="a-bone" style="fill:none"/>
+    <path d="M286 106 L354 106 L344 168 C338 196 330 210 320 214 C310 210 302 196 296 168 Z" class="a-bone"/>
+    <circle cx="208" cy="246" r="20" class="a-bone"/>
+    <circle cx="432" cy="246" r="20" class="a-bone"/>
+    <path d="M232 262 C244 286 252 300 258 310" class="a-bone" style="fill:none"/>
+    <path d="M408 262 C396 286 388 300 382 310" class="a-bone" style="fill:none"/>
+    <path d="M262 294 C290 272 350 272 378 294" class="a-bone" style="fill:none"/>
+    <!-- sitting bones -->
+    <ellipse cx="256" cy="318" rx="20" ry="11" class="a-bone"/>
+    <ellipse cx="384" cy="318" rx="20" ry="11" class="a-bone"/>
+    <ellipse cx="256" cy="333" rx="34" ry="6" class="a-green" opacity=".8"/>
+    <ellipse cx="384" cy="333" rx="34" ry="6" class="a-green" opacity=".8"/>
+    <!-- coccyx: clear of the seat when upright, pressed onto it when leaning back -->
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 64;0 64;0 0" keyTimes="0;.48;.56;.94;1" dur="10s" repeatCount="indefinite"/>
+      <circle cx="320" cy="224" r="8" class="a-coccyx"/>
+      <circle cx="320" cy="239" r="6.5" class="a-coccyx"/>
+      <circle cx="320" cy="252" r="5" class="a-coccyx"/>
+      <circle cx="320" cy="262" r="4" class="a-coccyx"/>
+      <text x="333" y="230" class="a-t3 a-t3--small">Coccyx<animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;.48;.52;.96;1" dur="10s" repeatCount="indefinite"/></text>
+    </g>
+    <ellipse cx="320" cy="333" rx="26" ry="6" class="a-red" opacity="0">
+      <animate attributeName="opacity" values="0;0;.85;.85;0" keyTimes="0;.5;.56;.94;1" dur="10s" repeatCount="indefinite"/>
+    </ellipse>
+    <!-- tripod lines -->
+    <g opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.52;.6;.94;1" dur="10s" repeatCount="indefinite"/>
+      <path d="M256 318 L320 314 L384 318" class="a-guide"/>
+    </g>
+    <line x1="150" y1="340" x2="490" y2="340" class="a-floor"/>
+    <text x="256" y="366" text-anchor="middle" class="a-t3">Sitting bone</text>
+    <text x="384" y="366" text-anchor="middle" class="a-t3">Sitting bone</text>
+  </g>
+</svg>

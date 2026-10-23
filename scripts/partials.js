@@ -26,6 +26,9 @@ export const ANIMS = {
   subluxation: { caption: "A displaced (subluxed) coccyx can shift inward, into the pelvis, or outward. The direction decides the treatment, so it is checked first.", still: 10.5 },
   "bike-vibration": { caption: "On a two-wheeler, each bump is passed up through the seat to the base of the spine.", still: 0.5 },
   "visit-steps": { caption: "Your visit in four steps: listen and assess, pinpoint the cause, hands-on treatment, recover and prevent.", still: 9 },
+  "seated-tripod": { caption: "Sitting upright, your weight rests on the two sitting bones. Leaning back rolls the pelvis so the coccyx becomes the third point of contact.", still: 7.5 },
+  "sitting-xray": { caption: "Two side-on X-rays, standing and sitting, show how far the coccyx bends under your weight (method developed by Maigne).", still: 8.5 },
+  "xray-findings": { caption: "Findings on sitting and standing X-rays in 208 people with coccydynia (Maigne et al., Spine, 2000).", still: 5 },
 };
 
 export function animFigure(name) {

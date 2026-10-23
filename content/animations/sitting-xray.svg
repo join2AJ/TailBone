@@ -1,0 +1,35 @@
+<svg class="anim__svg" viewBox="0 0 640 372" aria-hidden="true" focusable="false">
+  <text x="16" y="26" class="a-t3">← Front of body</text><text x="624" y="26" text-anchor="end" class="a-t3">Back →</text>
+  <g transform="translate(14 40)">
+    <rect x="0" y="0" width="296" height="320" rx="14" class="a-row"/>
+    <text x="148" y="30" text-anchor="middle" class="a-t1">Standing X-ray</text>
+    <g transform="translate(30 32) scale(1.3)">
+      <path d="M78 14 C102 18 112 70 98 118 L86 116 C96 72 90 34 70 26 Z" class="a-bone"/>
+      <circle cx="90" cy="130" r="7" class="a-coccyx a-coccyx--ok"/><circle cx="87" cy="144" r="6" class="a-coccyx a-coccyx--ok"/><circle cx="82" cy="157" r="5" class="a-coccyx a-coccyx--ok"/><circle cx="76" cy="168" r="4" class="a-coccyx a-coccyx--ok"/>
+    </g>
+    <text x="148" y="288" text-anchor="middle" class="a-t3">The reference picture, with</text>
+    <text x="148" y="307" text-anchor="middle" class="a-t3">no weight on the coccyx</text>
+  </g>
+  <g transform="translate(330 40)">
+    <rect x="0" y="0" width="296" height="320" rx="14" class="a-row"/>
+    <text x="148" y="30" text-anchor="middle" class="a-t1">Sitting X-ray</text>
+    <g transform="translate(30 32) scale(1.3)">
+      <path d="M78 14 C102 18 112 70 98 118 L86 116 C96 72 90 34 70 26 Z" class="a-bone"/>
+      <g class="a-guide"><circle cx="90" cy="130" r="7"/><circle cx="87" cy="144" r="6"/><circle cx="82" cy="157" r="5"/><circle cx="76" cy="168" r="4"/></g>
+      <g>
+        <animateTransform attributeName="transform" type="rotate" values="0 90 124;0 90 124;18 90 124;18 90 124;36 90 124;36 90 124;0 90 124" keyTimes="0;.08;.2;.45;.57;.9;1" dur="12s" repeatCount="indefinite"/>
+        <circle cx="90" cy="130" r="7" class="a-coccyx"/><circle cx="87" cy="144" r="6" class="a-coccyx"/><circle cx="82" cy="157" r="5" class="a-coccyx"/><circle cx="76" cy="168" r="4" class="a-coccyx"/>
+      </g>
+    </g>
+    <g opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.18;.22;.45;.5;1" dur="12s" repeatCount="indefinite"/>
+      <text x="148" y="288" text-anchor="middle" class="a-t3 a-t3--green">Normal: bends forward 5–25°</text>
+      <text x="148" y="307" text-anchor="middle" class="a-t3">under your weight</text>
+    </g>
+    <g opacity="0">
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;.55;.59;.9;.95;1" dur="12s" repeatCount="indefinite"/>
+      <text x="148" y="288" text-anchor="middle" class="a-t3 a-t3--red">Hypermobile: more than 25°</text>
+      <text x="148" y="307" text-anchor="middle" class="a-t3">the joint gives way when you sit</text>
+    </g>
+  </g>
+</svg>

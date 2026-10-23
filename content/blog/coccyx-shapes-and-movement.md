@@ -34,6 +34,8 @@ Having a type II or III coccyx does not mean you will get pain. Many people with
 
 Doctors compare two side-on X-rays, one taken standing and one taken sitting. This approach was developed by the French physician Jean-Yves Maigne. Comparing the two pictures shows how much the coccyx bends or slips under your weight.
 
+::anim sitting-xray
+
 | Finding on sitting vs standing X-ray | Movement | What it suggests |
 |---|---|---|
 | Normal | Bends forward 5–25° | Pain more likely comes from muscles, ligaments or nerves |
@@ -43,6 +45,8 @@ Doctors compare two side-on X-rays, one taken standing and one taken sitting. Th
 Table: Coccyx movement categories (after Maigne; summarised by Garg and Ahuja, 2021).
 
 In Maigne's study of 208 patients, this method found the likely cause of pain in about 69% of cases. A recent injury, within about a month before the pain started, made instability more likely.
+
+::anim xray-findings
 
 ## Why we start with your history and examination
 
