@@ -7,7 +7,7 @@ summary: A visual guide to coccydynia. Why sitting loads the tailbone, how it ge
 tags: Anatomy, Causes, Diagnosis, Treatment
 readMinutes: 7
 ---
-Tailbone pain (coccydynia) makes much more sense once you can see what is happening. This guide walks through it in pictures, one step at a time, with links to the full articles if you want to go deeper.
+Tailbone pain (coccydynia) makes much more sense once you can see what is happening. This guide walks through it in pictures, one step at a time (moving diagrams and slides), with links to the full articles if you want to go deeper.
 
 ## Key points
 
@@ -22,6 +22,8 @@ Tailbone pain (coccydynia) makes much more sense once you can see what is happen
 
 The coccyx is made of three to five small segments at the very bottom of the spine, joined to the sacrum above it. It is small, but it is an anchor point. The pelvic floor muscles that support the bladder and bowel attach to it, as do fibres of the large buttock muscle (gluteus maximus) and strong ligaments that tie it to the pelvis.
 
+![Slide: the coccyx was once called a leftover organ, but it anchors the gluteus maximus, pelvic floor muscles, levator ani, sacrotuberous ligament and anococcygeal raphe, and helps carry weight when sitting.](/assets/img/blog/slides/slide-coccyx-anchor.webp "1280x714" "The coccyx is not a useless leftover: muscles and ligaments of the pelvic floor and buttock attach to it.")
+
 That is why tailbone pain is often more than a bone problem. Tight or overworked pelvic floor muscles can pull on the coccyx, and a painful coccyx can make those muscles tense up in turn.
 
 ## 2. Why sitting hurts: the tripod
@@ -34,6 +36,10 @@ This is why the simplest advice works so often: sit tall or lean slightly forwar
 
 ::anim sitting
 
+![Slide: when we sit, weight is spread across three points, the two sitting bones and the coccyx, forming a tripod.](/assets/img/blog/slides/slide-seated-tripod.webp "1280x714" "The pelvic tripod: two sitting bones and the coccyx.")
+
+![Slide: upright posture sends weight through the sitting bones; slouched posture shifts the load onto the coccyx, causing repeated micro-trauma.](/assets/img/blog/slides/slide-slouch-effect.webp "1280x714" "Slouching moves the load off the sitting bones and onto the coccyx.")
+
 Read more: [Sitting with tailbone pain: 8 practical ways to ease it](/blog/sitting-with-tailbone-pain.html)
 
 ## 3. Not every coccyx is the same shape
@@ -41,6 +47,8 @@ Read more: [Sitting with tailbone pain: 8 practical ways to ease it](/blog/sitti
 ::anim coccyx-types
 
 Some coccyges curve gently, others hook sharply forward, and in some the joint is already slightly out of line. Shape alone doesn't cause pain, but it changes how pressure is spread when you sit, so some people are more likely to develop problems.
+
+![Slide: the coccyx is made of 3 to 5 small bones; its length, angle and curve vary greatly between people, which changes how pressure is absorbed.](/assets/img/blog/slides/slide-coccyx-variable.webp "1280x714" "Every coccyx is different in length, angle and curve.")
 
 Read more: [The shape and movement of your tailbone](/blog/coccyx-shapes-and-movement.html)
 
@@ -53,6 +61,8 @@ Read more: [The shape and movement of your tailbone](/blog/coccyx-shapes-and-mov
 | Repeated strain | Long hours sitting, especially slouched; two-wheeler riding over bumps; cycling or rowing | Small, repeated overload that builds up without a single injury |
 | Body weight at either end | Higher weight changes how the pelvis tilts when sitting; very low weight leaves little padding | Either can increase the load on the coccyx |
 Table: Common ways the coccyx is injured. Sometimes no single cause can be found.
+
+![Slide: acute trauma (falls, childbirth) causes fractures, sprains or dislocation; repetitive strain (long sitting on hard surfaces, cycling, rowing, long drives) causes slowly building inflammation.](/assets/img/blog/slides/slide-injury-mechanisms.webp "1280x714" "Two routes to injury: a sudden blow, or repeated strain.")
 
 Read more: [Tailbone pain after pregnancy](/blog/tailbone-pain-after-pregnancy.html) · [Two-wheelers, potholes and tailbone pain](/blog/two-wheeler-riding-and-tailbone-pain.html) · [Body weight and tailbone pain](/blog/body-weight-and-tailbone-pain.html)
 
@@ -115,6 +125,10 @@ Treatment starts with the simplest, safest steps and moves up only if needed:
 5. **Surgery** to remove the coccyx, kept for a small number of carefully selected people because of its real risk of wound problems.
 
 About 9 in 10 people improve with the first, non-surgical steps.
+
+![Slide: mechanical pressure is eased by posture and cushions; muscle tension by physiotherapy; an irritated ganglion impar nerve centre by targeted nerve blocks.](/assets/img/blog/slides/slide-cause-and-solution.webp "1280x714" "Matching the treatment to the source of the pain.")
+
+![Slide: everyday changes: manage constipation, pause cycling and rowing, avoid bumpy rides, and manage body weight.](/assets/img/blog/slides/slide-everyday-changes.webp "1280x714" "Everyday changes that take load off the coccyx.")
 
 ::anim cushion
 

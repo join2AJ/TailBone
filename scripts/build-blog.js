@@ -184,10 +184,14 @@ export function markdown(md) {
     if (!line.trim()) { flushPara(); flushList(); continue; }
     if ((m = /^::anim\s+([\w-]+)$/.exec(line.trim()))) { flushPara(); flushList(); out.push(animFigure(m[1])); continue; }
     if ((m = /^::(video|audio)\s+(\S+)(?:\s+"([^"]*)")?$/.exec(line.trim()))) { flushPara(); flushList(); out.push(mediaFigure(m[1], m[2], m[3] || "")); continue; }
-    if ((m = /^!\[([^\]]*)\]\((\/[^)\s]+)(?:\s+"(\d+)x(\d+)")?\)$/.exec(line.trim()))) {
+    // ![alt](/path "WxH" "caption"): size and caption are optional.
+    if ((m = /^!\[([^\]]*)\]\((\/[^)\s]+)(?:\s+"(\d+)x(\d+)")?(?:\s+"([^"]+)")?\)$/.exec(line.trim()))) {
       flushPara(); flushList();
       const size = m[3] ? ` width="${m[3]}" height="${m[4]}"` : "";
-      out.push(`<figure class="post-figure"><img src="${esc(m[2])}" alt="${esc(m[1])}"${size} loading="lazy" decoding="async"></figure>`);
+      const caption = m[5] ? `<figcaption>${inline(m[5])}</figcaption>` : "";
+      const img = `<img src="${esc(m[2])}" alt="${esc(m[1])}"${size} loading="lazy" decoding="async">`;
+      // Captioned pictures (slides, charts) open full size when tapped, as their text can be small on a phone.
+      out.push(`<figure class="post-figure">${m[5] ? `<a href="${esc(m[2])}" target="_blank" rel="noopener">${img}</a>` : img}${caption}</figure>`);
       continue;
     }
     if ((m = /^(#{2,3})\s+(.*)$/.exec(line))) {

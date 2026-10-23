@@ -887,6 +887,7 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 @media (max-width: 560px) { .glance { grid-template-columns: 1fr; gap: .2rem; } .glance dd { margin-bottom: .6rem; } }
 .post-cover, .post-figure { margin: 1.5rem 0; }
 .post-cover img, .post-figure img { width: 100%; height: auto; border-radius: var(--radius-sm); border: 1px solid var(--line); background: var(--bg-soft); }
+.post-figure figcaption { padding: .5rem .2rem 0; font-size: .9rem; color: var(--muted); }
 
 /* ---- In the news ---- */
 .press-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-5, 1.5rem); grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
