@@ -21,7 +21,7 @@ Home  /
 │     What it is · symptom self-check · self-care tips
 │     6 fact tiles (how common, causes, symptoms, diagnosis, treatment, outlook)
 │     Dr Rajveer's five rules · the research in numbers (table)
-│     Go deeper: "Dr Rajveer explains" (4 articles) and "What the research shows" (10 articles)
+│     Go deeper: "Dr Rajveer explains" (3 articles) and "What the research shows" (3 articles), link to all articles
 │     Red flags · sources
 │
 ├── Treatment  /treatment

@@ -1301,3 +1301,11 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 /* Treatment-ladder labels were hard to read on phones */
 [data-anim="treatment-ladder"] .a-lbl--sm { font-size: 17px; }
 [data-anim="treatment-ladder"] .a-t3 { font-size: 20px; }
+/* "Go deeper" on the Tailbone pain page: three cards per group, and one swipeable row each on phones */
+.deeper__all { margin: 1.2rem 0 0; display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: baseline; }
+.deeper__all a { font-weight: 700; color: var(--ink); }
+.deeper__all span { color: var(--muted); font-size: .9rem; }
+@media (max-width: 640px) {
+  .deeper .mini-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: .5rem; }
+  .deeper .mini-grid > li { scroll-snap-align: start; }
+}
