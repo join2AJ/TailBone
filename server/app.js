@@ -7,6 +7,7 @@ import { config } from "./config.js";
 import { hashPassword, rateLimit } from "./auth.js";
 import { publicRoutes } from "./routes/public.js";
 import { adminRoutes } from "./routes/admin.js";
+import { applyLive } from "./site-content.js";
 import { partnerRoutes } from "./routes/partners.js";
 import { hiddenPosts, syncPosts } from "./blog.js";
 import { renderArticle, renderArt, getMedia, readMedia } from "./articles.js";
@@ -39,6 +40,7 @@ export const CSP = [
 ].join("; ");
 
 export function createApp(db) {
+  applyLive(db); // opening hours and contact details saved in the dashboard
   const app = express();
   app.disable("x-powered-by");
   // Proxies in front of the app: 1 = the host's load balancer; 2 = Netlify proxy + host (see render.yaml).
@@ -76,6 +78,7 @@ export function createApp(db) {
   app.use("/api/payments/webhook", express.raw({ type: "*/*", limit: "1mb" }));
   app.use("/api/whatsapp/webhook", express.raw({ type: "*/*", limit: "1mb" }));
   app.use("/api/admin/articles", express.json({ limit: "300kb" })); // article text can be long
+  app.use("/api/admin/website", express.json({ limit: "200kb" })); // FAQ answers and clipping lists
   app.use(express.json({ limit: "50kb" }));
 
   app.get("/api/health", (req, res) => res.json({ ok: true }));

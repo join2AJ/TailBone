@@ -202,6 +202,7 @@
     privacy: ["Privacy & data requests", renderPrivacy],
     payments: ["Payments", renderPayments],
     instagram: ["Instagram highlights", renderInstagram],
+    website: ["Website content", renderWebsite],
     blog: ["Blog articles", renderBlog],
     article: ["Article", renderArticleEditor],
     referrals: ["Referral partners", renderReferrals],
@@ -215,7 +216,7 @@
   const VIEW_PERM = {
     appointments: "appointments", inbox: "inbox", followups: "followups", patients: "patients", patient: "patients",
     stories: "stories", instagram: "instagram", blog: "blog", article: "blog", payments: "payments", privacy: "privacy", control: "superadmin",
-    referrals: "referrals", visits: "homevisits", insights: "insights",
+    referrals: "referrals", visits: "homevisits", insights: "insights", website: "website",
   };
   const allowed = (view) => !VIEW_PERM[view] || state.admin.permissions.includes(VIEW_PERM[view]);
   function applyAccess() {
@@ -994,7 +995,7 @@
     content.innerHTML = `
       <section class="panel-card">
         <h2>Add a post or reel</h2>
-        <p class="muted small">Open the post on Instagram, tap ··· → <em>Copy link</em>, and paste it here. Pick posts with the most views and comments (you can see these in Instagram's Professional dashboard). They appear in the "From Instagram" section of the homepage, newest first. Up to 12 are shown.</p>
+        <p class="muted small">Open the post on Instagram, tap ··· → <em>Copy link</em>, and paste it here. Pick posts with the most views and comments (you can see these in Instagram's Professional dashboard). They appear in the "From Instagram" section of the Treatment page (and on Home or Doctor if you choose so under Website → Videos). Up to 12 are shown.</p>
         <form class="toolbar" id="mediaForm">
           <div class="field" style="flex:2"><label>Instagram link</label><input name="url" required placeholder="https://www.instagram.com/reel/…"></div>
           <div class="field" style="flex:1"><label>Caption (optional)</label><input name="caption" maxlength="140" placeholder="e.g. What is Internal Manipulation?"></div>
@@ -1009,19 +1010,324 @@
           <td>${m.kind === "reel" ? "🎬 Reel" : "🖼️ Post"}</td>
           <td><label class="check"><input type="checkbox" data-vis="${m.id}" ${m.visible ? "checked" : ""}> Visible</label></td>
           <td><button class="btn btn--danger btn--sm" data-mdel="${m.id}">Remove</button></td>
-        </tr>`).join("") || '<tr><td colspan="5"><div class="empty">No posts yet. Until you add some, the homepage shows a "Follow on Instagram" card instead.</div></td></tr>'}</tbody>
+        </tr>`).join("") || '<tr><td colspan="5"><div class="empty">No posts yet. Until you add some, the Treatment page shows a "Follow on Instagram" card instead.</div></td></tr>'}</tbody>
       </table></div>`;
     state.primary = { label: "Add a post or reel", run: () => $("#mediaForm [name=url]").focus() };
     $("#mediaForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      try { await api("/media", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); toast("Added to homepage."); route(); } catch (ex) { toast(ex.message); }
+      try { await api("/media", { method: "POST", body: Object.fromEntries(new FormData(e.target)) }); toast("Added to the website."); route(); } catch (ex) { toast(ex.message); }
     });
     $$("[data-move]").forEach((b) => b.addEventListener("click", () => confirmThen(null, async () => { await api(`/media/${b.dataset.id}`, { method: "PATCH", body: { move: b.dataset.move } }); route(); })));
     $$("[data-vis]").forEach((c) => c.addEventListener("change", () => confirmThen(null, async () => {
       try { await api(`/media/${c.dataset.vis}`, { method: "PATCH", body: { visible: c.checked } }); } catch (ex) { c.checked = !c.checked; throw ex; }
       toast(c.checked ? "Shown on site." : "Hidden.");
     })));
-    $$("[data-mdel]").forEach((b) => b.addEventListener("click", () => confirmThen("Remove this post from the homepage?", async () => { await api(`/media/${b.dataset.mdel}`, { method: "DELETE" }); toast("Removed."); route(); })));
+    $$("[data-mdel]").forEach((b) => b.addEventListener("click", () => confirmThen("Remove this post from the website?", async () => { await api(`/media/${b.dataset.mdel}`, { method: "DELETE" }); toast("Removed."); route(); })));
+  }
+
+  // ---------- Website content (phase 1): videos, announcement, hours & contact, FAQ, clippings, history ----------
+  async function renderWebsite(pane) {
+    const data = await api("/website");
+    const media = state.admin.permissions.includes("instagram") ? (await api("/media")).media : null;
+    const PAGES = data.pages;
+    const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const changed = (k) => (data.meta[k] ? `<p class="muted small">Last changed ${esc(when(data.meta[k].updatedAt))} by ${esc(data.meta[k].updatedBy)}. Earlier versions are under <a href="#/website/history">History</a>.</p>` : '<p class="muted small">Showing the website\'s built-in content. Your first save replaces it.</p>');
+    const save = async (area, value, message) => {
+      const res = await api(`/website/${area}`, { method: "PUT", body: { value } });
+      toast(message || "Saved. The website shows it within a minute.");
+      return res.value;
+    };
+    const pageChecks = (name, chosen) => Object.entries(PAGES).map(([k, v]) => `<label class="check"><input type="checkbox" name="${name}" value="${k}" ${chosen.includes(k) ? "checked" : ""}> ${esc(v)}</label>`).join(" ");
+    const moveBtns = (i, n, attr) => `<button type="button" class="btn btn--ghost btn--sm" ${attr}="up" data-i="${i}" ${i ? "" : "disabled"} aria-label="Move up">↑</button> <button type="button" class="btn btn--ghost btn--sm" ${attr}="down" data-i="${i}" ${i < n - 1 ? "" : "disabled"} aria-label="Move down">↓</button>`;
+    const moved = (list, i, dir) => { const j = dir === "up" ? i - 1 : i + 1; if (j < 0 || j >= list.length) return list; const c = [...list]; [c[i], c[j]] = [c[j], c[i]]; return c; };
+
+    // Videos
+    const yt = data.youtube;
+    const videosCard = `
+      <section class="panel-card">
+        <h2>Add a YouTube video</h2>
+        <p class="muted small">On YouTube, tap <em>Share → Copy link</em> and paste it here. Shorts work too. Choose the pages it appears on; the video loads only when a visitor taps it.</p>
+        <form class="form" id="ytForm">
+          <div class="field-row">
+            <div class="field" style="flex:2"><label for="ytUrl">YouTube link</label><input id="ytUrl" name="url" required placeholder="https://youtu.be/…"></div>
+            <div class="field" style="flex:2"><label for="ytTitle">Title shown under the video</label><input id="ytTitle" name="title" maxlength="120" placeholder="e.g. Why sitting hurts your tailbone"></div>
+          </div>
+          <fieldset class="field"><legend>Show on</legend>${pageChecks("pages", ["treatment"])}</fieldset>
+          <button class="btn btn--primary btn--sm">Add video</button>
+        </form>
+      </section>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Order</th><th>Video</th><th>Shows on</th><th>Shown</th><th></th></tr></thead>
+        <tbody>${yt.map((v, i) => `<tr>
+          <td class="nowrap">${moveBtns(i, yt.length, "data-ytmove")}</td>
+          <td><div class="yt-row"><img src="https://i.ytimg.com/vi/${esc(v.id)}/default.jpg" alt="" width="80" height="60" loading="lazy"><span><a href="https://www.youtube.com/watch?v=${esc(v.id)}" target="_blank" rel="noopener">${esc(v.title || "Untitled video")}</a>${v.short ? ' <span class="badge">Short</span>' : ""}<br><button type="button" class="link-btn small" data-ytedit="${i}">Edit title</button></span></div></td>
+          <td class="small">${Object.entries(PAGES).map(([k, lab]) => `<label class="check"><input type="checkbox" data-ytpage="${i}" value="${k}" ${v.pages.includes(k) ? "checked" : ""}> ${esc(lab)}</label>`).join("<br>")}</td>
+          <td><label class="check"><input type="checkbox" data-ytvis="${i}" ${v.visible ? "checked" : ""}> Visible</label></td>
+          <td><button type="button" class="btn btn--danger btn--sm" data-ytdel="${i}">Remove</button></td>
+        </tr>`).join("") || '<tr><td colspan="5"><div class="empty">No YouTube videos yet. The Videos section stays hidden on the website until you add one.</div></td></tr>'}</tbody>
+      </table></div>
+      ${media ? `<section class="panel-card">
+        <h2>Instagram: which pages show each post</h2>
+        <p class="muted small">Add, remove and reorder Instagram posts in the <a href="#/instagram">Instagram</a> section. The Treatment page has its own Instagram section; Home and Doctor show them under Videos.</p>
+        <div class="table-wrap"><table><thead><tr><th>Post</th><th>Shows on</th></tr></thead><tbody>
+          ${media.map((m) => `<tr><td><a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.caption || m.url)}</a></td>
+            <td class="small">${Object.entries(PAGES).map(([k, lab]) => `<label class="check"><input type="checkbox" data-igpage="${m.id}" value="${k}" ${(m.pages || "treatment").split(",").includes(k) ? "checked" : ""}> ${esc(lab)}</label>`).join(" ")}</td></tr>`).join("") || '<tr><td colspan="2"><div class="empty">No Instagram posts yet.</div></td></tr>'}
+        </tbody></table></div>
+      </section>` : ""}`;
+
+    // Announcement bar
+    const A = data.announcement;
+    const announceCard = `
+      <section class="panel-card">
+        <h2>Announcement bar</h2>
+        <p class="muted small">A coloured strip at the top of every page, e.g. a holiday closure or "Lucknow clinic now open". Visitors can close it. With dates, it appears and disappears by itself.</p>
+        ${changed("announcement")}
+        <form class="form" id="announceForm">
+          <label class="check"><input type="checkbox" name="enabled" ${A.enabled ? "checked" : ""}> Show the announcement</label>
+          <div class="field"><label for="anText">Message (English)</label><input id="anText" name="text" maxlength="200" value="${esc(A.text)}" placeholder="e.g. The clinic is closed on 14 November. Online consultations continue."></div>
+          <div class="field"><label for="anTextHi">Message in Hindi (optional; the Hindi pages show English if empty)</label><input id="anTextHi" name="textHi" maxlength="200" value="${esc(A.textHi)}"></div>
+          <div class="field-row">
+            <div class="field"><label for="anLink">Link (optional)</label><input id="anLink" name="link" value="${esc(A.link)}" placeholder="/book or https://…"></div>
+            <div class="field"><label for="anLinkText">Link text</label><input id="anLinkText" name="linkText" maxlength="40" value="${esc(A.linkText)}" placeholder="Book now"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label for="anStart">Show from (optional)</label><input id="anStart" type="date" name="start" value="${esc(A.start)}"></div>
+            <div class="field"><label for="anEnd">Show until (optional)</label><input id="anEnd" type="date" name="end" value="${esc(A.end)}"></div>
+            <div class="field"><label for="anTone">Colour</label><select id="anTone" name="tone">${[["info", "Green (news)"], ["warning", "Amber (closure, change)"], ["success", "Bright green (good news)"]].map(([v, l]) => `<option value="${v}" ${A.tone === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+          </div>
+          <p class="small muted" style="margin:.4rem 0 .2rem">Preview</p>
+          <div class="announce-preview" id="anPreview"></div>
+          <button class="btn btn--primary btn--sm">Save announcement</button>
+        </form>
+      </section>`;
+
+    // Opening hours and contact details
+    const H = data.hours;
+    const C = data.contact;
+    const hoursCard = `
+      <section class="panel-card">
+        <h2>Opening hours</h2>
+        <p class="muted small">Used everywhere on the website (the open/closed status at the top, the Clinics page, the footer) <strong>and for online booking</strong>: new bookings can only be made within these hours. Existing appointments don't move. For a single day off, use <a href="#/settings/holidays">Settings → Holidays</a> instead.</p>
+        ${changed("hours")}
+        <form class="form" id="hoursForm">
+          <div class="hours-edit">${[1, 2, 3, 4, 5, 6, 0].map((d) => `<div class="hours-edit__row">
+            <strong>${DAYS[d]}</strong>
+            <label class="check"><input type="checkbox" name="closed-${d}" ${H[d] ? "" : "checked"}> Closed</label>
+            <input type="time" name="open-${d}" value="${esc(H[d]?.[0] || "10:00")}" step="1800" aria-label="${DAYS[d]} opens">
+            <span aria-hidden="true">–</span>
+            <input type="time" name="close-${d}" value="${esc(H[d]?.[1] || "17:00")}" step="1800" aria-label="${DAYS[d]} closes">
+          </div>`).join("")}</div>
+          <button class="btn btn--primary btn--sm">Save opening hours</button>
+        </form>
+      </section>
+      <section class="panel-card">
+        <h2>Contact details</h2>
+        <p class="muted small">Changes the phone, WhatsApp and email links on every page, and the number in WhatsApp messages and receipts.</p>
+        ${changed("contact")}
+        <form class="form" id="contactForm">
+          <div class="field-row">
+            <div class="field"><label for="ctPhone">Phone (as shown)</label><input id="ctPhone" name="phone" required value="${esc(C.phone)}" placeholder="+91 98866 88323"></div>
+            <div class="field"><label for="ctWa">WhatsApp number (country code, digits only)</label><input id="ctWa" name="whatsapp" required inputmode="numeric" value="${esc(C.whatsapp)}" placeholder="919886688323"></div>
+            <div class="field"><label for="ctEmail">Email</label><input id="ctEmail" name="email" type="email" required value="${esc(C.email)}"></div>
+          </div>
+          <button class="btn btn--primary btn--sm">Save contact details</button>
+        </form>
+      </section>`;
+
+    // FAQ
+    let faq = data.faq.map((x) => ({ ...x }));
+    const faqCard = `
+      <section class="panel-card">
+        <h2>Frequently asked questions</h2>
+        <p class="muted small">Shown on the FAQ page (English). Leave a blank line between paragraphs. For a link write <code>[link text](/policies.html)</code>.</p>
+        ${changed("faq")}
+        <div id="faqList" class="stack"></div>
+        <div class="row-gap"><button type="button" class="btn btn--ghost btn--sm" id="faqAdd">+ Add a question</button>
+        <button type="button" class="btn btn--primary btn--sm" id="faqSave">Save FAQ</button> <span class="small muted" id="faqDirty" hidden>Unsaved changes</span></div>
+      </section>`;
+
+    // Newspaper clippings
+    let press = data.press.map((x) => ({ ...x }));
+    const pressCard = `
+      <section class="panel-card">
+        <h2>Add a newspaper clipping</h2>
+        <p class="muted small">A clear photo or scan of the clipping (JPG, PNG or WebP, up to 5 MB). It appears on the <a href="/press.html" target="_blank" rel="noopener">In the news</a> page, and the newspaper's name appears in "As featured in".</p>
+        <form class="form" id="pressForm">
+          <div class="field-row">
+            <div class="field"><label for="prPhoto">Photo of the clipping</label><input id="prPhoto" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required></div>
+            <div class="field"><label for="prPub">Newspaper</label><input id="prPub" name="publication" required maxlength="80" placeholder="e.g. The Times of India"></div>
+          </div>
+          <div class="field-row">
+            <div class="field" style="flex:2"><label for="prTitle">Headline or description (optional)</label><input id="prTitle" name="title" maxlength="160"></div>
+            <div class="field"><label for="prDate">Date</label><input id="prDate" name="date" type="date"></div>
+            <div class="field"><label for="prLang">Edition / language (optional)</label><input id="prLang" name="language" maxlength="40" placeholder="Hindi edition"></div>
+          </div>
+          <button class="btn btn--primary btn--sm">Upload and add</button>
+        </form>
+      </section>
+      <section class="panel-card">
+        <h2>Clippings on the website</h2>
+        ${changed("press")}
+        <div class="table-wrap"><table id="pressTable"></table></div>
+        <div class="row-gap"><button type="button" class="btn btn--primary btn--sm" id="pressSave">Save clippings</button> <span class="small muted" id="pressDirty" hidden>Unsaved changes</span></div>
+      </section>`;
+
+    // History
+    const historyCard = `
+      <section class="panel-card">
+        <h2>Change history</h2>
+        <p class="muted small">Every save keeps the version before it. <strong>Restore</strong> puts that version back on the website (the current one stays in this list, so you can switch back).</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>When</th><th>What</th><th>Changed by</th><th></th></tr></thead>
+          <tbody>${data.history.map((h) => `<tr><td class="nowrap small">${esc(when(h.changedAt))}</td><td>${esc(h.label)}</td><td class="small">${esc(h.changedBy)}</td>
+            <td><button type="button" class="btn btn--ghost btn--sm" data-restore="${h.id}" data-label="${esc(h.label)}">${h.wasDefault ? "Back to built-in" : "Restore version before this"}</button></td></tr>`).join("") || '<tr><td colspan="4"><div class="empty">No changes yet.</div></td></tr>'}</tbody>
+        </table></div>
+      </section>`;
+
+    const panes = [["videos", "Videos", videosCard], ["announcement", "Announcement", announceCard], ["hours", "Hours & contact", hoursCard], ["faq", "FAQ", faqCard], ["press", "Clippings", pressCard], ["history", "History", historyCard]];
+    const current = panes.find(([k]) => k === pane)?.[0] || "videos";
+    content.innerHTML = `
+      <nav class="chips settings-tabs" aria-label="Website sections">${panes.map(([k, label]) => `<a class="chip ${k === current ? "is-active" : ""}" href="#/website/${k}"${k === current ? ' aria-current="page"' : ""}>${label}</a>`).join("")}</nav>
+      ${state.demo ? '<div class="alert alert--ok">Demo: you can look around, but saving is disabled here because website changes would show to every visitor of the demo site.</div>' : ""}
+      <div class="settings-pane stack">${panes.find(([k]) => k === current)[2]}</div>`;
+
+    if (current === "videos") {
+      state.primary = { label: "Add a YouTube video", run: () => $("#ytUrl").focus() };
+      const saveYt = async (list, msg) => { await save("youtube", list, msg); route(); };
+      $("#ytForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        confirmThen(null, () => saveYt([{ url: f.get("url"), title: f.get("title"), pages: f.getAll("pages"), visible: true }, ...yt], "Video added. It shows on the website within a minute."));
+      });
+      $$("[data-ytmove]").forEach((b) => b.addEventListener("click", () => confirmThen(null, () => saveYt(moved(yt, Number(b.dataset.i), b.dataset.ytmove), "Order saved."))));
+      $$("[data-ytvis]").forEach((c) => c.addEventListener("change", () => confirmThen(null, () => saveYt(yt.map((v, i) => (i === Number(c.dataset.ytvis) ? { ...v, visible: c.checked } : v)), c.checked ? "Shown on the website." : "Hidden from the website."))));
+      $$("[data-ytpage]").forEach((c) => c.addEventListener("change", () => {
+        const i = Number(c.dataset.ytpage);
+        const pages = $$(`[data-ytpage="${i}"]:checked`).map((x) => x.value);
+        if (!pages.length) { c.checked = true; toast("A video needs at least one page. To take it off the website, untick Visible."); return; }
+        confirmThen(null, () => saveYt(yt.map((v, k) => (k === i ? { ...v, pages } : v)), "Pages saved."));
+      }));
+      $$("[data-ytedit]").forEach((b) => b.addEventListener("click", () => {
+        const i = Number(b.dataset.ytedit);
+        const title = prompt("Title shown under the video", yt[i].title || "");
+        if (title !== null) confirmThen(null, () => saveYt(yt.map((v, k) => (k === i ? { ...v, title } : v)), "Title saved."));
+      }));
+      $$("[data-ytdel]").forEach((b) => b.addEventListener("click", () => confirmThen("Remove this video from the website?", () => saveYt(yt.filter((_, i) => i !== Number(b.dataset.ytdel)), "Video removed."))));
+      $$("[data-igpage]").forEach((c) => c.addEventListener("change", () => {
+        const pages = $$(`[data-igpage="${c.dataset.igpage}"]:checked`).map((x) => x.value);
+        if (!pages.length) { c.checked = true; toast("A post needs at least one page. To hide it, untick it in the Instagram section."); return; }
+        confirmThen(null, async () => { await api(`/media/${c.dataset.igpage}`, { method: "PATCH", body: { pages } }); toast("Pages saved."); });
+      }));
+    }
+
+    if (current === "announcement") {
+      const form = $("#announceForm");
+      const read = () => { const f = new FormData(form); return { enabled: f.get("enabled") === "on", text: f.get("text"), textHi: f.get("textHi"), link: f.get("link"), linkText: f.get("linkText"), start: f.get("start"), end: f.get("end"), tone: f.get("tone") }; };
+      const preview = () => {
+        const a = read();
+        $("#anPreview").innerHTML = a.text ? `<div class="announce announce--${esc(a.tone)}"><div class="announce__inner"><p>${esc(a.text)}${a.link ? ` <a href="${esc(a.link)}" target="_blank" rel="noopener">${esc(a.linkText || "Find out more")} →</a>` : ""}</p><span class="announce__close" aria-hidden="true">×</span></div></div>
+          <p class="small muted">${a.enabled ? `Shows ${a.start ? `from ${esc(day(a.start))}` : "from now"}${a.end ? ` until ${esc(day(a.end))}` : ""}.` : "Switched off: not shown on the website."}</p>` : '<p class="small muted">Write a message to see the preview.</p>';
+      };
+      form.addEventListener("input", preview);
+      preview();
+      form.addEventListener("submit", (e) => { e.preventDefault(); confirmThen(null, async () => { await save("announcement", read(), read().enabled ? "Saved. The bar shows on the website within a minute." : "Saved (switched off)."); route(); }); });
+    }
+
+    if (current === "hours") {
+      $("#hoursForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const value = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((d) => [d, f.get(`closed-${d}`) ? null : [f.get(`open-${d}`), f.get(`close-${d}`)]]));
+        confirmThen("Save the new opening hours? Online booking will offer times within these hours from now on.", async () => { await save("hours", value, "Opening hours saved."); route(); });
+      });
+      $("#contactForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const value = Object.fromEntries(new FormData(e.target));
+        confirmThen("Save the new contact details? They appear on every page and in messages to patients.", async () => { await save("contact", value, "Contact details saved."); route(); });
+      });
+    }
+
+    if (current === "faq") {
+      const list = $("#faqList");
+      const dirty = (on = true) => { $("#faqDirty").hidden = !on; };
+      const draw = () => {
+        list.innerHTML = faq.map((x, i) => `<div class="faq-edit${x.visible ? "" : " is-hidden"}">
+          <div class="faq-edit__bar"><strong>Question ${i + 1}</strong><span>${moveBtns(i, faq.length, "data-fmove")}
+            <label class="check"><input type="checkbox" data-fvis="${i}" ${x.visible ? "checked" : ""}> Shown</label>
+            <button type="button" class="btn btn--danger btn--sm" data-fdel="${i}">Delete</button></span></div>
+          <div class="field"><label for="fq${i}">Question</label><input id="fq${i}" data-fq="${i}" maxlength="200" value="${esc(x.q)}"></div>
+          <div class="field"><label for="fa${i}">Answer</label><textarea id="fa${i}" data-fa="${i}" rows="4" maxlength="2000">${esc(x.a)}</textarea></div>
+        </div>`).join("") || '<div class="empty">No questions. Add one, or restore the built-in questions from History.</div>';
+      };
+      draw();
+      list.addEventListener("input", (e) => {
+        const t = e.target;
+        if (t.dataset.fq) faq[t.dataset.fq].q = t.value;
+        if (t.dataset.fa) faq[t.dataset.fa].a = t.value;
+        dirty();
+      });
+      list.addEventListener("change", (e) => { if (e.target.dataset.fvis) { faq[e.target.dataset.fvis].visible = e.target.checked; dirty(); draw(); } });
+      list.addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        if (b.dataset.fmove) { faq = moved(faq, Number(b.dataset.i), b.dataset.fmove); dirty(); draw(); }
+        if (b.dataset.fdel && confirm("Delete this question? (It's only removed from the website when you press Save FAQ.)")) { faq.splice(Number(b.dataset.fdel), 1); dirty(); draw(); }
+      });
+      $("#faqAdd").addEventListener("click", () => { faq.push({ q: "", a: "", visible: true }); dirty(); draw(); $(`#fq${faq.length - 1}`).focus(); });
+      $("#faqSave").addEventListener("click", () => confirmThen(null, async () => { await save("faq", faq, "FAQ saved. The FAQ page shows it within a minute."); route(); }));
+      state.primary = { label: "Add a question", run: () => $("#faqAdd").click() };
+    }
+
+    if (current === "press") {
+      const table = $("#pressTable");
+      const dirty = () => { $("#pressDirty").hidden = false; };
+      const draw = () => {
+        table.innerHTML = `<thead><tr><th>Order</th><th>Clipping</th><th>Newspaper and date</th><th>Shown</th><th></th></tr></thead>
+          <tbody>${press.map((p, i) => `<tr>
+            <td class="nowrap">${moveBtns(i, press.length, "data-pmove")}</td>
+            <td><a href="${esc(p.image)}" target="_blank" rel="noopener"><img src="${esc(p.thumb || p.image)}" alt="" width="64" height="80" style="object-fit:cover;border-radius:6px" loading="lazy"></a></td>
+            <td><div class="field"><label class="sr-only" for="pp${i}">Newspaper</label><input id="pp${i}" data-pf="publication" data-i="${i}" value="${esc(p.publication)}" maxlength="80"></div>
+              <div class="field-row"><input type="date" data-pf="date" data-i="${i}" value="${esc(p.date)}" aria-label="Date"><input data-pf="language" data-i="${i}" value="${esc(p.language)}" maxlength="40" placeholder="Edition" aria-label="Edition or language"></div></td>
+            <td><label class="check"><input type="checkbox" data-pvis="${i}" ${p.visible ? "checked" : ""}> Shown</label></td>
+            <td><button type="button" class="btn btn--danger btn--sm" data-pdel="${i}">Delete</button></td>
+          </tr>`).join("") || '<tr><td colspan="5"><div class="empty">No clippings.</div></td></tr>'}</tbody>`;
+      };
+      draw();
+      table.addEventListener("input", (e) => { const t = e.target; if (t.dataset.pf) { press[t.dataset.i][t.dataset.pf] = t.value; dirty(); } });
+      table.addEventListener("change", (e) => { if (e.target.dataset.pvis) { press[e.target.dataset.pvis].visible = e.target.checked; dirty(); } });
+      table.addEventListener("click", (e) => {
+        const b = e.target.closest("button");
+        if (!b) return;
+        if (b.dataset.pmove) { press = moved(press, Number(b.dataset.i), b.dataset.pmove); dirty(); draw(); }
+        if (b.dataset.pdel && confirm("Delete this clipping? (It's only removed from the website when you press Save clippings.)")) { press.splice(Number(b.dataset.pdel), 1); dirty(); draw(); }
+      });
+      $("#pressSave").addEventListener("click", () => confirmThen(null, async () => { await save("press", press, "Clippings saved."); route(); }));
+      $("#pressForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const file = f.get("photo");
+        if (!file?.size) { toast("Choose a photo of the clipping."); return; }
+        if (file.size > 5 * 1024 * 1024) { toast("Photos up to 5 MB can be added."); return; }
+        confirmThen(null, async () => {
+          const size = await new Promise((resolve) => { const im = new Image(); im.onload = () => { resolve([im.naturalWidth, im.naturalHeight]); URL.revokeObjectURL(im.src); }; im.onerror = () => resolve([800, 1000]); im.src = URL.createObjectURL(file); });
+          const res = await fetch(`/api/admin/website/upload?name=${encodeURIComponent(file.name)}`, { method: "POST", credentials: "same-origin", body: file, headers: { "content-type": file.type || "application/octet-stream", "x-requested-with": "fetch" } });
+          const body = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(body.error || "The photo couldn't be uploaded.");
+          const item = { publication: f.get("publication"), title: f.get("title"), date: f.get("date"), language: f.get("language"), image: body.media.url, thumb: body.media.url, width: size[0], height: size[1], visible: true };
+          await save("press", [item, ...press], "Clipping added. It shows on the In the news page within a minute.");
+          route();
+        });
+      });
+      state.primary = { label: "Add a clipping", run: () => $("#prPhoto").focus() };
+    }
+
+    if (current === "history") {
+      $$("[data-restore]").forEach((b) => b.addEventListener("click", () => confirmThen(`Put back the ${b.dataset.label.toLowerCase()} as it was before this change?`, async () => {
+        await api(`/website/history/${b.dataset.restore}/restore`, { method: "POST" });
+        toast("Restored. The website shows it within a minute.");
+        route();
+      })));
+    }
   }
 
   // ---------- Blog articles ----------

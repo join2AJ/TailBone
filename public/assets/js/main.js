@@ -101,7 +101,13 @@
   $$("[data-count]").forEach((el) => counter.observe(el));
 
   // ---- Open / closed status (clinic time, IST) ----
-  const HOURS = { 0: [8, 15], 1: [10, 17], 2: [10, 17], 3: [10, 17], 4: [10, 17], 5: [10, 17], 6: [10, 15] };
+  // Opening hours in hours (10.5 = 10:30); a closed day has none. The dashboard can change them (site-content.js).
+  let HOURS = { 0: [8, 15], 1: [10, 17], 2: [10, 17], 3: [10, 17], 4: [10, 17], 5: [10, 17], 6: [10, 15] };
+  const useSiteHours = (h) => {
+    if (!h) return;
+    const num = (t) => Number(t.slice(0, 2)) + Number(t.slice(3)) / 60;
+    HOURS = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((d) => [d, h[d] ? [num(h[d][0]), num(h[d][1])] : null]));
+  };
   const DAY_NAMES = HI ? ["रविवार", "सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार"] : ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const istNow = () => {
     const parts = new Intl.DateTimeFormat("en-US", {
@@ -111,10 +117,14 @@
     const day = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(get("weekday"));
     return { day, minutes: Number(get("hour")) * 60 + Number(get("minute")) };
   };
-  const fmtHour = (h) => `${((h + 11) % 12) + 1} ${h < 12 ? "AM" : "PM"}`;
+  const fmtHour = (h) => {
+    const hh = Math.floor(h);
+    const mm = Math.round((h - hh) * 60);
+    return `${((hh + 11) % 12) + 1}${mm ? `:${String(mm).padStart(2, "0")}` : ""} ${hh < 12 ? "AM" : "PM"}`;
+  };
   const updateStatus = () => {
     const { day, minutes } = istNow();
-    const [open, close] = HOURS[day];
+    const [open, close] = HOURS[day] || [24, 24];
     const isOpen = minutes >= open * 60 && minutes < close * 60;
     const status = $("#openStatus");
     status.classList.toggle("is-open", isOpen);
@@ -125,14 +135,19 @@
     } else if (minutes < open * 60) {
       text = t(`Closed · opens today at ${fmtHour(open)} IST`, `अभी बंद · आज ${fmtHour(open)} बजे खुलेगा`);
     } else {
-      const next = (day + 1) % 7;
-      text = t(`Closed · opens ${DAY_NAMES[next]} at ${fmtHour(HOURS[next][0])} IST`, `अभी बंद · ${DAY_NAMES[next]} ${fmtHour(HOURS[next][0])} बजे खुलेगा`);
+      let next = (day + 1) % 7;
+      for (let i = 0; i < 6 && !HOURS[next]; i++) next = (next + 1) % 7;
+      text = HOURS[next]
+        ? t(`Closed · opens ${DAY_NAMES[next]} at ${fmtHour(HOURS[next][0])} IST`, `अभी बंद · ${DAY_NAMES[next]} ${fmtHour(HOURS[next][0])} बजे खुलेगा`)
+        : t("Closed", "अभी बंद");
     }
     $(".status__text", status).textContent = text;
     $$("#hoursList li").forEach((li) => li.classList.toggle("is-today", Number(li.dataset.day) === day));
   };
+  useSiteHours(window.TB_SITE?.hours);
   updateStatus();
   setInterval(updateStatus, 60_000);
+  document.addEventListener("tb:site", (e) => { useSiteHours(e.detail.hours); updateStatus(); });
 
   // ---- Symptom checker ----
   // Each page now ships only its own sections (see scripts/build-pages.js), so every feature below
@@ -425,7 +440,7 @@
   };
   const localSlots = (date) => {
     const day = new Date(`${date}T00:00:00`).getDay();
-    const [open, close] = HOURS[day];
+    const [open, close] = HOURS[day] || [0, 0];
     const { day: todayIdx, minutes } = istNow();
     const isToday = date === istToday() && todayIdx === day;
     const out = [];
@@ -559,7 +574,7 @@
         b.disabled = d.free === 0;
         b.setAttribute("aria-pressed", "false");
         // A day with no times left only because they're past (today, late in the day) is "Closed", not "Full".
-        const over = !d.free && d.date === istToday() && istNow().minutes >= (HOURS[istNow().day][1] - 1) * 60;
+        const over = !d.free && d.date === istToday() && istNow().minutes >= ((HOURS[istNow().day] || [0, 0])[1] - 1) * 60;
         const label = d.free ? (offline ? t("Open", "खुला") : t(`${d.free} free`, `${d.free} खाली`)) : (offline || over ? t("Closed", "बंद") : t("Full", "भरा"));
         b.setAttribute("aria-label", `${prettyDay(d.date, { weekday: "long", day: "numeric", month: "long" })}, ${d.free ? t(`${d.free} times free`, `${d.free} समय खाली`) : over || offline ? t("closed", "बंद") : t("fully booked", "पूरा भरा")}`);
         b.innerHTML = `<small>${prettyDay(d.date, { weekday: "short" })}</small><strong>${prettyDay(d.date, { day: "numeric" })}</strong><em>${label}</em>`;
@@ -668,7 +683,7 @@
       if (reason) lines.push(`About my pain: ${reason}`);
       const refCode = String(fd.get("referralCode") || "").trim();
       if (refCode) lines.push(`Referral code: ${refCode}`);
-      const url = `https://wa.me/919886688323?text=${encodeURIComponent(lines.join("\n"))}`;
+      const url = `https://wa.me/${window.TB_SITE?.contact?.whatsapp || WA_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
       window.open(url, "_blank", "noopener");
       showDone({
         name: String(fd.get("name")).trim(),
@@ -696,7 +711,7 @@
     try {
       const { appointment, whatsappUrl, payment } = await api("/api/appointments", { method: "POST", body: JSON.stringify(payload) });
       lastBooking = appointment;
-      lastWhatsapp = whatsappUrl || `https://wa.me/919886688323?text=${encodeURIComponent(`Hi Dr Rajveer, got your details from your website. I have booked an appointment (no. ${appointment.ref}).`)}`;
+      lastWhatsapp = whatsappUrl || `https://wa.me/${window.TB_SITE?.contact?.whatsapp || WA_NUMBER}?text=${encodeURIComponent(`Hi Dr Rajveer, got your details from your website. I have booked an appointment (no. ${appointment.ref}).`)}`;
       if (payment) {
         pendingPayment = payment;
         await startPayment();

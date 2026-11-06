@@ -1309,3 +1309,24 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
   .deeper .mini-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: .5rem; }
   .deeper .mini-grid > li { scroll-snap-align: start; }
 }
+/* ---- Website content from the dashboard (site-content.js) ---- */
+.announce { background: var(--ink); color: #fff; font-size: .92rem; position: relative; z-index: 60; }
+.announce--warning { background: #92400e; }
+.announce--success { background: #166534; }
+.announce__inner { display: flex; align-items: center; gap: .8rem; padding-block: .55rem; }
+.announce p { margin: 0; flex: 1; line-height: 1.45; }
+.announce a { color: #fff; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.announce__close { background: none; border: 0; color: #fff; font-size: 1.4rem; line-height: 1; min-width: 36px; min-height: 36px; cursor: pointer; border-radius: 8px; }
+.announce__close:hover, .announce__close:focus-visible { background: rgba(255,255,255,.15); }
+.video-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 380px)); justify-content: center; gap: 1.2rem; align-items: start; }
+.video-card { margin: 0; }
+.video-card__play, .video-card iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius-sm); background: #0f172a; overflow: hidden; }
+.video-card--short .video-card__play, .video-card--short iframe { aspect-ratio: 9 / 16; max-height: 560px; }
+.video-card--post .video-card__play, .video-card--post iframe { aspect-ratio: 4 / 5; }
+.video-card__play { position: relative; padding: 0; cursor: pointer; color: #fff; }
+.video-card__play img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: .9; transition: opacity .2s; }
+.video-card__play:hover img, .video-card__play:focus-visible img { opacity: 1; }
+.video-card__icon { position: absolute; inset: 50% auto auto 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; border-radius: 50%; background: rgba(220, 38, 38, .92); display: grid; place-items: center; font-size: 1.5rem; padding-left: 4px; }
+.video-card__play--ig { display: grid; place-items: center; align-content: center; gap: .6rem; background: linear-gradient(160deg, #833ab4, #fd1d1d 60%, #fcb045); font-weight: 700; }
+.video-card__play--ig .video-card__icon { position: static; transform: none; background: rgba(255,255,255,.2); }
+.video-card figcaption { padding: .6rem .2rem 0; font-weight: 600; line-height: 1.4; }

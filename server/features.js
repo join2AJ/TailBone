@@ -32,6 +32,7 @@ export const PERMISSIONS = {
   insights: "Ads & insights (totals only, no names)",
   referrals: "Referral partners and their payouts",
   homevisits: "Doctor at your place requests",
+  website: "Website content (videos, announcement bar, opening hours, contact details, FAQ, newspaper clippings)",
 };
 export const DEFAULT_PERMISSIONS = ["appointments", "followups", "patients", "inbox", "stories", "instagram", "blog"];
 

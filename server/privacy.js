@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { config } from "./config.js";
 import { encrypt, decrypt, decryptFields } from "./crypto.js";
 import { calendarSync } from "./services.js";
 
@@ -44,7 +45,7 @@ export function exportPatientData(db, patientId) {
   const ownPartner = db.prepare("SELECT id, code, status, payout_details, created_at FROM partners WHERE patient_id = ?").get(patientId);
   return {
     exportedAt: new Date().toISOString(),
-    controller: "Tailbone Treatment Clinic, +91 98866 88323, contact@tailbonetreatment.com",
+    controller: `Tailbone Treatment Clinic, ${config.clinicPhone || "+91 98866 88323"}, ${config.clinicEmail || "contact@tailbonetreatment.com"}`,
     noticeVersion: NOTICE_VERSION,
     patient: decryptFields(patient, ["notes"]),
     appointments: db.prepare(

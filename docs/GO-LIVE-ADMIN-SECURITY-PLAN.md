@@ -55,7 +55,9 @@ This document has four parts:
 
 **Rules in every phase:** every change is saved with who made it and when, can be previewed before it goes live, and the last version can be restored with one click.
 
-### Phase 1: videos and everyday updates (with go-live, about 2–3 weeks)
+### Phase 1: videos and everyday updates ✅ built 6 November 2026
+
+In the dashboard under **Website** (tabs: Videos, Announcement, Hours & contact, FAQ, Clippings, History). The super admin gives other staff access with the new "Website content" permission in the Control panel. Two limits for now: the Hindi FAQ keeps its translated text, and the announcement shows in English on Hindi pages unless a Hindi message is written.
 
 | Section | Add | Edit | Hide / show | Delete | Reorder |
 |---|---|---|---|---|---|

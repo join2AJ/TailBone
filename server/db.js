@@ -122,6 +122,22 @@ CREATE TABLE IF NOT EXISTS media (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Website content edited in the dashboard (server/site-content.js): one JSON document per area, plus earlier versions.
+CREATE TABLE IF NOT EXISTS site_content (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_by TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS site_content_history (
+  id INTEGER PRIMARY KEY,
+  key TEXT NOT NULL,
+  value TEXT NOT NULL,                 -- the version before the change; 'null' = the website's built-in content
+  changed_at TEXT NOT NULL DEFAULT (datetime('now')),
+  changed_by TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_site_content_history ON site_content_history(key, id);
+
 CREATE TABLE IF NOT EXISTS blocked_dates (
   id INTEGER PRIMARY KEY,
   clinic TEXT NOT NULL CHECK (clinic IN ('all','blr','del','lko','online')),
@@ -335,6 +351,9 @@ const MIGRATIONS = {
     ad_click: "INTEGER NOT NULL DEFAULT 0",                // arrived from a Google Ads click (gclid)
     landing_page: "TEXT",
     referral_partner_id: "INTEGER",                        // partners.id when booked with a referral code
+  },
+  media: {
+    pages: "TEXT NOT NULL DEFAULT 'treatment'",           // comma-separated pages an Instagram post shows on: home, treatment, doctor
   },
   blog_media: {
     file_key: "TEXT",                                      // random part of the file's address (/media/blog/<key>), so drafts' files can't be guessed

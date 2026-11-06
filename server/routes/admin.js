@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import { CLINICS } from "../config.js";
 import {
   requireAdmin, verifyPassword, hashPassword, createSessionCookie, clearSessionCookie, rateLimit,
@@ -21,7 +21,8 @@ import { paymentsEnabled, rupees, paymentMode, webhookConfigured } from "../paym
 import { notify, readNotification, whatsappApiEnabled, getWhatsappSettings, saveWhatsappSettings, sendTest } from "../notify.js";
 import { listPosts, setEnabled } from "../blog.js";
 import { addDocument, listDocuments, getDocument, readFile, sendFile, KINDS, MAX_BYTES } from "../documents.js";
-import express from "express";
+import { adminView, saveArea, restoreArea, AREA_LABELS, PAGES } from "../site-content.js";
+import { addMedia, sniffMedia } from "../articles.js";
 import { getVideoSettings, saveVideoSettings, cleanVideoUrl, videoUrlFor } from "../video.js";
 import { growthRoutes } from "./admin-growth.js";
 import { cleanProfile, saveProfile, profileView, PROFILE_OPTIONS } from "../profile.js";
@@ -127,6 +128,7 @@ export function adminRoutes(db) {
   r.use((req, res, next) => {
     if (config.demo && DEMO_BLOCKED.some((rx) => rx.test(canonicalPath(req)))) return res.status(403).json({ error: "Disabled in the demo." });
     if (config.demo && canonicalPath(req).startsWith("/superadmin") && req.method !== "GET") return res.status(403).json({ error: "Viewing only in the demo: changes here would affect every demo visitor." });
+    if (config.demo && canonicalPath(req).startsWith("/website") && req.method !== "GET") return res.status(403).json({ error: "Viewing only in the demo: website changes would show to every visitor of the demo site." });
     next();
   });
 
@@ -137,7 +139,7 @@ export function adminRoutes(db) {
     [/^\/patients\/\d+\/(export|erase)$/, "privacy"],
     [/^\/patients\/\d+\/referrer$/, "referrals"],
     [/^\/appointments/, "appointments"], [/^\/followups/, "followups"], [/^\/patients/, "patients"],
-    [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"], [/^\/blog/, "blog"], [/^\/documents/, "patients"],
+    [/^\/notifications/, "inbox"], [/^\/stories/, "stories"], [/^\/media/, "instagram"], [/^\/website/, "website"], [/^\/blog/, "blog"], [/^\/documents/, "patients"],
     [/^\/payments/, "payments"], [/^\/privacy/, "privacy"],
     [/^\/settings\/policy$/, "settings", "PUT"], [/^\/settings\/video$/, "settings", "PUT"], [/^\/settings\/whatsapp/, "settings", "PUT"], [/^\/settings\/whatsapp\/test$/, "settings"], [/^\/blocked/, "settings"], [/^\/calendar/, "settings"],
     [/^\/export/, "export"],
@@ -966,6 +968,11 @@ export function adminRoutes(db) {
     const mid = id(req.params.id);
     if (req.body.visible !== undefined) db.prepare("UPDATE media SET visible = ? WHERE id = ?").run(req.body.visible ? 1 : 0, mid);
     if (req.body.caption !== undefined) db.prepare("UPDATE media SET caption = ? WHERE id = ?").run(cleanText(req.body.caption, 140), mid);
+    if (Array.isArray(req.body.pages)) {
+      const pages = [...new Set(req.body.pages.filter((pg) => Object.hasOwn(PAGES, pg)))];
+      if (!pages.length) throw new HttpError(400, "Choose at least one page.");
+      db.prepare("UPDATE media SET pages = ? WHERE id = ?").run(pages.join(","), mid);
+    }
     if (req.body.move === "up" || req.body.move === "down") {
       const rows = db.prepare("SELECT id FROM media ORDER BY sort, id DESC").all().map((r0) => r0.id);
       const i = rows.indexOf(mid);
@@ -982,6 +989,30 @@ export function adminRoutes(db) {
   r.delete("/media/:id", (req, res) => {
     db.prepare("DELETE FROM media WHERE id = ?").run(id(req.params.id));
     res.json({ ok: true });
+  });
+
+  // ---------- Website content (phase 1: videos, announcement, hours, contact, FAQ, clippings) ----------
+  r.get("/website", (req, res) => res.json(adminView(db)));
+
+  r.put("/website/:area", (req, res) => {
+    const value = saveArea(db, req.params.area, req.body?.value, req.admin.email);
+    securityLog(db, req, "website_content_saved", AREA_LABELS[req.params.area] || req.params.area);
+    res.json({ ok: true, value });
+  });
+
+  r.post("/website/history/:id/restore", (req, res) => {
+    const { key, value } = restoreArea(db, id(req.params.id), req.admin.email);
+    securityLog(db, req, "website_content_restored", `${AREA_LABELS[key] || key} (version #${req.params.id})`);
+    res.json({ ok: true, key, value });
+  });
+
+  // Photos for newspaper clippings (JPG, PNG or WebP, up to 5 MB). Stored like article pictures; served at /media/blog/<key>.
+  r.post("/website/upload", express.raw({ type: () => true, limit: 5 * 1024 * 1024 + 1024 }), (req, res) => {
+    if (req.body?.length > 5 * 1024 * 1024) throw new HttpError(413, "Photos up to 5 MB can be added.");
+    if (!sniffMedia(req.body)?.startsWith("image/")) throw new HttpError(415, "Please choose a JPG, PNG or WebP photo.");
+    const media = addMedia(db, req.query.name, req.body);
+    securityLog(db, req, "website_photo_added", `media #${media.id}`);
+    res.status(201).json({ media });
   });
 
   // ---------- Blocked dates ----------

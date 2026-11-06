@@ -276,6 +276,7 @@ ${body}
   <script src="/assets/js/anim.js" defer></script>
   <script src="/assets/js/consent.js" defer></script>
   <script src="/assets/js/blog.js" defer></script>
+  <script src="/assets/js/site-content.js" defer></script>
 </body>
 </html>
 `;

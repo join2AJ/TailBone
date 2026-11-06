@@ -3,8 +3,10 @@
 (() => {
   "use strict";
   const $ = (s, el = document) => el.querySelector(s);
-  const links = [...document.querySelectorAll(".press-card__img[data-full]")];
-  if (!links.length) return;
+  // Read the clippings each time: the dashboard's list can replace the built-in one after the page loads.
+  const all = () => [...document.querySelectorAll(".press-card__img[data-full]")];
+  if (!document.querySelector(".press-grid")) return;
+  let links = all();
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const box = document.createElement("dialog");
@@ -20,6 +22,8 @@
   let index = 0;
 
   function show(i, from) {
+    links = all();
+    if (!links.length) return;
     index = (i + links.length) % links.length;
     const a = links[index];
     img.src = a.dataset.full;
@@ -52,11 +56,12 @@
     anim.onfinish = () => box.close();
   }
 
-  links.forEach((a, i) => a.addEventListener("click", (e) => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; // let people open it in a new tab
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest(".press-card__img[data-full]");
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; // let people open it in a new tab
     e.preventDefault();
-    show(i, a);
-  }));
+    show(all().indexOf(a), a);
+  });
   $(".lightbox__close", box).addEventListener("click", close);
   $(".lightbox__prev", box).addEventListener("click", () => show(index - 1));
   $(".lightbox__next", box).addEventListener("click", () => show(index + 1));
@@ -65,7 +70,7 @@
     if (e.key === "ArrowRight") show(index + 1);
     if (e.key === "ArrowLeft") show(index - 1);
   });
-  box.addEventListener("close", () => links[index].focus({ preventScroll: true }));
+  box.addEventListener("close", () => links[index]?.focus({ preventScroll: true }));
   let startX = null;
   box.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; }, { passive: true });
   box.addEventListener("touchend", (e) => {
@@ -76,9 +81,12 @@
   });
 
   // Arriving from "As featured in" (press.html#clipping): bring that clipping into view and highlight it.
-  const target = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
-  if (target && target.classList.contains("press-card")) {
+  const highlight = () => {
+    const target = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+    if (!target || !target.classList.contains("press-card")) return;
     target.classList.add("is-highlight");
     setTimeout(() => target.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" }), 100);
-  }
+  };
+  highlight();
+  document.addEventListener("tb:site", highlight);
 })();

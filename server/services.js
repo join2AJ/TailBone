@@ -437,7 +437,7 @@ export function receiptFor(db, appt) {
   return {
     receiptNo,
     issuedAt: paidAt,
-    issuer: { name: "Tailbone Treatment Clinic", practitioner: "Dr Rajveer Singh", address: CLINICS.del.address, phone: "+91 98866 88323", email: "contact@tailbonetreatment.com" },
+    issuer: { name: "Tailbone Treatment Clinic", practitioner: "Dr Rajveer Singh", address: CLINICS.del.address, phone: config.clinicPhone || "+91 98866 88323", email: config.clinicEmail || "contact@tailbonetreatment.com" },
     patient: { name: appt.patient_name, code: appt.patient_code },
     appointment: { no: appt.appt_no || appt.ref, date: appt.date, time: appt.time, when: `${prettyDate(appt.date)}, ${prettyTime(appt.time)}`, clinic: clinic.name, status: appt.status },
     service,

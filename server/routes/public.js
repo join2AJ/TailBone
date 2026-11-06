@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { CLINICS, HOURS, BOOKING, config } from "../config.js";
+import { publicView } from "../site-content.js";
 import { rateLimit } from "../auth.js";
 import { clinicNow } from "../time.js";
 import { encrypt } from "../crypto.js";
@@ -622,7 +623,14 @@ export function publicRoutes(db) {
   // ---------- Instagram highlights ----------
   r.get("/media", (req, res) => {
     if (!isOn(db, "instagram")) return res.json({ media: [] });
-    res.json({ media: db.prepare("SELECT id, url, kind, caption FROM media WHERE visible = 1 ORDER BY sort, id DESC LIMIT 12").all() });
+    res.json({ media: db.prepare("SELECT id, url, kind, caption FROM media WHERE visible = 1 AND (',' || pages || ',') LIKE '%,treatment,%' ORDER BY sort, id DESC LIMIT 12").all() });
+  });
+
+  // ---------- Website content edited in the dashboard (see server/site-content.js) ----------
+  r.get("/site-content", (req, res) => {
+    const instagram = isOn(db, "instagram") ? db.prepare("SELECT url, kind, caption, pages FROM media WHERE visible = 1 ORDER BY sort, id DESC LIMIT 24").all() : [];
+    res.set("Cache-Control", "public, max-age=60");
+    res.json(publicView(db, { instagram }));
   });
 
   return r;

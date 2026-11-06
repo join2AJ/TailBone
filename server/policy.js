@@ -1,6 +1,7 @@
 // Fees, commission and cancellation / reschedule / follow-up rules.
 // Stored in the `settings` table so the clinic can change them from the dashboard.
 // Amounts in settings are whole rupees (easy to edit); everything else in the app uses paise.
+import { config } from "./config.js";
 
 // Clinic status: open = bookable; closed = shown as closed, no new bookings; soon = "opening soon".
 export const CLINIC_STATUSES = ["open", "closed", "soon"];
@@ -195,7 +196,7 @@ export function rescheduleCheck(appt, currentPolicy, now = new Date()) {
     return { allowed: false, reason: `Online rescheduling is limited to ${policy.reschedule.maxTimes === 1 ? "once" : `${policy.reschedule.maxTimes} times`} per booking. Please call the clinic.` };
   }
   if (hours < policy.reschedule.minHoursBefore) {
-    return { allowed: false, reason: `This appointment is less than ${policy.reschedule.minHoursBefore} hours away, so it can't be moved online. Please call or WhatsApp the clinic on +91 98866 88323.` };
+    return { allowed: false, reason: `This appointment is less than ${policy.reschedule.minHoursBefore} hours away, so it can't be moved online. Please call or WhatsApp the clinic on ${config.clinicPhone || "+91 98866 88323"}.` };
   }
   return { allowed: true, remaining: policy.reschedule.maxTimes - (appt.reschedule_count || 0) };
 }

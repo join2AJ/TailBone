@@ -91,6 +91,19 @@ ${lines.join("\n")}
 `);
 }
 
+/** Every public page loads site-content.js, which shows what the clinic changed in the dashboard (announcement, hours,
+ * contact details, FAQ, clippings, videos). The dashboard itself (/admin) doesn't need it. */
+export function addSiteContentScript() {
+  const tag = '<script src="/assets/js/site-content.js" defer></script>';
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? (e.name === "admin" ? [] : walk(path.join(dir, e.name))) : e.name.endsWith(".html") ? [path.join(dir, e.name)] : []);
+  for (const file of walk(path.join(root, "public"))) {
+    const html = fs.readFileSync(file, "utf8");
+    if (html.includes("/assets/js/site-content.js") || !html.includes("</body>")) continue;
+    fs.writeFileSync(file, html.replace("</body>", `  ${tag}\n</body>`));
+  }
+}
+
 /** Adds ?v=<content hash> to our own stylesheets and scripts in every page (see versionHtml in partials.js). */
 export function versionAssets() {
   const hashes = new Map();
@@ -113,6 +126,7 @@ export function buildSite() {
   write404();
   writeRobots();
   writeLlms(pages, posts);
+  addSiteContentScript();
   versionAssets();
   return { pages, posts };
 }

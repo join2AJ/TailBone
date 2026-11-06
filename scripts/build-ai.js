@@ -38,6 +38,7 @@ export function pageToMarkdown(html) {
   m = m
     .replace(/<(script|style|svg|form|noscript|button|template)\b[\s\S]*?<\/\1>/g, "")
     .replace(/<figure class="anim"[\s\S]*?<figcaption>([\s\S]*?)<\/figcaption>\s*<\/figure>/g, "<p>$1</p>")
+    .replace(/<section[^>]*\shidden[\s>][\s\S]*?<\/section>/g, "") // e.g. Videos, empty until the clinic adds some
     .replace(/<div[^>]*\bhidden\b[^>]*>[\s\S]*?<\/div>/g, "")
     .replace(/<(span|div)[^>]*aria-hidden="true"[^>]*>[\s\S]*?<\/\1>/g, "")
     .replace(/<div class="(feature__icon|explore__icon|globe)"[^>]*>[\s\S]*?<\/div>/g, "")
