@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { animFigure, siteFooter, siteHeader, SITE } from "./partials.js";
+import { animFigure, siteFooter, siteHeader, SITE, isArticleHidden, unlinkHiddenArticles } from "./partials.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(root, "content/blog");
@@ -459,12 +459,13 @@ export function checkIds(posts) {
 }
 
 export function build() {
-  const posts = checkIds(loadPosts());
+  // Articles kept for a later phase (content/launch.json) are left out entirely: no page, no card, no search entry.
+  const posts = checkIds(loadPosts()).filter((p) => !isArticleHidden(p.meta.id));
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.mkdirSync(OUT, { recursive: true });
   fs.mkdirSync(path.join(OUT, "art"), { recursive: true });
   for (const p of posts) {
-    fs.writeFileSync(path.join(OUT, `${p.meta.slug}.html`), articlePage(p, posts.filter((o) => o !== p)));
+    fs.writeFileSync(path.join(OUT, `${p.meta.slug}.html`), unlinkHiddenArticles(articlePage(p, posts.filter((o) => o !== p))));
     fs.writeFileSync(path.join(OUT, "art", `${p.meta.slug}.svg`), artSvg(p.meta));
   }
   fs.writeFileSync(path.join(OUT, "index.html"), indexPage(posts));

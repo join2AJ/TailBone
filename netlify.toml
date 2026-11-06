@@ -6,7 +6,13 @@
 
 [build]
   publish = "public"
-  command = ""
+  # Rebuilds the pages so the super admin's launch settings (Control panel → Launch phase → Publish) take effect.
+  # Set LAUNCH_URL in Netlify (Site configuration → Environment variables) to https://<server>/api/launch once the
+  # server is live; until then the build uses content/launch.json and produces the same files as the repository.
+  command = "node scripts/build-site.js"
+
+[build.environment]
+  NODE_VERSION = "22"
 
 [[redirects]]
   from = "/api/*"

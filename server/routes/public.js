@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { CLINICS, HOURS, BOOKING, config } from "../config.js";
 import { publicView } from "../site-content.js";
+import { getLaunch } from "../launch.js";
 import { rateLimit } from "../auth.js";
 import { clinicNow } from "../time.js";
 import { encrypt } from "../crypto.js";
@@ -624,6 +625,12 @@ export function publicRoutes(db) {
   r.get("/media", (req, res) => {
     if (!isOn(db, "instagram")) return res.json({ media: [] });
     res.json({ media: db.prepare("SELECT id, url, kind, caption FROM media WHERE visible = 1 AND (',' || pages || ',') LIKE '%,treatment,%' ORDER BY sort, id DESC LIMIT 12").all() });
+  });
+
+  // Launch settings for the website build (scripts/build-site.js reads this when LAUNCH_URL is set on Netlify).
+  r.get("/launch", (req, res) => {
+    const { hidden, hiddenArticles } = getLaunch(db);
+    res.json({ hidden, hiddenArticles });
   });
 
   // ---------- Website content edited in the dashboard (see server/site-content.js) ----------

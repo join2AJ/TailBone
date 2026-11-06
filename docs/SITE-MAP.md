@@ -42,7 +42,7 @@ Home  /
 │     Clinic → day → time → details (+ optional "About you" and referral code) → (online payment) → appointment number, patient ID,
 │     QR code, Add to Google Calendar. Without the server: sends a WhatsApp request instead.
 │
-├── Blog  /blog/                   30 articles, with search and topic filters
+├── Blog  /blog/                   10 articles published (20 held back for phase 2), with search and topic filters
 │     ├── /blog/<article>.html      picture, topics, "On this page", WhatsApp share, sources,
 │     │                             booking box, "Keep reading" (3 related articles)
 │     └── /blog/a/<article>         articles written in the dashboard (pictures, video, audio)
@@ -85,7 +85,9 @@ Home  /
 
 ---
 
-## 2. Articles (30)
+## 2. Articles (30: 10 published, 20 held back for phase 2)
+
+Held back for phase 2 (numbers): 1–12, 17, 20, 21, 22, 23, 24, 25, 29. Published: 13, 14, 15, 16, 18, 19, 26, 27, 28, 30. The super admin can change this in Control panel → Launch phase.
 
 ### Dr Rajveer explains (from his videos)
 | # | Article |

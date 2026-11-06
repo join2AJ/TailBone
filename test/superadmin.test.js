@@ -119,8 +119,8 @@ test("feature switches are enforced on the public site", async () => {
 
 test("the admin can hide a blog article by its number, and the site stops showing it", async () => {
   const { body } = await api("super", "GET", "/api/admin/blog");
-  assert.ok(body.posts.length >= 20);
-  const post = body.posts.find((p) => p.slug === "history-of-coccydynia");
+  assert.ok(body.posts.length >= 8);
+  const post = body.posts.find((p) => p.slug === "coccydynia-facts-and-figures");
   assert.ok(Number.isInteger(post.id) && post.enabled);
   assert.equal((await fetch(`${base}/blog/${post.slug}.html`)).status, 200);
 

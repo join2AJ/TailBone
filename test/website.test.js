@@ -176,3 +176,26 @@ test("the public content is cacheable for a minute and has no private details", 
   assert.match(res.headers.get("cache-control"), /public, max-age=60/);
   assert.ok(!JSON.stringify(res.body).includes("admin@test.local"));
 });
+
+test("launch phase: only the super admin can see and change it; the website build reads the saved settings", async () => {
+  const before = await api("GET", "/api/launch", undefined, { as: "nobody" });
+  assert.ok(before.body.hidden.includes("booking"), "starts from content/launch.json");
+  assert.ok(before.body.hiddenArticles.length >= 20);
+  const { body } = await api("GET", "/api/admin/superadmin/launch");
+  assert.ok(body.articles.length >= 30 && body.articles.some((a) => a.hidden) && body.features.booking);
+  assert.equal(body.publishConnected, false);
+  const saved = await api("PUT", "/api/admin/superadmin/launch", { hidden: ["booking", "nonsense", "__proto__"], hiddenArticles: [1, 2, 2, 99999] });
+  assert.deepEqual(saved.body.launch, { hidden: ["booking"], hiddenArticles: [1, 2] });
+  assert.deepEqual((await api("GET", "/api/launch", undefined, { as: "nobody" })).body, { hidden: ["booking"], hiddenArticles: [1, 2] });
+  const all = body.articles.map((a) => a.id);
+  assert.equal((await api("PUT", "/api/admin/superadmin/launch", { hidden: [], hiddenArticles: all })).status, 400, "at least one article stays");
+  assert.equal((await api("POST", "/api/admin/superadmin/launch/publish")).status, 409, "not connected without NETLIFY_BUILD_HOOK");
+  assert.equal((await api("GET", "/api/admin/superadmin/launch", undefined, { as: "desk" })).status, 403);
+  assert.equal((await api("PUT", "/api/admin/superadmin/launch", { hidden: [] }, { as: "desk" })).status, 403);
+});
+
+test("the Doctor preset covers clinic work, rules, hours and the website, but not the super admin's pages", async () => {
+  const { body } = await api("GET", "/api/admin/superadmin");
+  for (const p of ["appointments", "patients", "settings", "website", "homevisits"]) assert.ok(body.doctorPermissions.includes(p), p);
+  assert.ok(!body.doctorPermissions.includes("superadmin"));
+});

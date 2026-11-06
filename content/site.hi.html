@@ -725,7 +725,7 @@
         <div class="tabs reveal" role="tablist" aria-label="क्लिनिक की जगहें">
           <button type="button" class="tab tab--open is-active" role="tab" aria-selected="true" aria-controls="loc-del" id="tab-del" data-tab="del" data-note="अपॉइंटमेंट से, हफ़्ते के 7 दिन · सोम–शुक्र 10–5, शनि 10–3, रवि 8–3"><span class="tab__dot" aria-hidden="true"></span>नई दिल्ली</button>
           <button type="button" class="tab tab--open" role="tab" aria-selected="false" aria-controls="loc-onl" id="tab-onl" data-tab="onl" data-note="भारत या विदेश में कहीं से भी वीडियो कंसल्टेशन, अपॉइंटमेंट से"><span class="tab__dot" aria-hidden="true"></span>ऑनलाइन</button>
-          <button type="button" class="tab tab--visit" data-launch="home_visits" role="tab" aria-selected="false" aria-controls="loc-hv" id="tab-hv" data-tab="hv" data-note="डॉ. राजवीर आपके शहर में मरीज़ों के पास आते हैं · 7 दिन पहले अनुरोध करें"><span class="tab__dot" aria-hidden="true"></span>आपके यहाँ</button>
+          <button type="button" class="tab tab--visit" role="tab" aria-selected="false" aria-controls="loc-hv" id="tab-hv" data-tab="hv" data-note="डॉ. राजवीर आपके शहर में मरीज़ों के पास आते हैं · 7 दिन पहले अनुरोध करें"><span class="tab__dot" aria-hidden="true"></span>आपके यहाँ</button>
           <button type="button" class="tab tab--soon" role="tab" aria-selected="false" aria-controls="loc-lko" id="tab-lko" data-tab="lko" data-note="तब तक ऑनलाइन कंसल्टेशन बुक करें या नई दिल्ली आएँ"><span class="tab__dot" aria-hidden="true"></span>लखनऊ <small>जल्द</small></button>
           <button type="button" class="tab tab--closed" role="tab" aria-selected="false" aria-controls="loc-blr" id="tab-blr" data-tab="blr" data-note="कृपया इसकी जगह नई दिल्ली या ऑनलाइन कंसल्टेशन बुक करें"><span class="tab__dot" aria-hidden="true"></span>बेंगलुरु <small>बंद</small></button>
         </div>
@@ -762,7 +762,7 @@
           </div>
         </div>
 
-        <div class="panel" id="loc-hv" data-launch="home_visits" role="tabpanel" aria-labelledby="tab-hv" hidden>
+        <div class="panel" id="loc-hv" role="tabpanel" aria-labelledby="tab-hv" hidden>
           <div class="loc loc--online">
             <div class="loc__info">
               <h3>डॉक्टर आपके यहाँ</h3>
@@ -772,7 +772,8 @@
                 <li>क्लिनिक जैसी ही जाँच और इलाज</li>
                 <li>बाद में ऑनलाइन फ़ॉलो-अप</li>
               </ul>
-              <a class="btn btn--primary" href="/home-visit.html">विज़िट का अनुरोध करें</a>
+              <a data-launch="home_visits" class="btn btn--primary" href="/home-visit.html">विज़िट का अनुरोध करें</a>
+              <div class="row-gap" data-launch-only="home_visits"><a class="btn btn--primary" href="tel:+919886688323">कॉल करें</a> <a class="btn btn--ghost" href="https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20ask%20about%20treatment%20at%20our%20place." target="_blank" rel="noopener">WhatsApp पर पूछें</a></div>
             </div>
             <div class="globe" aria-hidden="true">✈️</div>
           </div>
@@ -1009,6 +1010,10 @@
           <details class="reveal">
             <summary>मैं भारत से बाहर रहता/रहती हूँ। क्या आप मदद कर सकते हैं?</summary>
             <p>हाँ। हमारे कई मरीज़ विदेश से आते हैं, जिनमें मिडिल ईस्ट के मरीज़ भी हैं। ऑनलाइन कंसल्टेशन से शुरुआत करें, और हम विज़िट प्लान करने में आपकी मदद करेंगे।</p>
+          </details>
+          <details class="reveal">
+            <summary>क्या डॉक्टर हमारे यहाँ आ सकते हैं?</summary>
+            <p>हाँ। अनुरोध पर विशेषज्ञ आपके शहर या देश में आकर इलाज कर सकते हैं, एक मरीज़ के लिए या समूह के लिए। आने-जाने, रहने और खाने का खर्च आपकी तरफ़ से होगा, साथ में इलाज की फ़ीस। कृपया कम से कम 7 दिन पहले फ़ोन या WhatsApp पर बताएँ ताकि विज़िट की योजना बन सके।</p>
           </details>
           <details class="reveal">
             <summary>अपॉइंटमेंट कैंसिल कैसे करूँ या समय कैसे बदलूँ?</summary>

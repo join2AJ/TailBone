@@ -8,7 +8,7 @@ import { config } from "../config.js";
 import { exportPatientData, erasePatient, readDataRequest, recordConsent, completeDataRequest, NOTICE_VERSION } from "../privacy.js";
 import { createBackup, listBackups } from "../backup.js";
 import { DEMO_ADMIN } from "../demo.js";
-import { FEATURES, PERMISSIONS, DEFAULT_PERMISSIONS, getFeatures, saveFeatures, permissionsOf, sanitizePermissions, isOn } from "../features.js";
+import { FEATURES, PERMISSIONS, DEFAULT_PERMISSIONS, DOCTOR_PERMISSIONS, getFeatures, saveFeatures, permissionsOf, sanitizePermissions, isOn } from "../features.js";
 import crypto from "node:crypto";
 import QRCode from "qrcode";
 import { gcalEnabled } from "../gcal.js";
@@ -23,6 +23,7 @@ import { listPosts, setEnabled } from "../blog.js";
 import { addDocument, listDocuments, getDocument, readFile, sendFile, KINDS, MAX_BYTES } from "../documents.js";
 import { adminView, saveArea, restoreArea, AREA_LABELS, PAGES } from "../site-content.js";
 import { addMedia, sniffMedia } from "../articles.js";
+import { getLaunch, saveLaunch, launchArticles, publishLaunch, LAUNCH_FEATURES } from "../launch.js";
 import { getVideoSettings, saveVideoSettings, cleanVideoUrl, videoUrlFor } from "../video.js";
 import { growthRoutes } from "./admin-growth.js";
 import { cleanProfile, saveProfile, profileView, PROFILE_OPTIONS } from "../profile.js";
@@ -227,6 +228,7 @@ export function adminRoutes(db) {
       featureInfo: FEATURES,
       permissionInfo: PERMISSIONS,
       defaultPermissions: DEFAULT_PERMISSIONS,
+      doctorPermissions: DOCTOR_PERMISSIONS,
       users: db.prepare("SELECT * FROM admins ORDER BY role DESC, name").all().map(userView),
     });
   });
@@ -255,6 +257,21 @@ export function adminRoutes(db) {
     }
     securityLog(db, req, "user_created", `${email} (${role})`);
     res.status(201).json({ email, temporaryPassword: password });
+  });
+
+  // Launch phases: which features and articles the public website leaves out for now (see server/launch.js).
+  r.get("/superadmin/launch", (req, res) => res.json({
+    launch: getLaunch(db), features: LAUNCH_FEATURES, articles: launchArticles(db), publishConnected: Boolean(process.env.NETLIFY_BUILD_HOOK),
+  }));
+  r.put("/superadmin/launch", (req, res) => {
+    const value = saveLaunch(db, req.body, req.admin.email);
+    securityLog(db, req, "launch_settings_saved", `hidden: ${value.hidden.join(", ") || "none"}; articles hidden: ${value.hiddenArticles.length}`);
+    res.json({ ok: true, launch: value });
+  });
+  r.post("/superadmin/launch/publish", async (req, res) => {
+    await publishLaunch();
+    securityLog(db, req, "launch_published", "website rebuild requested");
+    res.json({ ok: true });
   });
 
   r.patch("/superadmin/users/:id", (req, res) => {

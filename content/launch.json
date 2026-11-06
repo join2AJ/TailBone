@@ -1,4 +1,32 @@
 {
-  "_about": "Launch phase 1: features listed in 'hidden' are left out of the website (links, sections and pages). Remove a name to bring it back, then run npm run build. booking = online booking form (patients call, WhatsApp or email instead); accounts = My appointments and check-in pages; referrals = Refer a patient and partner log-in; home_visits = Doctor at your place; story_form = the Share your story form (stories stay readable).",
-  "hidden": ["booking", "accounts", "referrals", "home_visits", "story_form"]
+  "_about": "Launch phase 1: features listed in 'hidden' are left out of the website (links, sections and pages). Remove a name to bring it back, then run npm run build. booking = online booking form (patients call, WhatsApp or email instead); accounts = My appointments and check-in pages; referrals = Refer a patient and partner log-in; home_visits = Doctor at your place; story_form = the Share your story form (stories stay readable). hiddenArticles = article numbers kept for phase 2: their pages aren't built, links to them become plain text, and their old addresses go to /blog/.",
+  "hidden": [
+    "booking",
+    "accounts",
+    "referrals",
+    "home_visits",
+    "story_form"
+  ],
+  "hiddenArticles": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    17,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    29
+  ]
 }

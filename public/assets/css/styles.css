@@ -1309,7 +1309,7 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 @media (max-width: 640px) {
   .mini-grid { grid-template-columns: 1fr; gap: .6rem; }
   .mini-card { flex-direction: row; align-items: stretch; }
-  .mini-card img { width: 92px; flex: none; aspect-ratio: 1; height: auto; object-fit: cover; object-position: 38% 50%; }
+  .mini-card img { width: 92px; flex: none; aspect-ratio: 1; height: auto; object-fit: cover; object-position: 11.5% 50%; }
   .mini-card__body { padding: .55rem .75rem; align-content: center; gap: .15rem; }
   .mini-card__body small { font-size: .65rem; }
   .mini-card__body strong { font-size: .9rem; line-height: 1.3; }

@@ -43,6 +43,24 @@ export const HIDDEN_PAGES = {
   "/manage.html": "accounts", "/checkin.html": "accounts", "/refer.html": "referrals", "/partner.html": "referrals", "/home-visit.html": "home_visits",
 };
 
+/** Articles kept for a later phase (launch.json "hiddenArticles", by article number): their slugs. */
+export const isArticleHidden = (id) => (LAUNCH.hiddenArticles || []).includes(Number(id));
+let hiddenSlugCache;
+export function hiddenArticleSlugs() {
+  if (!hiddenSlugCache) {
+    const dir = path.join(root, "content/blog");
+    hiddenSlugCache = new Set(fs.readdirSync(dir).filter((f) => f.endsWith(".md")).map((f) => fs.readFileSync(path.join(dir, f), "utf8"))
+      .filter((t) => isArticleHidden((/^id:\s*(\d+)/m.exec(t) || [])[1])).map((t) => (/^slug:\s*(\S+)/m.exec(t) || [])[1]).filter(Boolean));
+  }
+  return hiddenSlugCache;
+}
+/** Links to hidden articles become plain text, so nobody lands on a missing page. */
+export function unlinkHiddenArticles(html) {
+  const hidden = hiddenArticleSlugs();
+  if (!hidden.size) return html;
+  return html.replace(/<a\b[^>]*href="(?:https?:\/\/[^"/]+)?\/blog\/([a-z0-9-]+)\.html(?:#[^"]*)?"[^>]*>([\s\S]*?)<\/a>/g, (m, slug, text) => (hidden.has(slug) ? text : m));
+}
+
 export function applyLaunch(html) {
   const open = /<([a-zA-Z][\w-]*)\b[^>]*\sdata-launch(-only)?="([\w-]+)"[^>]*>/g;
   let m;
@@ -63,7 +81,7 @@ export function applyLaunch(html) {
     html = html.slice(0, Math.max(start, 0)) + html.slice(end);
     open.lastIndex = Math.max(start, 0);
   }
-  return html;
+  return unlinkHiddenArticles(html);
 }
 
 export function animFigure(name) {

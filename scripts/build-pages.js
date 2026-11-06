@@ -4,7 +4,7 @@
 // Run with `npm run build`; the output in public/ is committed.
 import fs from "node:fs";
 import path from "node:path";
-import { applyLaunch, root, SITE, injectAnims } from "./partials.js";
+import { applyLaunch, hiddenArticleSlugs, root, SITE, injectAnims } from "./partials.js";
 import { loadPosts, miniCard } from "./build-blog.js";
 
 export const TEMPLATE = path.join(root, "content/site.html");
@@ -239,7 +239,7 @@ export function renderPage(template, p) {
 function injectPosts(html) {
   const bySlug = new Map(loadPosts().map((p) => [p.meta.slug, p.meta]));
   return html.replace(/<!-- posts:([\w,-]+) -->[\s\S]*?<!-- \/posts -->/g, (all, list) => {
-    const cards = list.split(",").map((slug) => {
+    const cards = list.split(",").filter((slug) => !hiddenArticleSlugs().has(slug)).map((slug) => {
       const meta = bySlug.get(slug);
       if (!meta) throw new Error(`content/site.html links to a missing article: ${slug}`);
       return miniCard(meta);

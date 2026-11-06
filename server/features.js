@@ -35,6 +35,9 @@ export const PERMISSIONS = {
   website: "Website content (videos, announcement bar, opening hours, contact details, FAQ, newspaper clippings)",
 };
 export const DEFAULT_PERMISSIONS = ["appointments", "followups", "patients", "inbox", "stories", "instagram", "blog"];
+// The doctor's account: day-to-day clinic work, fees and rules (cancellation, rescheduling), opening hours and website
+// content, home-visit requests. Not: users, website features, launch phase, backups, the security log (super admin only).
+export const DOCTOR_PERMISSIONS = ["appointments", "followups", "patients", "inbox", "stories", "instagram", "blog", "website", "settings", "homevisits", "payments"];
 
 export function getFeatures(db) {
   const row = db.prepare("SELECT value FROM settings WHERE key = 'features'").get();

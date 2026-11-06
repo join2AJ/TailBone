@@ -298,3 +298,5 @@ fieldset.field legend { font-weight: 600; font-size: .85rem; margin-bottom: .3re
 .announce a { color: #fff; font-weight: 700; }
 .announce__close { font-size: 1.3rem; }
 #ytForm > .btn, #announceForm > .btn, #hoursForm > .btn, #contactForm > .btn, #pressForm > .btn { justify-self: start; align-self: start; width: auto; }
+.launch-articles { margin: .4rem 0 .8rem; }
+.launch-articles summary { cursor: pointer; padding: .4rem 0; }

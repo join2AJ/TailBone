@@ -54,10 +54,17 @@ Also choose the admin email and a strong password (12+ characters).
    - **Fees, payments & policies:** check the fees and refund rules.
    - **Backups → Back up now**, then **Download**. Store it on an encrypted drive.
 3. Go to **Control panel**:
-   - **+ Add user** for Dr Rajveer (role *Admin*). Tick the sections he should see, such as appointments, follow-ups, patients, inbox, stories, payments, privacy and settings.
+   - **Two logins.** The super admin is the account in `ADMIN_EMAIL` (the owner): it sees everything, including the Control panel, the launch phase, users, backups and the security log. For Dr Rajveer, press **+ Add user**, choose **Quick choice → Doctor**, and create the account. The Doctor preset covers appointments, follow-ups, patients, inbox, stories, Instagram, blog, **Website** (videos, announcement, opening hours, FAQ, clippings), **Settings** (fees, cancellation and rescheduling rules, holidays), home-visit requests and payments.
    - Share the temporary password privately. Each person changes it and turns on 2FA.
    - Switch website features on or off as needed (e.g. turn **Online payments** on only after Razorpay is live).
 4. Locked out? In the Render **Shell**, run `npm run admin:create -- you@example.com "Your Name" --super`. It resets the password and unlocks the account.
+
+## Step 4b: Launch phase (what the public website shows)
+The website launches with some features and 20 articles held back (`content/launch.json`). The super admin changes this in **Control panel → Launch phase**; to make **Publish to website** work:
+1. In Netlify: **Site configuration → Build & deploy → Build hooks → Add build hook** (name it "Launch phase"). Copy the address.
+2. In Render, add the environment variable `NETLIFY_BUILD_HOOK` with that address.
+3. In Netlify: **Site configuration → Environment variables**, add `LAUNCH_URL` = `https://<your-render-address>/api/launch`.
+Netlify then rebuilds the pages with the saved settings whenever the super admin presses **Publish**. Without these, the website uses `content/launch.json`.
 
 ## Step 5: Monitoring (3 min)
 - At **uptimerobot.com** (free), add an HTTP monitor for `https://tailbone.netlify.app/api/health` every 5 minutes, with alerts to the doctor's phone or email.

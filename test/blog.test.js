@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { parseFrontMatter, markdown, loadPosts } from "../scripts/build-blog.js";
+import { parseFrontMatter, markdown, loadPosts as loadAllPosts } from "../scripts/build-blog.js";
+import { isArticleHidden, hiddenArticleSlugs } from "../scripts/partials.js";
+
+// Articles kept for a later phase (content/launch.json) are not built; the tests cover the published ones.
+const loadPosts = () => loadAllPosts().filter((p) => !isArticleHidden(p.meta.id));
 
 test("blog markdown escapes HTML and only allows safe links", () => {
   const html = markdown("Hi <script>x</script> **bold** [ok](https://nhs.uk) [bad](javascript:alert(1))\n\n- a\n- b\n\n1. one");
@@ -98,7 +102,7 @@ test("article tables, figures and citations", () => {
   assert.ok(html.includes("<caption>Cap</caption>") && html.includes('<th scope="row">x</th><td>&lt;y&gt;</td>'));
   assert.ok(html.includes('data-anim="treatment-ladder"'));
   const posts = loadPosts();
-  const internal = new Set(posts.map((p) => `/blog/${p.meta.slug}.html`));
+  const internal = new Set(loadAllPosts().map((p) => `/blog/${p.meta.slug}.html`));
   for (const p of posts) {
     for (const [, href] of p.body.matchAll(/\]\((\/blog\/[^)\s]+)\)/g)) assert.ok(internal.has(href), `${p.meta.slug} links to missing ${href}`);
     if (/^## Sources/m.test(p.body) && p.meta.tags?.includes("Research")) {
@@ -133,4 +137,17 @@ test("every page links our stylesheets and scripts with a content version, so br
     const bare = fs.readFileSync(file, "utf8").match(/(?:href|src)="\/?(?:assets|admin)\/[^"?]+\.(?:css|js)"/g);
     assert.equal(bare, null, `${file} has unversioned asset links: run npm run build`);
   }
+});
+
+test("articles kept for a later phase are not published, not linked, and their addresses go to the blog", () => {
+  const hidden = [...hiddenArticleSlugs()];
+  if (!hidden.length) return;
+  const redirects = fs.readFileSync("public/_redirects", "utf8");
+  const pages = ["index.html", "coccydynia.html", "blog/index.html", ...loadPosts().map((p) => `blog/${p.meta.slug}.html`)].map((f) => fs.readFileSync(`public/${f}`, "utf8"));
+  for (const slug of hidden) {
+    assert.ok(!fs.existsSync(`public/blog/${slug}.html`), `${slug} should not be built`);
+    assert.ok(redirects.includes(`/blog/${slug}.html /blog/ 302!`), `${slug} redirect`);
+    assert.ok(!pages.some((h) => h.includes(`href="/blog/${slug}.html"`)), `a page still links to ${slug}`);
+  }
+  assert.ok(!fs.readFileSync("public/sitemap.xml", "utf8").includes(hidden[0]));
 });

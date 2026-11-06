@@ -2199,6 +2199,46 @@
   }
 
   // ---------- Control panel (super admin): site features and dashboard users ----------
+  // Launch phase: what the public website leaves out for now (features and articles), and publishing it.
+  async function renderLaunch() {
+    const box = $("#launchCard");
+    let L;
+    try { L = await api("/superadmin/launch"); } catch (ex) { box.innerHTML = `<div class="alert alert--error">${esc(ex.message)}</div>`; return; }
+    const hidden = new Set(L.launch.hidden);
+    const hiddenArticles = new Set(L.launch.hiddenArticles);
+    const shown = L.articles.filter((a) => !a.hidden).length;
+    box.innerHTML = `
+      <div class="panel-card__head"><h2>Launch phase: what the website shows</h2>
+        <span class="small">${L.publishConnected ? '<span class="badge badge--confirmed">Publishing connected</span>' : '<span class="badge badge--pending">Publishing not connected yet</span>'}</span></div>
+      <p class="muted small">Ticked items are <strong>hidden</strong> from the public website for now. Untick to bring them back, press <strong>Save</strong>, then <strong>Publish to website</strong>: the website is rebuilt and the change is live in about two minutes. ${L.launch.saved ? `Last saved ${esc(when(L.launch.updatedAt))} by ${esc(L.launch.updatedBy)}.` : "Showing the settings the website was built with."}</p>
+      <form class="form" id="launchForm">
+        <fieldset class="field"><legend>Hidden features</legend>
+          ${Object.entries(L.features).map(([k, label]) => `<label class="check"><input type="checkbox" name="feature" value="${k}" ${hidden.has(k) ? "checked" : ""}> ${esc(label)}</label>`).join("<br>")}
+        </fieldset>
+        <details class="launch-articles"><summary><strong>Articles held back</strong> · ${L.articles.length - shown} hidden, ${shown} on the website</summary>
+          <div class="table-wrap"><table><thead><tr><th>No.</th><th>Article</th><th>Hidden</th></tr></thead><tbody>
+            ${L.articles.map((a) => `<tr><td class="nowrap">#${a.id}</td><td>${esc(a.title)}<br><span class="muted small">${esc(a.tags.join(", "))}</span></td>
+              <td><label class="check"><input type="checkbox" name="article" value="${a.id}" ${hiddenArticles.has(a.id) ? "checked" : ""}> Hidden</label></td></tr>`).join("")}
+          </tbody></table></div>
+        </details>
+        <div class="row-gap"><button class="btn btn--primary btn--sm" type="submit">Save</button>
+          <button class="btn btn--ghost btn--sm" type="button" id="publishBtn">Publish to website</button></div>
+      </form>`;
+    $("#launchForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      confirmThen(null, async () => {
+        await api("/superadmin/launch", { method: "PUT", body: { hidden: f.getAll("feature"), hiddenArticles: f.getAll("article").map(Number) } });
+        toast("Saved. Press Publish to website to make it live.");
+        renderLaunch();
+      });
+    });
+    $("#publishBtn").addEventListener("click", () => confirmThen("Rebuild the public website with the saved launch settings now?", async () => {
+      await api("/superadmin/launch/publish", { method: "POST" });
+      toast("Publishing started. The website updates in about two minutes.");
+    }));
+  }
+
   async function renderControl() {
     const d = await api("/superadmin");
     const permBoxes = (selected, name = "perm") => Object.entries(d.permissionInfo).map(([k, label]) =>
@@ -2218,6 +2258,8 @@
           <button class="btn btn--primary" type="submit">Save features</button>
         </form>
       </section>
+
+      <section class="panel-card" id="launchCard"><div class="empty">Loading launch phase…</div></section>
 
       <section class="panel-card">
         <div class="panel-card__head"><h2>Dashboard users</h2><button class="btn btn--primary btn--sm" id="addUser" type="button">+ Add user</button></div>
@@ -2240,6 +2282,7 @@
         </table></div>
       </section>`;
 
+    renderLaunch();
     $("#featForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const body = Object.fromEntries(Object.keys(d.featureInfo).map((k) => [k, e.target[k].checked]));
@@ -2263,9 +2306,17 @@
             <div class="field"><label>Email</label><input name="email" type="email" required></div>
           </div>
           <div class="field"><label>Role</label><select name="role"><option value="admin">Admin (only the sections ticked below)</option><option value="superadmin">Super admin (everything)</option></select></div>
+          <div class="row-gap"><span class="small muted">Quick choice:</span>
+            <button type="button" class="btn btn--ghost btn--sm" data-preset="doctor">Doctor (clinic work, fees and rules, hours, website)</button>
+            <button type="button" class="btn btn--ghost btn--sm" data-preset="desk">Front desk</button></div>
           <fieldset class="field"><legend>Sections this admin can open</legend><div class="perm-grid">${permBoxes(d.defaultPermissions)}</div></fieldset>
           <button class="btn btn--primary btn--block">Create user</button>
         </form>`);
+      $$("[data-preset]").forEach((b) => b.addEventListener("click", () => {
+        const pick = b.dataset.preset === "doctor" ? d.doctorPermissions : d.defaultPermissions;
+        $$('#userForm input[name="perm"]').forEach((c) => { c.checked = pick.includes(c.value); });
+        $('#userForm [name="role"]').value = "admin";
+      }));
       $("#userForm").addEventListener("submit", async (e) => {
         e.preventDefault();
         const fd = new FormData(e.target);
