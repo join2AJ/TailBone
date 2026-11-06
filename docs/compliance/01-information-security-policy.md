@@ -1,6 +1,6 @@
 # Information Security & Privacy Policy
 
-**Organisation:** Tailbone Treatment Clinic (Bengaluru · New Delhi · Online)
+**Organisation:** Tailbone Treatment Clinic (New Delhi · Online · Lucknow opening soon)
 **Owner:** Dr Rajveer Singh (top management) · **IT operator:** [name of the person or firm maintaining the website]
 **Version:** 1.0 · **Approved:** [date, signature] · **Review:** yearly, or after a major change or incident
 

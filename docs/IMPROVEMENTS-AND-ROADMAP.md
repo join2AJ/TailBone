@@ -2,7 +2,7 @@
 
 This is the running record of how the new Tailbone Treatment website and clinic system improves on the old site at **tailbonetreatment.com**, and the plan for what comes next.
 
-**Keep it current:** whenever something is added or changed, add a line to the [change log](#3-change-log) and tick or move items in the [future plan](#4-future-plan). Last updated: **23 October 2026**.
+**Keep it current:** whenever something is added or changed, add a line to the [change log](#3-change-log) and tick or move items in the [future plan](#4-future-plan). Last updated: **6 November 2026**.
 
 ---
 
@@ -94,6 +94,7 @@ Newest first. Add one line per change.
 
 | Date | Change |
 |---|---|
+| 6 Nov 2026 | **Full review and three-phase plan:** a professional review of the site, the security and the legal side, with a step-by-step go-live plan and what the doctor will be able to change himself in the dashboard in phases 1, 2 and 3. See [GO-LIVE-ADMIN-SECURITY-PLAN.md](GO-LIVE-ADMIN-SECURITY-PLAN.md). Fixed during the review: a known weakness in one of the server's building blocks (now updated, none left), and the security policy no longer lists the closed Bengaluru clinic. |
 | 23 Oct 2026 | **Shorter article list on the Tailbone pain page:** "Go deeper" showed 14 article cards (more than 4 screens of scrolling on a phone). It now shows 3 "Dr Rajveer explains" and 3 research articles, starting with the new picture guide, plus a "See all articles on the blog" link; on phones each group is one row you swipe sideways. Same change on the Hindi page. The home page's tailbone-pain section now has a "Tailbone pain in pictures" button. |
 | 23 Oct 2026 | **Easier to read on phones:** on the Doctor page the photo is smaller, so Dr Rajveer's name and qualifications show straight away instead of after a long scroll; the "Treatment, step by step" diagram has larger, shorter labels. |
 | 23 Oct 2026 | **Slides added to the visual guide:** seven of the shared slides (the coccyx as an anchor, the sitting tripod, slouching, coccyx shapes, how injuries happen, matching treatment to the cause, and everyday changes) now appear in "Tailbone pain explained in pictures", each with a short caption. The "Gemini Notebook" mark was removed from them. Slides with spelling mistakes or advice that disagrees with the clinic's (for example recommending doughnut cushions) were left out. Tapping a slide opens it full size. |
@@ -133,6 +134,8 @@ Newest first. Add one line per change.
 ---
 
 ## 4. Future plan
+
+The phased go-live, dashboard and security plan (6 Nov 2026) is in [GO-LIVE-ADMIN-SECURITY-PLAN.md](GO-LIVE-ADMIN-SECURITY-PLAN.md).
 
 ### Before going live (owner actions)
 - [ ] **Connect the domain:** point tailbonetreatment.com to Netlify (website records only; leave email untouched). Then switch canonical links and the sitemap to the domain (`SITE_URL`) and run IndexNow.
