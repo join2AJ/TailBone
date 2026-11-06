@@ -1385,3 +1385,9 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
   .crumbs a { display: inline-block; padding: .35rem 0; }
   .footer address a, .footer__clinic a { display: inline-block; padding: .35rem 0; }
 }
+/* Feature cards: icon on the left, heading beside it, text below (compact on phones too) */
+.feature { display: grid; grid-template-columns: auto 1fr; column-gap: .9rem; align-items: center; align-content: start; }
+.feature .feature__icon { margin: 0; width: 46px; height: 46px; font-size: 1.35rem; border-radius: 12px; }
+.feature h3 { margin: 0; }
+.feature > p, .feature > ul { grid-column: 1 / -1; margin: .7rem 0 0; }
+@media (max-width: 640px) { .feature { padding: 1.1rem 1.2rem; } .feature h3 { font-size: 1.1rem; } }
