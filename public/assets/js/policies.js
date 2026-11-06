@@ -12,7 +12,7 @@
     .then((r) => (r.ok ? r.json() : Promise.reject()))
     .then((cfg) => {
       const fees = (cfg.clinics || []).filter((c) => c.status === "open").map((c) =>
-        c.id === "online" ? `Online video consultation: ${rupee(cfg.fees.online)}` : `Consultation in ${c.short}: ${rupee(cfg.fees[c.id])}`);
+        c.id === "online" ? `Online video consultation: ${rupee(cfg.fees.online)}` : `Consultation in ${c.short}: ${rupee(cfg.fees[c.id])} (at the clinic)`);
       if (cfg.followup.windowDays) fees.push(`Follow-up / review visit within ${cfg.followup.windowDays} days of a completed visit: ${rupee(cfg.followup.fee)}`);
       fill("#feeList", fees);
       fill("#cancelList", cfg.policy.cancellation);

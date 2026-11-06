@@ -355,7 +355,9 @@
     bar.className = "demo-bar";
     bar.setAttribute("role", "region");
     bar.setAttribute("aria-label", "Demo notice");
-    bar.innerHTML = '<span><strong>Demo site</strong> · sample data, resets daily · please don\'t enter real health details</span><span class="demo-bar__actions"><a href="/admin?demo=1">Try as doctor (admin)</a><a href="/manage.html?demo=1">Try as patient</a></span>';
+    // My appointments is offered only while it is part of the website (content/launch.json); the page links to it then.
+    const patientView = [...document.querySelectorAll('a[href="/manage.html"]')].some((a) => a.offsetParent !== null);
+    bar.innerHTML = '<span><strong>Demo site</strong> · sample data, resets daily · please don\'t enter real health details</span><span class="demo-bar__actions"><a href="/admin?demo=1">Try as doctor (admin)</a>' + (patientView ? '<a href="/manage.html?demo=1">Try as patient</a>' : "") + '</span>';
     document.body.prepend(bar);
   }
 
