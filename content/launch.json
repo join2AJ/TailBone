@@ -1,0 +1,4 @@
+{
+  "_about": "Launch phase 1: features listed in 'hidden' are left out of the website (links, sections and pages). Remove a name to bring it back, then run npm run build. booking = online booking form (patients call, WhatsApp or email instead); accounts = My appointments and check-in pages; referrals = Refer a patient and partner log-in; home_visits = Doctor at your place; story_form = the Share your story form (stories stay readable).",
+  "hidden": ["booking", "accounts", "referrals", "home_visits", "story_form"]
+}

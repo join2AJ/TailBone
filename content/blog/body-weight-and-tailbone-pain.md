@@ -1,6 +1,6 @@
 ---
 id: 17
-title: Body weight and tailbone pain: why both high and low BMI matter
+title: Does body weight affect tailbone pain?
 slug: body-weight-and-tailbone-pain
 date: 2026-10-17
 summary: Being overweight raises the risk of coccydynia, but so does being very thin. The reason is the way your pelvis tilts when you sit. Here is the research, explained simply.
@@ -33,9 +33,9 @@ In Maigne's study of 208 patients, obesity was confirmed as a risk factor, and t
 
 ## What this means for you
 
-- **If you are carrying extra weight**, gradual weight loss can reduce the load on the coccyx. Lean slightly forward when sitting, and use a cut-out cushion so the tip doesn't meet the seat.
-- **If you are very slim or have lost weight quickly**, avoid hard seats, add padding, and take frequent breaks from sitting.
-- **Either way**, the right treatment depends on how *your* coccyx is moving. That is why we examine carefully before treating.
+- If you are carrying extra weight, gradual weight loss can reduce the load on the coccyx. Lean slightly forward when sitting, and use a cut-out cushion so the tip doesn't meet the seat.
+- If you are very slim or have lost weight quickly, avoid hard seats, add padding, and take frequent breaks from sitting.
+- Either way, the right treatment depends on how *your* coccyx is moving. That is why we examine carefully before treating.
 
 ## Sources
 

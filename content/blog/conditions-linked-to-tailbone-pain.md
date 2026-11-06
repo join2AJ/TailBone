@@ -1,6 +1,6 @@
 ---
 id: 21
-title: Conditions linked to tailbone pain: spondylitis, pelvic floor problems and more
+title: Spondylitis, pelvic floor problems and other conditions linked to tailbone pain
 slug: conditions-linked-to-tailbone-pain
 date: 2026-10-17
 summary: Tailbone pain is more common in people with ankylosing spondylitis, pelvic floor dysfunction, back problems and fibromyalgia. What the studies show, and why it changes treatment.
@@ -11,11 +11,11 @@ Tailbone pain doesn't always start with a fall or a hard chair. Some people who 
 
 ## Key points
 
-- **Ankylosing spondylitis (AS):** in one study, **38.3%** of people with AS had tailbone pain, about **three times** the rate in people with ordinary back pain.
-- **Pelvic floor problems:** half of women seeking physiotherapy for pelvic pain also had coccydynia, and nearly 8 in 10 of them had a tight coccygeus muscle.
-- **Fibromyalgia** was about five times more common in women with coccydynia in the same study.
-- **Low back problems** often occur alongside tailbone pain, so both areas should be examined.
-- **Rheumatoid and other inflammatory arthritis** can affect the joints of the coccyx, which in some people have a true joint lining.
+- Ankylosing spondylitis (AS): in one study, **38.3%** of people with AS had tailbone pain, about **three times** the rate in people with ordinary back pain.
+- Pelvic floor problems: half of women seeking physiotherapy for pelvic pain also had coccydynia, and nearly 8 in 10 of them had a tight coccygeus muscle.
+- Fibromyalgia was about five times more common in women with coccydynia in the same study.
+- Low back problems often occur alongside tailbone pain, so both areas should be examined.
+- Rheumatoid and other inflammatory arthritis can affect the joints of the coccyx, which in some people have a true joint lining.
 
 ## Ankylosing spondylitis and axial spondyloarthritis
 

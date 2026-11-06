@@ -1,6 +1,6 @@
 ---
 id: 15
-title: Tailbone pain after pregnancy: why it happens and what helps
+title: Tailbone pain after having a baby
 slug: tailbone-pain-after-pregnancy
 date: 2026-10-16
 summary: Many new mothers find that sitting to feed their baby is surprisingly painful. Here is why childbirth can affect the coccyx, and how it is treated.
@@ -12,10 +12,10 @@ Tailbone pain is much more common in women than in men, and pregnancy and childb
 
 ## Why pregnancy and childbirth affect the coccyx
 
-- **Hormones loosen the joints.** During pregnancy, hormones relax the ligaments of the pelvis so the baby can pass through. The joint between the sacrum and the coccyx loosens too.
-- **The baby's head presses on the coccyx** during a vaginal delivery, pushing it backwards. Occasionally the coccyx is bruised, strained or even displaced.
-- **Weight and posture change.** Through pregnancy, the way you sit and stand changes, putting new strain on the lower spine and pelvic floor.
-- **Assisted or long deliveries** and larger babies make injury a little more likely.
+- Hormones loosen the joints. During pregnancy, hormones relax the ligaments of the pelvis so the baby can pass through. The joint between the sacrum and the coccyx loosens too.
+- The baby's head presses on the coccyx during a vaginal delivery, pushing it backwards. Occasionally the coccyx is bruised, strained or even displaced.
+- Weight and posture change. Through pregnancy, the way you sit and stand changes, putting new strain on the lower spine and pelvic floor.
+- Assisted or long deliveries and larger babies make injury a little more likely.
 
 ::anim pregnancy
 

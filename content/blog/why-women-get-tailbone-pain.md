@@ -15,8 +15,8 @@ One of the most consistent findings about coccydynia is that it affects women fa
 
 - Women are about **5 times** more likely than men to develop coccydynia.
 - A woman's pelvis is **wider and differently angled**, so the coccyx is more exposed when sitting.
-- **Childbirth** can push the coccyx backward. In one specialist clinic it accounted for **7.3%** of women's coccydynia cases, and forceps had been used in about half of those deliveries.
-- **Pelvic girdle pain** affects about **1 in 5** pregnant women and can overlap with tailbone pain.
+- Childbirth can push the coccyx backward. In one specialist clinic it accounted for **7.3%** of women's coccydynia cases, and forceps had been used in about half of those deliveries.
+- Pelvic girdle pain affects about **1 in 5** pregnant women and can overlap with tailbone pain.
 - Pain after childbirth is often dismissed as "normal". If it lasts beyond a few weeks, it deserves an assessment.
 
 ## Reason 1: the shape of the pelvis

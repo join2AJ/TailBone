@@ -31,6 +31,41 @@ export const ANIMS = {
   "xray-findings": { caption: "Findings on sitting and standing X-rays in 208 people with coccydynia (Maigne et al., Spine, 2000).", still: 5 },
 };
 
+// ---- Launch phases (content/launch.json) ----
+// Elements marked data-launch="<feature>" are left out while that feature is hidden; data-launch-only="<feature>"
+// marks the stand-in shown only while it is hidden (e.g. "call or WhatsApp to book" instead of the booking form).
+export const LAUNCH = (() => {
+  try { return JSON.parse(fs.readFileSync(path.join(root, "content/launch.json"), "utf8")); } catch { return { hidden: [] }; }
+})();
+export const isHidden = (feature) => LAUNCH.hidden.includes(feature);
+/** Pages that belong to hidden features: not built into links or the sitemap, and redirected (see writeRedirects). */
+export const HIDDEN_PAGES = {
+  "/manage.html": "accounts", "/checkin.html": "accounts", "/refer.html": "referrals", "/partner.html": "referrals", "/home-visit.html": "home_visits",
+};
+
+export function applyLaunch(html) {
+  const open = /<([a-zA-Z][\w-]*)\b[^>]*\sdata-launch(-only)?="([\w-]+)"[^>]*>/g;
+  let m;
+  while ((m = open.exec(html))) {
+    const [tag, name, only, feature] = m;
+    if (only ? isHidden(feature) : !isHidden(feature)) continue;
+    // Find the matching closing tag (same element name, nesting-aware).
+    const rx = new RegExp(`<(/?)${name}\\b[^>]*>`, "gi");
+    rx.lastIndex = m.index + tag.length;
+    let depth = 1;
+    let end = m.index + tag.length;
+    if (!/^(br|img|input|hr|meta|link)$/i.test(name)) {
+      let t;
+      while (depth && (t = rx.exec(html))) { depth += t[1] ? -1 : t[0].endsWith("/>") ? 0 : 1; end = rx.lastIndex; }
+    }
+    const lineStart = html.lastIndexOf("\n", m.index) + 1;
+    const start = /^[ \t]*$/.test(html.slice(lineStart, m.index)) ? lineStart - 1 : m.index;
+    html = html.slice(0, Math.max(start, 0)) + html.slice(end);
+    open.lastIndex = Math.max(start, 0);
+  }
+  return html;
+}
+
 export function animFigure(name) {
   const a = ANIMS[name];
   if (!a) throw new Error(`Unknown animation "${name}"`);
@@ -45,7 +80,7 @@ export function siteFooter() {
   const html = fs.readFileSync(path.join(root, "content/site.html"), "utf8");
   const m = /<footer class="footer">[\s\S]*?<\/footer>/.exec(html);
   if (!m) throw new Error("No footer in content/site.html");
-  return m[0];
+  return applyLaunch(m[0]);
 }
 
 /** The main header and menu from content/site.html, with `active` (a nav href such as "/blog/") marked as the current page. */
@@ -60,7 +95,7 @@ export function siteHeader(active) {
     header = header.replace(new RegExp(`<a href="${active.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"( class="([^"]*)")?>`), (all, _c, cls = "") =>
       `<a href="${active}" class="${[cls, "is-active"].filter(Boolean).join(" ")}" aria-current="page">`);
   }
-  return header;
+  return applyLaunch(header);
 }
 
 // Fill <!-- anim:name --> … <!-- /anim --> blocks.

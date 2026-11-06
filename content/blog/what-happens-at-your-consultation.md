@@ -12,9 +12,9 @@ Many people put off getting tailbone pain checked because they aren't sure what 
 
 ## Before you come
 
-- **Make a list of your medicines** and any past operations or injuries.
-- **Note how your pain behaves:** when it started, what makes it worse (sitting, getting up, driving, bowel movements) and what helps.
-- **Wear comfortable clothes.**
+- Make a list of your medicines and any past operations or injuries.
+- Note how your pain behaves: when it started, what makes it worse (sitting, getting up, driving, bowel movements) and what helps.
+- Wear comfortable clothes.
 - If you would prefer to be seen by a **female clinician**, mention it when booking.
 
 ::anim visit-steps

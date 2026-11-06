@@ -1,6 +1,6 @@
 ---
 id: 29
-title: Amusement and water park rides: protect your tailbone (and your child's)
+title: Water slides, theme park rides and your tailbone
 slug: amusement-park-rides-and-tailbone-injury
 date: 2026-10-18
 summary: Sudden drops and jolts on dry and water rides can push the coccyx out of place, in teenagers as well as adults. Dr Rajveer Singh's tips to ride safely, and what to do if it hurts afterwards.
@@ -14,7 +14,7 @@ A day at an amusement or water park is great fun, but the sudden drops, bumps an
 
 - Sudden vertical drops and sideways jerks can push the coccyx **inward or outward** (a subluxation).
 - Children and teenagers are affected just as badly as adults.
-- **Padded or thick undergarments** and a careful sitting posture absorb some of the jolt.
+- Padded or thick undergarments and a careful sitting posture absorb some of the jolt.
 - If the tailbone still hurts a few days after a ride, get it checked rather than waiting.
 
 ## Why rides hurt the tailbone

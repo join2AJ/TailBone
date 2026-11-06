@@ -4,7 +4,7 @@
 // Run with `npm run build`; the output in public/ is committed.
 import fs from "node:fs";
 import path from "node:path";
-import { root, SITE, injectAnims } from "./partials.js";
+import { applyLaunch, root, SITE, injectAnims } from "./partials.js";
 import { loadPosts, miniCard } from "./build-blog.js";
 
 export const TEMPLATE = path.join(root, "content/site.html");
@@ -232,7 +232,7 @@ export function renderPage(template, p) {
   if (p.page !== "book") html = html.replace(/\n\s*<script src="\/assets\/js\/pay\.js" defer><\/script>/, "");
   if (p.page === "book") html = html.replace(/<a href="(?:\/hi)?\/book" class="mbar__primary">([^<]*)<\/a>/, '<a href="#appointment" class="mbar__primary">$1</a>');
   if (p.heading) html = html.replace('<main id="main">', `<main id="main">\n    <h1 class="visually-hidden" id="pageTitle">${esc(p.heading)}</h1>`);
-  return html;
+  return applyLaunch(html); // features not launched yet (content/launch.json)
 }
 
 // Fill <!-- posts:slug,slug --> … <!-- /posts --> with article cards (picture + title).

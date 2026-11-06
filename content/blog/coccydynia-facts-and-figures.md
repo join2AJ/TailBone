@@ -1,6 +1,6 @@
 ---
 id: 18
-title: Coccydynia in numbers: what the research really says
+title: Tailbone pain in numbers
 slug: coccydynia-facts-and-figures
 date: 2026-10-17
 summary: How common is tailbone pain, who gets it, what causes it and how often treatment works: the key figures from medical research, each with its source.
@@ -11,11 +11,11 @@ Coccydynia (tailbone or coccyx pain) is one of the most under-studied causes of 
 
 ## Key points
 
-- **Nobody knows exactly how many people have coccydynia.** It is thought to make up only around 1% of people seen for spine pain, but it is often missed or recorded as "low back pain".
-- **Women are affected about five times as often as men.**
-- **Half or more of patients remember an injury** such as a fall. Childbirth accounts for a smaller but important share in women.
-- **Body weight matters at both ends:** both a high and a very low body mass index (BMI) raise the risk.
-- **About 9 in 10 people improve without surgery.**
+- Nobody knows exactly how many people have coccydynia. It is thought to make up only around 1% of people seen for spine pain, but it is often missed or recorded as "low back pain".
+- Women are affected about five times as often as men.
+- Half or more of patients remember an injury such as a fall. Childbirth accounts for a smaller but important share in women.
+- Body weight matters at both ends: both a high and a very low body mass index (BMI) raise the risk.
+- About 9 in 10 people improve without surgery.
 
 ::anim women-5x
 
@@ -40,10 +40,10 @@ Coccydynia rarely gets its own diagnosis code. In many records it is grouped wit
 
 ## Who is more likely to get it?
 
-- **Women**, partly because of the shape of the pelvis and because of childbirth. See [why women get tailbone pain more often](/blog/why-women-get-tailbone-pain.html).
-- **People with a higher BMI, or who are very thin.** See [body weight and tailbone pain](/blog/body-weight-and-tailbone-pain.html).
-- **People who sit for long hours or ride over rough roads.** See [two-wheelers and tailbone pain](/blog/two-wheeler-riding-and-tailbone-pain.html).
-- **People with some other conditions**, such as ankylosing spondylitis or pelvic floor problems. See [conditions linked to tailbone pain](/blog/conditions-linked-to-tailbone-pain.html).
+- Women, partly because of the shape of the pelvis and because of childbirth. See [why women get tailbone pain more often](/blog/why-women-get-tailbone-pain.html).
+- People with a higher BMI, or who are very thin. See [body weight and tailbone pain](/blog/body-weight-and-tailbone-pain.html).
+- People who sit for long hours or ride over rough roads. See [two-wheelers and tailbone pain](/blog/two-wheeler-riding-and-tailbone-pain.html).
+- People with some other conditions, such as ankylosing spondylitis or pelvic floor problems. See [conditions linked to tailbone pain](/blog/conditions-linked-to-tailbone-pain.html).
 
 ## High rates in particular groups
 

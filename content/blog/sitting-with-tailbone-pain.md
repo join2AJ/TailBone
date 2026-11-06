@@ -1,6 +1,6 @@
 ---
 id: 16
-title: Sitting with tailbone pain: 8 practical ways to ease it
+title: 8 ways to sit more comfortably with tailbone pain
 slug: sitting-with-tailbone-pain
 date: 2026-10-17
 summary: Desk job, long drives or a hard classroom bench? Small changes to how and how long you sit can take a lot of pressure off a sore coccyx.
@@ -10,7 +10,7 @@ readMinutes: 5
 
 If your tailbone hurts, sitting is usually the hardest part of the day. When you sit upright or lean back, part of your weight rests on the coccyx, the small bone at the very bottom of the spine. When it is bruised, inflamed or moving abnormally, that pressure turns into pain, and getting up from a chair can bring a sharp jolt.
 
-The good news is that how you sit makes a real difference. These are the changes our patients find most useful.
+How you sit makes a real difference. These are the changes our patients find most useful.
 
 ::anim sitting
 

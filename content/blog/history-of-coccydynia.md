@@ -1,6 +1,6 @@
 ---
 id: 22
-title: A short history of tailbone pain: from 1859 to today
+title: Tailbone pain through history, from 1859 to now
 slug: history-of-coccydynia
 date: 2026-10-17
 summary: Tailbone pain was named "coccygodynia" in 1859. How doctors' understanding grew, from pelvic floor spasm to coccyx shapes and sitting X-rays, and what it means for treatment today.
@@ -37,9 +37,9 @@ Table: Milestones in understanding coccydynia.
 
 Each step added a piece of the picture:
 
-- **The muscles matter.** Thiele's work is why hands-on treatment of the pelvic floor is still part of care today.
-- **The shape and movement of the coccyx matter.** Postacchini and Maigne showed that the coccyx's shape and how it moves when you sit help explain the pain and guide treatment. Read more in [coccyx shapes and movement](/blog/coccyx-shapes-and-movement.html).
-- **Other conditions can be involved.** Newer research links tailbone pain with inflammatory spine disease, pelvic floor problems and more. See [conditions linked to tailbone pain](/blog/conditions-linked-to-tailbone-pain.html).
+- The muscles matter. Thiele's work is why hands-on treatment of the pelvic floor is still part of care today.
+- The shape and movement of the coccyx matter. Postacchini and Maigne showed that the coccyx's shape and how it moves when you sit help explain the pain and guide treatment. Read more in [coccyx shapes and movement](/blog/coccyx-shapes-and-movement.html).
+- Other conditions can be involved. Newer research links tailbone pain with inflammatory spine disease, pelvic floor problems and more. See [conditions linked to tailbone pain](/blog/conditions-linked-to-tailbone-pain.html).
 
 That is why our treatment combines a careful history and examination, hands-on treatment of both the coccyx and the muscles, and advice on sitting. See [coccydynia treatment, step by step](/blog/coccydynia-treatment-ladder.html).
 

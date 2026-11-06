@@ -10,6 +10,8 @@
 
 ## 1. Public website (for patients)
 
+**Launch phase 1 (6 Nov 2026):** these are built but hidden until switched on in `content/launch.json`: the online booking form (Book shows Call, WhatsApp and Email instead), My appointments and check-in, Refer a patient and Partner page, Doctor at your place, and the "Share your story" form. Their old links go to the Book page.
+
 **In Hindi:** the main pages are also at `/hi/` (home), `/hi/coccydynia`, `/hi/treatment`, `/hi/doctor`, `/hi/locations`, `/hi/faq` and `/hi/book`. The English ⇄ हिंदी switch in the header goes to the same page in the other language. Articles, My appointments and the other pages are in English.
 
 ```
@@ -88,31 +90,31 @@ Home  /
 ### Dr Rajveer explains (from his videos)
 | # | Article |
 |---|---|
-| 26 | Tailbone subluxation: why the direction of the shift decides the treatment |
-| 27 | Kegel exercises and tailbone pain: when squeezing makes it worse |
+| 26 | A displaced tailbone: why the direction of the shift matters |
+| 27 | Kegel exercises can make tailbone pain worse |
 | 28 | Why "bone setting" for tailbone pain can be dangerous |
-| 29 | Amusement and water park rides: protect your tailbone (and your child's) |
+| 29 | Water slides, theme park rides and your tailbone |
 
 ### What the research shows
 | # | Article |
 |---|---|
-| 30 | Tailbone pain explained in pictures: from the first twinge to the right treatment |
-| 18 | Coccydynia in numbers: what the research really says |
-| 20 | The shape and movement of your tailbone: why some hurt and others don't |
+| 30 | Tailbone pain, explained in pictures |
+| 18 | Tailbone pain in numbers |
+| 20 | Why some tailbones hurt and others don't |
 | 25 | Why women get tailbone pain five times more often than men |
-| 17 | Body weight and tailbone pain: why both high and low BMI matter |
-| 24 | Two-wheelers, potholes and tailbone pain: what the research shows |
-| 21 | Conditions linked to tailbone pain: spondylitis, pelvic floor problems and more |
-| 23 | When it isn't the coccyx: conditions that can mimic tailbone pain |
-| 19 | Coccydynia treatment, step by step: what works and how often |
-| 22 | A short history of tailbone pain: from 1859 to today |
+| 17 | Does body weight affect tailbone pain? |
+| 24 | Two-wheelers, potholes and tailbone pain |
+| 21 | Spondylitis, pelvic floor problems and other conditions linked to tailbone pain |
+| 23 | Pain near the tailbone that isn't coming from the coccyx |
+| 19 | How coccydynia is treated, and how often each treatment works |
+| 22 | Tailbone pain through history, from 1859 to now |
 
 ### Practical guides
 | # | Article |
 |---|---|
-| 16 | Sitting with tailbone pain: 8 practical ways to ease it |
-| 15 | Tailbone pain after pregnancy: why it happens and what helps |
-| 14 | Tailbone pain red flags: when it needs urgent attention |
+| 16 | 8 ways to sit more comfortably with tailbone pain |
+| 15 | Tailbone pain after having a baby |
+| 14 | When tailbone pain needs urgent attention |
 | 13 | What happens at a coccydynia consultation (and how to prepare) |
 
 ### From the old site (Dr Rajveer Singh, 2017–2026)

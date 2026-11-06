@@ -1,6 +1,6 @@
 ---
 id: 27
-title: Kegel exercises and tailbone pain: when squeezing makes it worse
+title: Kegel exercises can make tailbone pain worse
 slug: kegel-exercises-and-tailbone-pain
 date: 2026-10-18
 summary: Kegels and "butt-squeezing" are often suggested for pelvic pain. Dr Rajveer Singh explains why they can pull an inward-shifted or fractured coccyx further out of place, and what to do instead.

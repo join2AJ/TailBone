@@ -1,6 +1,6 @@
 ---
 id: 19
-title: Coccydynia treatment, step by step: what works and how often
+title: How coccydynia is treated, and how often each treatment works
 slug: coccydynia-treatment-ladder
 date: 2026-10-17
 summary: Tailbone pain is treated in steps, from better sitting and hands-on care to injections and, rarely, surgery. What each step involves and the success rates reported in research.
@@ -13,9 +13,9 @@ Most people with tailbone pain get better without surgery. Treatment works like 
 
 - About **90%** of people with coccydynia improve with non-surgical care.
 - The first step is changing **how and how long you sit**: a wedge or cut-out cushion, leaning forward, and regular breaks.
-- **Manipulation** of the coccyx, usually combined with an injection, helped about **75–92%** of patients in older clinical series. General physiotherapy (heat, ultrasound) helped little in the same studies, so the type of hands-on treatment matters.
-- **Injections** are an option when pain persists; reported relief varies widely between studies.
-- **Surgery** (coccygectomy) is kept for a small, carefully selected group, and has a real risk of wound infection.
+- Manipulation of the coccyx, usually combined with an injection, helped about **75–92%** of patients in older clinical series. General physiotherapy (heat, ultrasound) helped little in the same studies, so the type of hands-on treatment matters.
+- Injections are an option when pain persists; reported relief varies widely between studies.
+- Surgery (coccygectomy) is kept for a small, carefully selected group, and has a real risk of wound infection.
 
 ::anim treatment-ladder
 
@@ -37,9 +37,9 @@ These figures come from different studies with different patients and definition
 
 Sitting puts weight on the coccyx, especially when you lean back. Small changes take that pressure off:
 
-- **Lean forward slightly** so your weight rests on your thigh bones and sitting bones, not on the tailbone.
-- **Use a wedge or cut-out cushion** with the gap at the back. A doughnut ring can still press on the coccyx.
-- **Stand up every 20–30 minutes**, and avoid low, soft sofas.
+- Lean forward slightly so your weight rests on your thigh bones and sitting bones, not on the tailbone.
+- Use a wedge or cut-out cushion with the gap at the back. A doughnut ring can still press on the coccyx.
+- Stand up every 20–30 minutes, and avoid low, soft sofas.
 
 See [sitting with tailbone pain](/blog/sitting-with-tailbone-pain.html) for more detail.
 

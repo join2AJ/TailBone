@@ -25,9 +25,11 @@
 
   function card(s) {
     const c = el("article", `story${s.featured ? " story--featured" : ""}`);
-    const stars = el("div", "stars", "★".repeat(s.rating) + "☆".repeat(5 - s.rating));
-    stars.setAttribute("aria-label", `${s.rating} out of 5 stars`);
-    c.append(stars);
+    if (s.rating) {
+      const stars = el("div", "stars", "★".repeat(s.rating) + "☆".repeat(5 - s.rating));
+      stars.setAttribute("aria-label", `${s.rating} out of 5 stars`);
+      c.append(stars);
+    }
     if (s.title) c.append(el("h2", "", s.title));
     c.append(el("p", "", s.body));
     const who = el("footer", "story__who");
@@ -59,7 +61,17 @@
       if (total) $("#storyStats").textContent = `${total} stories · average rating ${average}/5 · every story is shared by a patient and published with consent.`;
       if (!total) grid.append(el("p", "muted center", "Stories will appear here soon."));
     } catch {
-      grid.replaceChildren(el("p", "muted center", "Stories couldn't be loaded right now. Please try again later."));
+      // No server (or it's down): show the stories that are built into the website (stories.json, from the Doctor page).
+      try {
+        const res = await fetch("/stories.json");
+        if (!res.ok) throw new Error();
+        const { stories } = await res.json();
+        grid.replaceChildren(...stories.map(card));
+        more.hidden = true;
+        $("#storyStats").textContent = "Shared by patients and published with their consent. Individual results vary.";
+      } catch {
+        grid.replaceChildren(el("p", "muted center", "Stories couldn't be loaded right now. Please try again later."));
+      }
     } finally {
       more.disabled = false;
     }

@@ -1,6 +1,6 @@
 ---
 id: 24
-title: Two-wheelers, potholes and tailbone pain: what the research shows
+title: Two-wheelers, potholes and tailbone pain
 slug: two-wheeler-riding-and-tailbone-pain
 date: 2026-10-17
 summary: A 2025 study found tailbone pain in a third of regular motorbike riders, and vibration was the strongest risk factor. What that means for daily commuters in Delhi, and how to protect your coccyx.
@@ -14,8 +14,8 @@ For millions of people in Indian cities, the daily commute means a scooter or mo
 ## Key points
 
 - A 2025 study of **190 male riders** in Pakistan found tailbone pain in **33.2%**.
-- **Vibration exposure** was the strongest risk factor: riders exposed to it were almost **6 times** more likely to have pain.
-- **Poor posture** on the bike roughly **tripled** the odds.
+- Vibration exposure was the strongest risk factor: riders exposed to it were almost **6 times** more likely to have pain.
+- Poor posture on the bike roughly **tripled** the odds.
 - Riders with weak core muscles (unable to hold a plank) all reported pain.
 - Long sitting hours alone, bike type and bike fit were *not* significantly linked to pain in this study.
 
@@ -23,11 +23,11 @@ For millions of people in Indian cities, the daily commute means a scooter or mo
 
 | Factor | Finding | Strength of link |
 |---|---|---|
-| Overall tailbone pain | 33.2% of 190 riders | — |
+| Overall tailbone pain | 33.2% of 190 riders | – |
 | Exposure to vibration | 70% of exposed riders had pain | Odds ratio 5.79 (strong) |
 | Poor riding posture | 51.2% had pain | Odds ratio 2.71 |
 | Unable to hold a plank | 100% had pain | Small group; suggests core strength matters |
-| Bike type, bike fit, occupation, sitting hours | No significant link | — |
+| Bike type, bike fit, occupation, sitting hours | No significant link | – |
 Table: Coccydynia among male bike riders aged 16–40 (Fatima et al., 2025).
 
 **About the evidence:** this is one cross-sectional study of young men in Pakistan. It shows an association, not proof that riding causes coccydynia. We have not found a similar study in India yet, but road conditions and commuting habits are very similar.

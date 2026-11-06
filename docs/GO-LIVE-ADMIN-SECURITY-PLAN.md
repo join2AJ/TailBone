@@ -102,6 +102,8 @@ Not in phase 1: changing page layouts, the home page's main text, or clinic loca
 
 ## 3. How to make the website live
 
+**Update, 6 Nov:** the website now launches with phase 1 only (information, articles, clippings, stories to read; booking by call, WhatsApp or email). This part works on Netlify alone, with no server, so steps 1, 3, 5, 6 and 9 are enough to go live. The server (step 4) is needed for the dashboard, including the new Website section, and for online booking and payments later.
+
 **About the Gmail and password:** please don't send the password to me or anyone in chat. You (or Dr Rajveer) sign in to each service yourself; I prepare everything else and change the settings in the code. Where a service needs a secret key, the session can open a secure form for it, so it never appears in the chat.
 
 | Step | Who | What | Time |

@@ -1,6 +1,6 @@
 ---
 id: 23
-title: When it isn't the coccyx: conditions that can mimic tailbone pain
+title: Pain near the tailbone that isn't coming from the coccyx
 slug: tailbone-pain-mimics
 date: 2026-10-17
 summary: Pilonidal cysts, nerve pain, cysts on the sacral nerves, stress fractures and, rarely, tumours can all feel like tailbone pain. How they differ, and why a careful examination comes first.
@@ -11,11 +11,11 @@ Most pain at the base of the spine really does come from the coccyx and the musc
 
 ## Key points
 
-- **Pilonidal cysts** sit in the skin over the tailbone, not in the bone. They often cause a tender lump, redness or discharge.
-- **Pudendal nerve pain** is burning or shooting pain in the genitals, perineum or back passage, typically worse sitting and better standing or on a toilet seat.
-- **Tarlov cysts** on the sacral nerves are usually harmless and found by chance, but large ones occasionally cause pain.
-- **Sacral insufficiency fractures** happen without a fall in people with weak bones, mostly older women.
-- **Tumours** near the sacrum and coccyx, such as chordoma, are rare. Constant pain, pain at night and weight loss are warning signs.
+- Pilonidal cysts sit in the skin over the tailbone, not in the bone. They often cause a tender lump, redness or discharge.
+- Pudendal nerve pain is burning or shooting pain in the genitals, perineum or back passage, typically worse sitting and better standing or on a toilet seat.
+- Tarlov cysts on the sacral nerves are usually harmless and found by chance, but large ones occasionally cause pain.
+- Sacral insufficiency fractures happen without a fall in people with weak bones, mostly older women.
+- Tumours near the sacrum and coccyx, such as chordoma, are rare. Constant pain, pain at night and weight loss are warning signs.
 
 ## How they compare
 

@@ -1305,9 +1305,14 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .deeper__all { margin: 1.2rem 0 0; display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: baseline; }
 .deeper__all a { font-weight: 700; color: var(--ink); }
 .deeper__all span { color: var(--muted); font-size: .9rem; }
+/* Phones: article cards become a compact row (small picture beside the title) instead of a tall card. */
 @media (max-width: 640px) {
-  .deeper .mini-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78%; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: .5rem; }
-  .deeper .mini-grid > li { scroll-snap-align: start; }
+  .mini-grid { grid-template-columns: 1fr; gap: .6rem; }
+  .mini-card { flex-direction: row; align-items: stretch; }
+  .mini-card img { width: 92px; flex: none; aspect-ratio: 1; height: auto; object-fit: cover; object-position: 38% 50%; }
+  .mini-card__body { padding: .55rem .75rem; align-content: center; gap: .15rem; }
+  .mini-card__body small { font-size: .65rem; }
+  .mini-card__body strong { font-size: .9rem; line-height: 1.3; }
 }
 /* ---- Website content from the dashboard (site-content.js) ---- */
 .announce { background: var(--ink); color: #fff; font-size: .92rem; position: relative; z-index: 60; }

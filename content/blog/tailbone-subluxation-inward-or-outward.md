@@ -1,6 +1,6 @@
 ---
 id: 26
-title: Tailbone subluxation: why the direction of the shift decides the treatment
+title: A displaced tailbone: why the direction of the shift matters
 slug: tailbone-subluxation-inward-or-outward
 date: 2026-10-18
 summary: A displaced coccyx can be pushed inward into the pelvis or outward. Dr Rajveer Singh explains why the direction must be known first, how treatment differs, and how one patient recovered.
@@ -53,11 +53,11 @@ Not everyone recovers at the same pace, but the pattern is typical: the manipula
 
 ## What to avoid while it heals
 
-- **Cycling and riding motorbikes**, which put your weight on a narrow saddle right under the coccyx (see [two-wheelers and tailbone pain](/blog/two-wheeler-riding-and-tailbone-pain.html)).
-- **Sitting flat on hard chairs** without a cut-out cushion (see [sitting with tailbone pain](/blog/sitting-with-tailbone-pain.html)).
-- **Bending forward without support.**
-- **Squeezing exercises** if your coccyx has shifted inward (see [Kegel exercises and tailbone pain](/blog/kegel-exercises-and-tailbone-pain.html)).
-- **External "bone setting"** (see [why bone setting can be dangerous](/blog/tailbone-bone-setting-risks.html)).
+- Cycling and riding motorbikes, which put your weight on a narrow saddle right under the coccyx (see [two-wheelers and tailbone pain](/blog/two-wheeler-riding-and-tailbone-pain.html)).
+- Sitting flat on hard chairs without a cut-out cushion (see [sitting with tailbone pain](/blog/sitting-with-tailbone-pain.html)).
+- Bending forward without support.
+- Squeezing exercises if your coccyx has shifted inward (see [Kegel exercises and tailbone pain](/blog/kegel-exercises-and-tailbone-pain.html)).
+- External "bone setting" (see [why bone setting can be dangerous](/blog/tailbone-bone-setting-risks.html)).
 
 ## Treat it early
 

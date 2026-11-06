@@ -251,6 +251,7 @@ export function page({ title, description, canonical, type = "website", jsonLd, 
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="/assets/css/fonts.css">
   <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/launch.css">
   <script src="/assets/js/theme.js"></script>
   <script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>
 </head>

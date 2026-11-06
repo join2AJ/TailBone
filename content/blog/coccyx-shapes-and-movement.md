@@ -1,6 +1,6 @@
 ---
 id: 20
-title: The shape and movement of your tailbone: why some hurt and others don't
+title: Why some tailbones hurt and others don't
 slug: coccyx-shapes-and-movement
 date: 2026-10-17
 summary: Coccyges come in different shapes and move differently when you sit. Here is what the four classic coccyx types mean, and how too much or too little movement causes pain.
@@ -13,7 +13,7 @@ Your coccyx is not a fixed, useless stub. It is made of three to five small bone
 
 - In 1983, Postacchini and Massobrio described **four coccyx shapes**. The shapes that curve or angle further forward, and a slipped joint, are more common in people with tailbone pain.
 - When you sit, a healthy coccyx bends forward by about **5–25°**.
-- **Too much bending (over 25°)**, **almost no movement (under 5°)**, or a **slipped joint** are each linked to pain.
+- Too much bending (over 25°), **almost no movement (under 5°)**, or a **slipped joint** are each linked to pain.
 - A small **bony spur** at the tip is found in about 14% of patients and can press painfully into the skin when you sit.
 
 ## The four coccyx shapes

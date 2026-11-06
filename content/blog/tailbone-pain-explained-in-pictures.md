@@ -1,6 +1,6 @@
 ---
 id: 30
-title: Tailbone pain explained in pictures: from the first twinge to the right treatment
+title: Tailbone pain, explained in pictures
 slug: tailbone-pain-explained-in-pictures
 date: 2026-10-23
 summary: A visual guide to coccydynia. Why sitting loads the tailbone, how it gets injured, how to tell it from other pain, what sitting and standing X-rays show, and how treatment is stepped up.
@@ -15,7 +15,7 @@ Tailbone pain (coccydynia) makes much more sense once you can see what is happen
 - The coccyx is a small anchor for the **pelvic floor muscles, the buttock muscle and several ligaments**, so it is never just "a leftover bone".
 - Pain usually comes from a **fall, childbirth or repeated strain** such as long sitting or riding over bumps.
 - True coccydynia is pain you can **point to with one finger**, worst when sitting and when **getting up**.
-- **Sitting and standing X-rays** compared side by side can show a coccyx that bends too far or slips. In one large study they found a likely cause in about **7 in 10** people.
+- Sitting and standing X-rays compared side by side can show a coccyx that bends too far or slips. In one large study they found a likely cause in about **7 in 10** people.
 - About **9 in 10** people get better without surgery.
 
 ## 1. A small bone with a big job
@@ -40,7 +40,7 @@ This is why the simplest advice works so often: sit tall or lean slightly forwar
 
 ![Slide: upright posture sends weight through the sitting bones; slouched posture shifts the load onto the coccyx, causing repeated micro-trauma.](/assets/img/blog/slides/slide-slouch-effect.webp "1280x714" "Slouching moves the load off the sitting bones and onto the coccyx.")
 
-Read more: [Sitting with tailbone pain: 8 practical ways to ease it](/blog/sitting-with-tailbone-pain.html)
+Read more: [8 ways to sit more comfortably with tailbone pain](/blog/sitting-with-tailbone-pain.html)
 
 ## 3. Not every coccyx is the same shape
 
@@ -50,7 +50,7 @@ Some coccyges curve gently, others hook sharply forward, and in some the joint i
 
 ![Slide: the coccyx is made of 3 to 5 small bones; its length, angle and curve vary greatly between people, which changes how pressure is absorbed.](/assets/img/blog/slides/slide-coccyx-variable.webp "1280x714" "Every coccyx is different in length, angle and curve.")
 
-Read more: [The shape and movement of your tailbone](/blog/coccyx-shapes-and-movement.html)
+Read more: [Why some tailbones hurt and others don't](/blog/coccyx-shapes-and-movement.html)
 
 ## 4. How the coccyx gets hurt
 
@@ -64,7 +64,7 @@ Table: Common ways the coccyx is injured. Sometimes no single cause can be found
 
 ![Slide: acute trauma (falls, childbirth) causes fractures, sprains or dislocation; repetitive strain (long sitting on hard surfaces, cycling, rowing, long drives) causes slowly building inflammation.](/assets/img/blog/slides/slide-injury-mechanisms.webp "1280x714" "Two routes to injury: a sudden blow, or repeated strain.")
 
-Read more: [Tailbone pain after pregnancy](/blog/tailbone-pain-after-pregnancy.html) · [Two-wheelers, potholes and tailbone pain](/blog/two-wheeler-riding-and-tailbone-pain.html) · [Body weight and tailbone pain](/blog/body-weight-and-tailbone-pain.html)
+Read more: [Tailbone pain after having a baby](/blog/tailbone-pain-after-pregnancy.html) · [Two-wheelers, potholes and tailbone pain](/blog/two-wheeler-riding-and-tailbone-pain.html) · [Does body weight affect tailbone pain?](/blog/body-weight-and-tailbone-pain.html)
 
 ## 5. Recognising it
 
@@ -88,7 +88,7 @@ Table: Three common sources of pain low in the back, and how they usually differ
 
 A few less common conditions can feel similar, and some need other treatment. If you have fever, bleeding from the back passage, pain that is constant even at rest or at night, or unexplained weight loss, see a doctor promptly.
 
-Read more: [When it isn't the coccyx](/blog/tailbone-pain-mimics.html) · [Tailbone pain red flags](/blog/tailbone-pain-red-flags.html)
+Read more: [Pain near the tailbone that isn't coming from the coccyx](/blog/tailbone-pain-mimics.html) · [When tailbone pain needs urgent attention](/blog/tailbone-pain-red-flags.html)
 
 ## 7. Seeing the problem: sitting and standing X-rays
 
@@ -110,7 +110,7 @@ Read more: [What happens at a coccydynia consultation](/blog/what-happens-at-you
 
 When the coccyx is out of line, the direction matters. A coccyx pushed inwards and one pushed outwards need different hands-on treatment, which is why it is checked before anything is done.
 
-Read more: [Tailbone subluxation: why the direction decides the treatment](/blog/tailbone-subluxation-inward-or-outward.html)
+Read more: [A displaced tailbone: why the direction of the shift matters](/blog/tailbone-subluxation-inward-or-outward.html)
 
 ## 9. Treatment, step by step
 
@@ -132,9 +132,9 @@ About 9 in 10 people improve with the first, non-surgical steps.
 
 ::anim cushion
 
-Read more: [Coccydynia treatment, step by step](/blog/coccydynia-treatment-ladder.html) · [Why "bone setting" can be dangerous](/blog/tailbone-bone-setting-risks.html)
+Read more: [How coccydynia is treated](/blog/coccydynia-treatment-ladder.html) · [Why "bone setting" can be dangerous](/blog/tailbone-bone-setting-risks.html)
 
-## The short version
+## Summary
 
 Tailbone pain is a mechanical problem with a clear pattern, and it can be worked out. Find out exactly where the pain comes from, take the load off the coccyx, treat the joint and the muscles around it, and step up only if needed. Most people get back to sitting comfortably without surgery.
 
