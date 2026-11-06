@@ -1,7 +1,7 @@
 // "In the news" page from content/press.json (newspaper coverage imported from the old site).
 import fs from "node:fs";
 import path from "node:path";
-import { root, SITE } from "./partials.js";
+import { root, SITE, applyLaunch } from "./partials.js";
 import { page } from "./build-blog.js";
 
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -67,6 +67,6 @@ ${MENTIONS.map((m) => `          <li><a href="${esc(m.url)}" target="_blank" rel
     },
     body,
   });
-  fs.writeFileSync(path.join(root, "public/press.html"), html.replace("</body>", '  <script src="/assets/js/press.js" defer></script>\n</body>'));
+  fs.writeFileSync(path.join(root, "public/press.html"), applyLaunch(html).replace("</body>", '  <script src="/assets/js/press.js" defer></script>\n</body>'));
   return items;
 }

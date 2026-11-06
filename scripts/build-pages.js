@@ -34,7 +34,7 @@ export const PAGES = [
     slug: "/doctor", file: "doctor.html", page: "doctor", crumb: "Dr Rajveer Singh",
     heading: "Dr Rajveer Singh, tailbone pain specialist",
     title: "Dr Rajveer Singh, Tailbone Pain Specialist in New Delhi",
-    description: "Dr Rajveer Singh (BPT, Fellowship in Orthopaedic Rehabilitation, Apollo Hospital Chennai) treats coccyx and tailbone pain without surgery. Read patient stories.",
+    description: "Dr Rajveer Singh (BPT, Fellowship in Orthopaedic Rehabilitation, Apollo Hospital Chennai) treats coccyx and tailbone pain without surgery, in New Delhi and online.",
   },
   {
     slug: "/locations", file: "locations.html", page: "locations", crumb: "Clinics",

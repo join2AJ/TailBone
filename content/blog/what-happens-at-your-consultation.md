@@ -42,4 +42,4 @@ After treatment, a short check-in a week or two later helps track your pain and 
 
 ## Book or ask a question
 
-You can [book online](/book) at our New Delhi clinic or for a video consultation, or message us on WhatsApp if you have questions before deciding.
+You can [book an appointment](/book) at our New Delhi clinic or for a video consultation, or message us on WhatsApp if you have questions before deciding.

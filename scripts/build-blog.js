@@ -319,7 +319,7 @@ export function articlePage(post, others) {
   const cover = meta.image ? imageSize(meta.image) : null;
   const more = related(post, others, 3).map((o) => miniCard(o.meta)).join("");
   const body = `      <article class="post narrow" data-post-id="${meta.id}">
-        <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog/">Blog</a></nav>
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/blog/">Articles</a></nav>
         ${tagsHtml(meta.tags, true)}
         <h1>${esc(meta.title)}</h1>
         <p class="post-lede">${esc(meta.summary)}</p>
@@ -373,7 +373,7 @@ ${post.html}
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: `${SITE}/` },
-        { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE}/blog/` },
+        { "@type": "ListItem", position: 2, name: "Articles", item: `${SITE}/blog/` },
         { "@type": "ListItem", position: 3, name: meta.title, item: url },
       ],
     }],
@@ -395,7 +395,7 @@ function indexPage(posts) {
         </li>`;
   }).join("\n");
   const body = `      <div class="section__head">
-        <span class="eyebrow">Blog</span>
+        <span class="eyebrow">Articles</span>
         <h1>Tailbone pain, explained</h1>
         <p class="muted">Practical advice on coccydynia from our clinic: sitting, pregnancy, warning signs and what treatment involves. Checked against trusted sources such as the NHS and Cleveland Clinic.</p>
       </div>

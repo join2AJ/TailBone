@@ -1352,3 +1352,36 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .post-body #s-sources ~ ul li { margin: .25rem 0; }
 .post-body #s-sources ~ ul a { color: var(--muted); text-decoration-thickness: 1px; }
 .post-note { font-size: .88rem; }
+/* ---- Review, 6 Nov: phones ---- */
+.ig-more { text-align: center; margin: 1.4rem 0 0; }
+/* Sources on the Tailbone pain page: smaller, like in articles */
+.sources .h3 { font-size: 1rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.sources ul { font-size: .82rem; color: var(--muted); }
+.sources a { color: var(--muted); }
+@media (max-width: 640px) {
+  /* Footer: bigger tap targets, useful links in two columns */
+  .footer li a { padding: .45rem 0; }
+  .footer__links { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+  /* Article list: compact rows (small picture beside the title) */
+  .post-grid { gap: .7rem; }
+  .post-card { flex-direction: row; align-items: stretch; }
+  .post-card__img { width: 96px; flex: none; aspect-ratio: auto; height: auto; min-height: 100%; object-position: 11.5% 50%; border-bottom: 0; border-right: 1px solid var(--line); }
+  .post-card__body { padding: .7rem .85rem; }
+  .post-card__body .post-tags { margin-bottom: .35rem; }
+  .post-card__body h2 { font-size: .98rem; margin-bottom: .25rem; }
+  .post-card__body p { font-size: .8rem; }
+}
+/* Six menu items: never wrap a label; tighter between tablet and laptop widths */
+.nav a { white-space: nowrap; }
+@media (min-width: 921px) and (max-width: 1100px) {
+  .nav { gap: .2rem 1rem; }
+  .nav a { font-size: .9rem; }
+  .nav__cta { padding: .55rem 1rem; }
+  .header__actions { gap: .4rem; }
+}
+@media (max-width: 640px) {
+  .post-toc li { margin: .15rem 0; }
+  .post-toc a { display: inline-block; padding: .3rem 0; }
+  .crumbs a { display: inline-block; padding: .35rem 0; }
+  .footer address a, .footer__clinic a { display: inline-block; padding: .35rem 0; }
+}

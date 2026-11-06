@@ -46,25 +46,35 @@ export const HIDDEN_PAGES = {
 /** Where a hidden page's old address leads instead. */
 export const HIDDEN_PAGE_TARGET = { "/stories.html": "/doctor" };
 
-// While online booking is hidden, the Book page is the "call, WhatsApp or email" page, so booking buttons say so.
-const BOOKING_LABELS = {
-  "Book appointment": "Contact us",
-  "Book an appointment": "Call or WhatsApp to book",
-  "Book online": "Call or WhatsApp",
-  "Book online consult": "Ask about an online consult",
-  "Book an online consult": "Ask about an online consult",
-  "Book in New Delhi": "Call the New Delhi clinic",
-  "booking page": "contact page",
-  "अपॉइंटमेंट बुक करें": "कॉल या WhatsApp करें",
-  "ऑनलाइन बुक करें": "कॉल या WhatsApp करें",
-  "ऑनलाइन कंसल्ट बुक करें": "ऑनलाइन कंसल्ट के बारे में पूछें",
-  "नई दिल्ली में बुक करें": "नई दिल्ली क्लिनिक को कॉल करें",
-  "बुकिंग पेज": "संपर्क पेज",
+// While online booking is hidden, booking buttons call or open WhatsApp directly (the Book page lists call, WhatsApp
+// and email), and the phone bar shows Call · WhatsApp · Email.
+const TEL = "tel:+919886688323";
+const WA = "https://wa.me/919886688323?text=Hi%20Dr%20Rajveer%2C%20got%20your%20details%20from%20your%20website.%20I%20would%20like%20to%20book%20an%20appointment.";
+const BOOKING_LINKS = {
+  "Book appointment": ["Contact us"],
+  "Book an appointment": ["Call to book", TEL],
+  "Book online": ["Chat on WhatsApp", WA],
+  "Book online consult": ["Ask about an online consult", WA],
+  "Book an online consult": ["Ask about an online consult", WA],
+  "Book in New Delhi": ["Call the New Delhi clinic", TEL],
+  "booking page": ["contact page"],
+  "अपॉइंटमेंट बुक करें": ["बुकिंग के लिए कॉल करें", TEL],
+  "ऑनलाइन बुक करें": ["WhatsApp पर बात करें", WA],
+  "ऑनलाइन कंसल्ट बुक करें": ["ऑनलाइन कंसल्ट के बारे में पूछें", WA],
+  "नई दिल्ली में बुक करें": ["नई दिल्ली क्लिनिक को कॉल करें", TEL],
+  "बुकिंग पेज": ["संपर्क पेज"],
 };
 function phaseOneBooking(html) {
   if (!isHidden("booking")) return html;
-  html = html.replace(/(<a\b[^>]*href="(?:\/hi)?\/book"[^>]*>)([^<]+)(<\/a>)/g, (m, open, text, close) => (Object.hasOwn(BOOKING_LABELS, text.trim()) ? `${open}${BOOKING_LABELS[text.trim()]}${close}` : m));
-  // Phone bar: Call · WhatsApp · Email instead of Book.
+  html = html.replace(/<a\b([^>]*)href="(\/hi)?\/book"([^>]*)>([^<]+)<\/a>/g, (m, before, hi, after, text) => {
+    const key = text.trim();
+    if (/nav__cta/.test(before + after)) return `<a${before}href="${hi || ""}/book"${after}>${hi ? "संपर्क करें" : "Contact us"}</a>`;
+    if (!Object.hasOwn(BOOKING_LINKS, key)) return m;
+    const [label, href] = BOOKING_LINKS[key];
+    if (!href) return `<a${before}href="${hi || ""}/book"${after}>${label}</a>`;
+    const extra = href.startsWith("https:") && !/target=/.test(before + after) ? ' target="_blank" rel="noopener"' : "";
+    return `<a${before}href="${href}"${after}${extra}>${label}</a>`;
+  });
   return html.replace(/<a href="[^"]*" class="mbar__primary">([^<]*)<\/a>/, (m, text) => `<a href="mailto:contact@tailbonetreatment.com" class="mbar__primary">${/[ऀ-ॿ]/.test(text) ? "ईमेल" : "Email"}</a>`);
 }
 

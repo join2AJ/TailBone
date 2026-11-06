@@ -16,7 +16,7 @@ Key facts:
 - [Tailbone Pain Treatment in Delhi | Tailbone Treatment Clinic](https://tailbone.netlify.app/): Non-surgical treatment for tailbone (coccyx) pain by Dr Rajveer Singh, coccydynia specialist. Clinic in Vasant Kunj, New Delhi, and online video consultations.
 - [Coccydynia (Tailbone Pain): Symptoms, Causes and Self-Check](https://tailbone.netlify.app/coccydynia): What causes tailbone (coccyx) pain, typical symptoms, warning signs and self-care, with a 1-minute symptom check. Checked against NHS and Cleveland Clinic information.
 - [Non-Surgical Tailbone Pain Treatment | Tailbone Treatment](https://tailbone.netlify.app/treatment): How coccydynia is treated without surgery: careful assessment, Internal Manipulation of the coccyx and a personalised recovery plan, in New Delhi or online.
-- [Dr Rajveer Singh, Tailbone Pain Specialist in New Delhi](https://tailbone.netlify.app/doctor): Dr Rajveer Singh (BPT, Fellowship in Orthopaedic Rehabilitation, Apollo Hospital Chennai) treats coccyx and tailbone pain without surgery. Read patient stories.
+- [Dr Rajveer Singh, Tailbone Pain Specialist in New Delhi](https://tailbone.netlify.app/doctor): Dr Rajveer Singh (BPT, Fellowship in Orthopaedic Rehabilitation, Apollo Hospital Chennai) treats coccyx and tailbone pain without surgery, in New Delhi and online.
 - [Tailbone Pain Clinic in Vasant Kunj, New Delhi · Timings](https://tailbone.netlify.app/locations): Address, map and opening hours of the Tailbone Treatment clinic in Vasant Kunj, New Delhi, plus online video consultations. Lucknow clinic opening soon.
 - [Tailbone Pain FAQ: Treatment, Sessions and Fees](https://tailbone.netlify.app/faq): Answers about coccydynia, Internal Manipulation, how many sessions are needed, fees, online consultations and appointments at Tailbone Treatment Clinic.
 - [Book a Tailbone Pain Appointment · New Delhi or Online](https://tailbone.netlify.app/book): Choose a day and time for a tailbone pain consultation with Dr Rajveer Singh in New Delhi or by video. Instant appointment number and WhatsApp reminders.
@@ -41,6 +41,6 @@ Key facts:
 ## Optional
 
 - [Full text of this site in one file](https://tailbone.netlify.app/llms-full.txt)
-- [Patient stories](https://tailbone.netlify.app/stories.html)
+
 - [Terms, fees, cancellation and refund policy](https://tailbone.netlify.app/policies.html)
 - [Privacy notice](https://tailbone.netlify.app/privacy.html)
