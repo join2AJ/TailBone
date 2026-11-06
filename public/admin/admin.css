@@ -300,3 +300,9 @@ fieldset.field legend { font-weight: 600; font-size: .85rem; margin-bottom: .3re
 #ytForm > .btn, #announceForm > .btn, #hoursForm > .btn, #contactForm > .btn, #pressForm > .btn { justify-self: start; align-self: start; width: auto; }
 .launch-articles { margin: .4rem 0 .8rem; }
 .launch-articles summary { cursor: pointer; padding: .4rem 0; }
+/* Phase-1 dashboard (/dashboard) */
+.ig-badge { width: 80px; height: 60px; border-radius: 6px; display: grid; place-items: center; flex: none; color: #fff; font-weight: 800; background: linear-gradient(160deg, #833ab4, #fd1d1d 60%, #fcb045); }
+.enroll-qr { display: grid; place-items: center; margin: .6rem 0; }
+.enroll-qr img { width: 200px; height: 200px; background: #fff; padding: 8px; border-radius: 12px; }
+.enroll-steps { padding-left: 1.2rem; margin: .4rem 0; }
+.login__card .form { display: grid; gap: .8rem; }

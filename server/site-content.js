@@ -6,127 +6,20 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { config, HOURS } from "./config.js";
-import { HttpError, cleanText } from "./services.js";
+import { HttpError } from "./services.js";
+import { CLEAN as RULES, PAGES as SHARED_PAGES, AREA_LABELS as SHARED_LABELS, publicView as sharedPublicView, faqFromHtml, youtubeId as sharedYoutubeId } from "../shared/content-rules.js";
 import { clinicNow } from "./time.js";
 
-export const PAGES = { home: "Home", treatment: "Treatment", doctor: "Doctor" };
+export const PAGES = SHARED_PAGES;
 const DEFAULT_HOURS = JSON.parse(JSON.stringify(HOURS));
 const DEFAULT_CONTACT = { phone: "+91 98866 88323", whatsapp: "919886688323", email: "contact@tailbonetreatment.com" };
 const HISTORY_KEEP = 30;
+export const youtubeId = sharedYoutubeId;
 
-const isTime = (v) => typeof v === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
-const isDate = (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
-const httpsUrl = (v, max = 500) => {
-  const s = cleanText(v, max);
-  if (!s) return "";
-  if (s.startsWith("/") && !s.startsWith("//")) return s; // a page on this site
-  try { const u = new URL(s); return u.protocol === "https:" ? u.href : null; } catch { return null; }
-};
-
-/** The 11-character id of a YouTube video from any of its usual links (watch, youtu.be, shorts, embed, live). */
-export function youtubeId(input) {
-  const s = cleanText(input, 300);
-  if (/^[\w-]{11}$/.test(s)) return s;
-  let u;
-  try { u = new URL(s); } catch { return null; }
-  const host = u.hostname.replace(/^(www|m|music)\./, "");
-  let idPart = null;
-  if (host === "youtu.be") idPart = u.pathname.slice(1);
-  else if (host === "youtube.com" || host === "youtube-nocookie.com") {
-    idPart = u.searchParams.get("v") || (/^\/(shorts|embed|live)\/([^/?#]+)/.exec(u.pathname) || [])[2];
-  }
-  return idPart && /^[\w-]{11}$/.test(idPart) ? idPart : null;
-}
-
-// ---- Validation: each area turns dashboard input into a clean document, or explains what's wrong ----
-const CLEAN = {
-  announcement(v) {
-    const a = {
-      enabled: v?.enabled === true,
-      text: cleanText(v?.text, 200),
-      textHi: cleanText(v?.textHi, 200),
-      linkText: cleanText(v?.linkText, 40),
-      link: httpsUrl(v?.link),
-      start: isDate(v?.start) ? v.start : "",
-      end: isDate(v?.end) ? v.end : "",
-      tone: ["info", "warning", "success"].includes(v?.tone) ? v.tone : "info",
-    };
-    if (a.link === null) throw new HttpError(400, "The link must start with https:// or be a page on this site, such as /book.");
-    if (a.enabled && !a.text) throw new HttpError(400, "Write the announcement before switching it on.");
-    if (a.start && a.end && a.end < a.start) throw new HttpError(400, "The end date is before the start date.");
-    if (a.link && !a.linkText) a.linkText = "Find out more";
-    return a;
-  },
-  hours(v) {
-    const out = {};
-    for (let d = 0; d < 7; d++) {
-      const day = v?.[d];
-      if (day === null || day === false || day?.closed) { out[d] = null; continue; }
-      const [open, close] = Array.isArray(day) ? day : [day?.open, day?.close];
-      if (!isTime(open) || !isTime(close)) throw new HttpError(400, "Give opening and closing times as HH:MM, or mark the day closed.");
-      if (close <= open) throw new HttpError(400, "Closing time must be after opening time.");
-      out[d] = [open, close];
-    }
-    if (!Object.values(out).some(Boolean)) throw new HttpError(400, "At least one day must be open.");
-    return out;
-  },
-  contact(v) {
-    const digits = (s) => String(s ?? "").replace(/\D/g, "");
-    const phone = cleanText(v?.phone, 30);
-    const whatsapp = digits(v?.whatsapp);
-    const email = cleanText(v?.email, 120).toLowerCase();
-    if (digits(phone).length < 10) throw new HttpError(400, "Enter the phone number with its country code, e.g. +91 98866 88323.");
-    if (whatsapp.length < 11 || whatsapp.length > 15) throw new HttpError(400, "Enter the WhatsApp number with its country code and no spaces, e.g. 919886688323.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, "Enter a valid email address.");
-    return { phone, whatsapp, email };
-  },
-  faq(v) {
-    if (!Array.isArray(v)) throw new HttpError(400, "Invalid FAQ list.");
-    if (v.length > 40) throw new HttpError(400, "Up to 40 questions can be shown.");
-    return v.map((x) => {
-      const q = cleanText(x?.q, 200);
-      const a = cleanText(x?.a, 2000);
-      if (!q || !a) throw new HttpError(400, "Every question needs an answer (and the other way round).");
-      return { q, a, visible: x?.visible !== false };
-    });
-  },
-  press(v) {
-    if (!Array.isArray(v)) throw new HttpError(400, "Invalid list of clippings.");
-    if (v.length > 60) throw new HttpError(400, "Up to 60 clippings can be shown.");
-    return v.map((x, i) => {
-      const image = httpsUrl(x?.image);
-      const publication = cleanText(x?.publication, 80);
-      if (!publication) throw new HttpError(400, "Every clipping needs the newspaper's name.");
-      if (!image) throw new HttpError(400, `Add a photo of the clipping for ${publication}.`);
-      const thumb = httpsUrl(x?.thumb) || image;
-      const slug = cleanText(x?.slug, 120).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, "")
-        || `clipping-${i + 1}-${publication.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`.slice(0, 120);
-      const n = (k, d) => (Number.isInteger(x?.[k]) && x[k] > 0 && x[k] < 10000 ? x[k] : d);
-      return {
-        slug, publication, title: cleanText(x?.title, 160), language: cleanText(x?.language, 40),
-        date: isDate(x?.date) ? x.date : "", image, thumb,
-        width: n("width", 800), height: n("height", 1000), thumbWidth: n("thumbWidth", n("width", 800)), thumbHeight: n("thumbHeight", n("height", 1000)),
-        visible: x?.visible !== false,
-      };
-    });
-  },
-  youtube(v) {
-    if (!Array.isArray(v)) throw new HttpError(400, "Invalid list of videos.");
-    if (v.length > 30) throw new HttpError(400, "Up to 30 videos can be added.");
-    const seen = new Set();
-    return v.map((x) => {
-      const id = youtubeId(x?.id || x?.url);
-      if (!id) throw new HttpError(400, "Paste a YouTube link, e.g. https://www.youtube.com/watch?v=… or https://youtu.be/…");
-      if (seen.has(id)) throw new HttpError(409, "That video is already in the list.");
-      seen.add(id);
-      const pages = [...new Set((Array.isArray(x?.pages) ? x.pages : []).filter((p) => Object.hasOwn(PAGES, p)))];
-      if (!pages.length) throw new HttpError(400, "Choose at least one page for each video.");
-      return { id, title: cleanText(x?.title, 120), pages, visible: x?.visible !== false, short: !!x?.short || /\/shorts\//.test(String(x?.url || "")) };
-    });
-  },
-};
+// The areas this server stores (Instagram posts have their own table here, so videos are YouTube only).
+const CLEAN = Object.fromEntries(["announcement", "hours", "contact", "faq", "press", "youtube"].map((k) => [k, RULES[k]]));
 export const AREAS = Object.keys(CLEAN);
-export const AREA_LABELS = { announcement: "Announcement bar", hours: "Opening hours", contact: "Contact details", faq: "FAQ", press: "Newspaper clippings", youtube: "YouTube videos" };
+export const AREA_LABELS = SHARED_LABELS;
 
 export function getArea(db, key) {
   const row = db.prepare("SELECT value FROM site_content WHERE key = ?").get(key);
@@ -187,12 +80,7 @@ export function applyLive(db) {
 // The website's built-in FAQ and clippings, so the dashboard's forms start from what the site shows today.
 // FAQ answers keep their links as [text](/address).
 function builtInFaq() {
-  try {
-    const html = fs.readFileSync(path.join(config.publicDir, "faq.html"), "utf8");
-    const plain = (x) => x.replace(/<a [^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/g, "[$2]($1)").replace(/<\/p>\s*<p>/g, "\n\n").replace(/<[^>]+>/g, "")
-      .replace(/&amp;/g, "&").replace(/&#39;|&rsquo;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/[ \t]*\n[ \t]*/g, "\n").replace(/[ \t]+/g, " ").trim();
-    return [...html.matchAll(/<details[^>]*>\s*<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/g)].map((m) => ({ q: plain(m[1]), a: plain(m[2]), visible: true }));
-  } catch { return []; }
+  try { return faqFromHtml(fs.readFileSync(path.join(config.publicDir, "faq.html"), "utf8")); } catch { return []; }
 }
 function builtInPress() {
   try {
@@ -214,26 +102,11 @@ export function adminView(db) {
   };
 }
 
-/** What the public pages need. Only areas the clinic has changed are sent; the pages keep their built-in content otherwise. */
+/** What the public pages need (see shared/content-rules.js). */
 export function publicView(db, { instagram = [] } = {}) {
-  const today = clinicNow().date;
-  const a = getArea(db, "announcement");
-  const live = a?.enabled && a.text && (!a.start || a.start <= today) && (!a.end || a.end >= today);
-  const out = {
-    announcement: live ? { text: a.text, textHi: a.textHi, link: a.link, linkText: a.linkText, tone: a.tone, id: crypto.createHash("sha256").update(JSON.stringify(a)).digest("hex").slice(0, 10) } : null,
-    hours: getArea(db, "hours"),
-    contact: getArea(db, "contact"),
-    faq: getArea(db, "faq")?.filter((x) => x.visible).map(({ q, a: ans }) => ({ q, a: ans })) ?? null,
-    press: getArea(db, "press")?.filter((x) => x.visible) ?? null,
-    videos: {},
-  };
-  const yt = (getArea(db, "youtube") || []).filter((v) => v.visible);
-  for (const p of Object.keys(PAGES)) {
-    out.videos[p] = [
-      ...yt.filter((v) => v.pages.includes(p)).map((v) => ({ type: "youtube", id: v.id, title: v.title, short: v.short })),
-      // The Treatment page has its own Instagram section, so its Instagram posts aren't repeated here.
-      ...instagram.filter((m) => p !== "treatment" && m.pages.split(",").includes(p)).map((m) => ({ type: "instagram", url: m.url, kind: m.kind, title: m.caption })),
-    ];
-  }
-  return out;
+  const areas = Object.fromEntries(["announcement", "hours", "contact", "faq", "press", "youtube"].map((k) => [k, getArea(db, k)]));
+  return sharedPublicView(areas, {
+    today: clinicNow().date, instagram,
+    announcementId: (a) => crypto.createHash("sha256").update(JSON.stringify(a)).digest("hex").slice(0, 10),
+  });
 }

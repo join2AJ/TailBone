@@ -140,12 +140,14 @@ Newest first. Add one line per change.
 | 17 Oct 2026 | First version: redesigned website, online booking, follow-ups and the clinic dashboard. |
 
 ---
+| 6 Nov 2026 | **Free phase-1 dashboard at /dashboard (no paid server needed):** the doctor and the super admin sign in with email, password and a 6-digit code from an authenticator app. The doctor can change videos (YouTube and Instagram reels), the announcement bar, opening hours, contact details, FAQ and newspaper clippings, and undo any change from History. The super admin can also change the launch phase (what is hidden) and who can sign in, and sees an activity log. Everything is stored in Supabase (free plan, Mumbai), and permissions are enforced by the database itself. Tested end to end with temporary accounts (wrong password, wrong code, someone not on the staff list, the doctor trying super-admin actions: all refused). Steps to go live: [GO-LIVE-PHASE-1.md](GO-LIVE-PHASE-1.md). |
 
 ## 4. Future plan
 
 The phased go-live, dashboard and security plan (6 Nov 2026) is in [GO-LIVE-ADMIN-SECURITY-PLAN.md](GO-LIVE-ADMIN-SECURITY-PLAN.md).
 
 ### Before going live (owner actions)
+- [ ] **Phase-1 dashboard:** create your login and the doctor's in Supabase, switch off public sign-ups, and set up the authenticator app. About 10 minutes; see [GO-LIVE-PHASE-1.md](GO-LIVE-PHASE-1.md).
 - [ ] **Connect the domain:** point tailbonetreatment.com to Netlify (website records only; leave email untouched). Then switch canonical links and the sitemap to the domain (`SITE_URL`) and run IndexNow.
 - [ ] **Before running ads: put the site on tailbonetreatment.com.** Point the domain to Netlify (the fast website, which never sleeps) and send ads there, not to the temporary netlify.app or onrender.com addresses. Old addresses already redirect to the new pages.
 - [ ] **Use Render's paid Starter plan (about US$7 a month) for the real clinic server, never the free plan.** The free plan goes to sleep (30–60 seconds to wake) and does not keep its data, so bookings would be lost. tailbone.onrender.com is only the demo.

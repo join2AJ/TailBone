@@ -105,3 +105,7 @@ create policy "staff remove site media" on storage.objects for delete to authent
 
 -- The owner's super admin account (the login itself is created in Supabase → Authentication → Users).
 insert into public.staff (email, name, role, created_by) values ('join2ajkumar@gmail.com', 'Owner', 'superadmin', 'setup');
+
+-- Security check follow-up: the history function runs only as a trigger; staff_role() is for signed-in users.
+revoke execute on function public.site_content_keep_history() from public, anon, authenticated;
+revoke execute on function public.staff_role() from anon;

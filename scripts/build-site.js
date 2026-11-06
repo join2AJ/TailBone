@@ -8,6 +8,8 @@ import { buildPages } from "./build-pages.js";
 import { build as buildBlog, page as blogPage } from "./build-blog.js";
 import { writeRobots, writeLlms } from "./build-ai.js";
 import { buildPress } from "./build-press.js";
+import { faqFromHtml, DEFAULT_HOURS, DEFAULT_CONTACT } from "../shared/content-rules.js";
+import { loadPosts } from "./build-blog.js";
 
 const STANDALONE = ["manage.html", "policies.html", "privacy.html", "stories.html", "press.html", "refer.html", "partner.html", "home-visit.html"];
 // Pages outside the template that get the shared header (menu) and the nav link to mark as current.
@@ -99,6 +101,19 @@ ${lines.join("\n")}
 `);
 }
 
+/** What the website shows by default, for the phase-1 dashboard (/dashboard) to start its forms from: FAQ, clippings,
+ * hours, contact details, the articles (including those held back) and the launch settings in content/launch.json. */
+export function writeSiteDefaults() {
+  const faq = faqFromHtml(fs.readFileSync(path.join(root, "public/faq.html"), "utf8"));
+  const press = JSON.parse(fs.readFileSync(path.join(root, "content/press.json"), "utf8")).map((p) => ({ ...p, visible: true }));
+  const articles = loadPosts().map(({ meta }) => ({ id: meta.id, title: meta.title, tags: meta.tags })).sort((a, b) => b.id - a.id);
+  const launch = JSON.parse(fs.readFileSync(path.join(root, "content/launch.json"), "utf8"));
+  fs.mkdirSync(path.join(root, "public/assets/data"), { recursive: true });
+  fs.writeFileSync(path.join(root, "public/assets/data/site-defaults.json"), `${JSON.stringify({
+    faq, press, hours: DEFAULT_HOURS, contact: DEFAULT_CONTACT, articles, launch: { hidden: launch.hidden, hiddenArticles: launch.hiddenArticles || [] },
+  }, null, 1)}\n`);
+}
+
 /** The patient stories built into the Doctor page, for the Stories page when the server can't be reached. */
 export function writeStoriesFallback() {
   const html = fs.readFileSync(path.join(root, "content/site.html"), "utf8");
@@ -160,6 +175,7 @@ export function buildSite() {
   writeRobots();
   writeLlms(pages, posts);
   writeLaunchCss();
+  writeSiteDefaults();
   writeStoriesFallback();
   addSiteContentScript();
   versionAssets();

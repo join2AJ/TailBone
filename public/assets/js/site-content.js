@@ -6,6 +6,9 @@
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // Only addresses on this site ("/…") or https links; anything else is dropped (the server checks too).
+  const safeUrl = (u) => (typeof u === "string" && /^(\/(?!\/)|https:\/\/)[^\s"<>]*$/.test(u) ? u : "");
+  const num = (n) => (Number.isFinite(+n) && +n > 0 ? Math.round(+n) : "");
   const HI = document.documentElement.lang === "hi";
   const BUILT_IN = { phone: "+91 98866 88323", whatsapp: "919886688323", email: "contact@tailbonetreatment.com" };
   const DAYS = HI ? ["रविवार", "सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार"] : ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -29,7 +32,7 @@
     bar.setAttribute("role", "region");
     bar.setAttribute("aria-label", HI ? "सूचना" : "Announcement");
     const text = (HI && a.textHi) || a.text;
-    bar.innerHTML = `<div class="container announce__inner"><p>${esc(text)}${a.link ? ` <a href="${esc(a.link)}">${esc(a.linkText || "Find out more")} <span aria-hidden="true">→</span></a>` : ""}</p>
+    bar.innerHTML = `<div class="container announce__inner"><p>${esc(text)}${safeUrl(a.link) ? ` <a href="${esc(safeUrl(a.link))}">${esc(a.linkText || "Find out more")} <span aria-hidden="true">→</span></a>` : ""}</p>
       <button type="button" class="announce__close" aria-label="${HI ? "बंद करें" : "Close announcement"}">×</button></div>`;
     $(".announce__close", bar).addEventListener("click", () => { bar.remove(); try { sessionStorage.setItem(key, "1"); } catch { /* ignore */ } });
     document.body.prepend(bar);
@@ -91,8 +94,8 @@
       grid.innerHTML = list.map((p) => {
         const heading = p.language ? `${p.publication} (${p.language})` : p.publication;
         return `<li class="press-card" id="${esc(p.slug)}">
-          <a href="${esc(p.image)}" class="press-card__img" data-full="${esc(p.image)}" data-w="${p.width}" data-h="${p.height}" data-caption="${esc(heading)}${p.date ? `, ${esc(prettyDate(p.date))}` : ""}" aria-label="Open the full clipping: ${esc(heading)}">
-            <img src="${esc(p.thumb || p.image)}" alt="Newspaper clipping: ${esc(p.title || heading)}" width="${p.thumbWidth || p.width}" height="${p.thumbHeight || p.height}" loading="lazy" decoding="async">
+          <a href="${esc(safeUrl(p.image))}" class="press-card__img" data-full="${esc(safeUrl(p.image))}" data-w="${num(p.width)}" data-h="${num(p.height)}" data-caption="${esc(heading)}${p.date ? `, ${esc(prettyDate(p.date))}` : ""}" aria-label="Open the full clipping: ${esc(heading)}">
+            <img src="${esc(safeUrl(p.thumb) || safeUrl(p.image))}" alt="Newspaper clipping: ${esc(p.title || heading)}" width="${num(p.thumbWidth || p.width)}" height="${num(p.thumbHeight || p.height)}" loading="lazy" decoding="async">
           </a>
           <h2>${esc(heading)}</h2>
           <p class="muted small">${p.date ? `<time datetime="${esc(p.date)}">${esc(prettyDate(p.date))}</time>` : ""}</p>
@@ -144,6 +147,7 @@
           ${v.title ? `<figcaption>${esc(v.title)}</figcaption>` : ""}`;
         $(".video-card__play", fig).addEventListener("click", (e) => {
           const iframe = document.createElement("iframe");
+          if (!/^https:\/\/www\.instagram\.com\/(p|reel)\/[\w-]+\/$/.test(v.url)) return;
           iframe.src = `${v.url}embed/`;
           iframe.title = v.title || `Instagram ${v.kind}`;
           iframe.allow = "encrypted-media; picture-in-picture";

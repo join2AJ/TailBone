@@ -1,27 +1,22 @@
-# Netlify serves the website from /public and forwards the API to the Node backend.
-# 1. Deploy the backend (see render.yaml / README "Deploying").
-# 2. Replace BACKEND_URL below with its address, e.g. https://tailbone-api.onrender.com
-# Because Netlify proxies /api/* (status 200 rewrite), the browser sees one domain:
-# sign-in cookies, booking and payments all work without CORS.
+# Netlify serves the website from /public. In phase 1, /api/* is the Netlify function netlify/functions/api.mjs, which
+# keeps the website content and the clinic dashboard (/dashboard) in Supabase (free). See DEPLOY.md.
 
 [build]
   publish = "public"
-  # Rebuilds the pages so the super admin's launch settings (Control panel → Launch phase → Publish) take effect.
-  # Set LAUNCH_URL in Netlify (Site configuration → Environment variables) to https://<server>/api/launch once the
-  # server is live; until then the build uses content/launch.json and produces the same files as the repository.
+  # Rebuilds the pages so the super admin's launch settings (dashboard → Launch phase → Publish) take effect.
+  # With LAUNCH_URL = https://<this site>/api/launch set in Netlify (Site configuration → Environment variables), the
+  # build uses the saved settings; without it, content/launch.json (the same files as the repository).
   command = "node scripts/build-site.js"
 
 [build.environment]
   NODE_VERSION = "22"
 
-[[redirects]]
-  from = "/api/*"
-  to = "https://BACKEND_URL/api/:splat"
-  status = 200
-  force = true
-  # Optional but recommended: the same random value as PROXY_SECRET on the backend, so the backend can tell real
-  # visitors' addresses from forged ones (rate limits). Keep this repository private if you set it here.
-  # headers = { X-Proxy-Secret = "PUT-THE-SAME-RANDOM-VALUE-HERE" }
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Phase 1: /api/* is served by the Netlify function netlify/functions/api.mjs (website content and the /dashboard
+# sign-in, saved in Supabase). Phase 2 (bookings, patients) will point /api/* at the clinic's server again.
 
 # Articles written in the dashboard, and their pictures, audio and video, come from the backend too.
 [[redirects]]
@@ -118,6 +113,12 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(self), microphone=(self), geolocation=(), payment=(self \"https://checkout.razorpay.com\" \"https://api.razorpay.com\")"
     Cross-Origin-Opener-Policy = "same-origin-allow-popups"
+
+[[headers]]
+  for = "/dashboard/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
 
 [[headers]]
   for = "/admin/*"

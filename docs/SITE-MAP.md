@@ -139,7 +139,11 @@ The number is each article's permanent ID. The dashboard's **Blog** section uses
 
 ---
 
-## 3. Clinic dashboard (staff)  `/admin`
+## 3a. Phase-1 dashboard (free hosting)  `/dashboard`
+
+Email, password and an authenticator code. Videos (YouTube and Instagram), announcement bar, hours and contact, FAQ, newspaper clippings, history and undo. Super admin only: launch phase, staff and activity log. Data lives in Supabase; see [GO-LIVE-PHASE-1.md](GO-LIVE-PHASE-1.md).
+
+## 3. Clinic dashboard (staff, phase 2 onwards, needs the clinic server)  `/admin`
 
 ```
 Sign in (email + password + two-factor code)
