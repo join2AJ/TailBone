@@ -112,7 +112,7 @@
 
   // ---------- Data ----------
   async function load() {
-    const [data, defaults] = await Promise.all([api("/website"), state.defaults || fetch("/assets/data/site-defaults.json").then((r) => r.json())]);
+    const [data, defaults] = await Promise.all([api("/website"), state.defaults || fetch("/dashboard/defaults.json").then((r) => r.json())]);
     state.data = data;
     state.defaults = defaults;
     const A = data.areas;
@@ -398,7 +398,7 @@
     },
 
     async launch() {
-      const [L, defaults] = await Promise.all([api("/launch"), state.defaults || fetch("/assets/data/site-defaults.json").then((r) => r.json())]);
+      const [L, defaults] = await Promise.all([api("/launch"), state.defaults || fetch("/dashboard/defaults.json").then((r) => r.json())]);
       state.defaults = defaults;
       const current = L.launch || defaults.launch;
       const hidden = new Set(current.hidden);

@@ -1,0 +1,556 @@
+{
+ "faq": [
+  {
+   "q": "What is coccydynia?",
+   "a": "It's the medical name for pain in and around the coccyx (tailbone). It usually gets worse when sitting, especially when leaning back, and when standing up after sitting.",
+   "visible": true
+  },
+  {
+   "q": "What is Internal Manipulation, and does it hurt?",
+   "a": "It's a hands-on, non-surgical technique that frees up the tight ligaments and muscles attached to the coccyx and restores its alignment and movement. It is quick and done with full consent and privacy. Patients commonly report it's far less uncomfortable than they expected.",
+   "visible": true
+  },
+  {
+   "q": "How many sessions will I need?",
+   "a": "It depends on your diagnosis, how long you've had the pain and your general health. Some people need very few visits, and others need a short course. We reassess your progress at every visit.",
+   "visible": true
+  },
+  {
+   "q": "What are the fees?",
+   "a": "A consultation costs ₹800, at the clinic or online by video. A follow-up within 7 days costs ₹500. You pay at the clinic by cash, UPI or card. For an online consultation we tell you how to pay by UPI when we confirm the time. The cancellation and refund rules are on the [terms, fees and refunds](/policies.html) page.",
+   "visible": true
+  },
+  {
+   "q": "What should I bring to my appointment?",
+   "a": "A short note of how and when the pain started, any past injuries or operations, and a list of the medicines you take. Wear comfortable clothing.",
+   "visible": true
+  },
+  {
+   "q": "Do I need a referral from a doctor?",
+   "a": "No. You can book directly with us on the [contact page](/book), by phone or on WhatsApp.",
+   "visible": true
+  },
+  {
+   "q": "Is a female doctor available?",
+   "a": "Yes. A female doctor, trained by Dr Rajveer Singh, sees patients at the New Delhi clinic. Just tell us when you call or message to book.",
+   "visible": true
+  },
+  {
+   "q": "I live outside India. Can you help?",
+   "a": "Yes. Many of our patients travel from abroad, including from the Middle East. Start with an online consultation and we'll help you plan the visit.",
+   "visible": true
+  },
+  {
+   "q": "Can the doctor come to us?",
+   "a": "Yes. On request, the specialist can travel to your city or country and treat you there, for one patient or a group. Travel, accommodation and food are covered by you, along with the treatment fee. Please ask at least 7 days ahead by phone or WhatsApp so we can plan the visit.",
+   "visible": true
+  },
+  {
+   "q": "How do I cancel or reschedule?",
+   "a": "Call or WhatsApp us on [+91 98866 88323](tel:+919886688323) and we'll move or cancel it for you. The refund rules are on the [terms, fees and refunds](/policies.html) page.",
+   "visible": true
+  }
+ ],
+ "press": [
+  {
+   "slug": "article-on-tailbone-treatment-in-hindustan-delhi-english",
+   "title": "Article on Tailbone Treatment in Hindustan Delhi (English)",
+   "publication": "Hindustan, Delhi",
+   "date": "2016-10-16",
+   "image": "/assets/img/press/article-on-tailbone-treatment-in-hindustan-delhi-english.jpg",
+   "width": 765,
+   "height": 788,
+   "language": "",
+   "thumb": "/assets/img/press/article-on-tailbone-treatment-in-hindustan-delhi-english-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 494,
+   "visible": true
+  },
+  {
+   "slug": "article-on-tailbone-hindustan-delhi",
+   "title": "Article on Tailbone Treatment in Hindustan Delhi (Hindi)",
+   "publication": "Hindustan, Delhi",
+   "date": "2016-10-16",
+   "image": "/assets/img/press/article-on-tailbone-hindustan-delhi.jpg",
+   "width": 765,
+   "height": 788,
+   "language": "Hindi",
+   "thumb": "/assets/img/press/article-on-tailbone-hindustan-delhi-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 494,
+   "visible": true
+  },
+  {
+   "slug": "tailbone-pain-article-in-times-of-india-news-paper",
+   "title": "Tailbone Pain Article in Times of India",
+   "publication": "The Times of India",
+   "date": "2016-06-25",
+   "image": "/assets/img/press/tailbone-pain-article-in-times-of-india-news-paper.jpg",
+   "width": 675,
+   "height": 661,
+   "language": "",
+   "thumb": "/assets/img/press/tailbone-pain-article-in-times-of-india-news-paper-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 470,
+   "visible": true
+  },
+  {
+   "slug": "tailbone-article-in-prajavani-news-paper",
+   "title": "Tailbone Article in Prajavani News Paper",
+   "publication": "Prajavani",
+   "date": "2015-05-05",
+   "image": "/assets/img/press/tailbone-article-in-prajavani-news-paper.jpg",
+   "width": 1200,
+   "height": 1472,
+   "language": "Kannada",
+   "thumb": "/assets/img/press/tailbone-article-in-prajavani-news-paper-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 589,
+   "visible": true
+  },
+  {
+   "slug": "the-acute-pain-of-tail-bone",
+   "title": "The Acute Pain of Tail Bone",
+   "publication": "Newspaper",
+   "date": "2015-02-18",
+   "image": "/assets/img/press/the-acute-pain-of-tail-bone.jpg",
+   "width": 847,
+   "height": 1280,
+   "language": "",
+   "thumb": "/assets/img/press/the-acute-pain-of-tail-bone-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 725,
+   "visible": true
+  },
+  {
+   "slug": "tailbone-pain-article-in-deccan-herald",
+   "title": "Tailbone Pain Article in Deccan Herald",
+   "publication": "Deccan Herald",
+   "date": "2014-09-06",
+   "image": "/assets/img/press/tailbone-pain-article-in-deccan-herald.jpg",
+   "width": 570,
+   "height": 1024,
+   "language": "",
+   "thumb": "/assets/img/press/tailbone-pain-article-in-deccan-herald-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 862,
+   "visible": true
+  },
+  {
+   "slug": "article-on-diastasis-recti",
+   "title": "Article on Diastasis Recti",
+   "publication": "Newspaper",
+   "date": "2014-01-22",
+   "image": "/assets/img/press/article-on-diastasis-recti.jpg",
+   "width": 1017,
+   "height": 744,
+   "language": "",
+   "thumb": "/assets/img/press/article-on-diastasis-recti-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 351,
+   "visible": true
+  },
+  {
+   "slug": "tailbone-pain-article-in-kanada-news-paper",
+   "title": "Tailbone Pain Article in Kanada News Paper",
+   "publication": "Kannada newspaper",
+   "date": "2014-01-21",
+   "image": "/assets/img/press/tailbone-pain-article-in-kanada-news-paper.jpg",
+   "width": 959,
+   "height": 828,
+   "language": "Kannada",
+   "thumb": "/assets/img/press/tailbone-pain-article-in-kanada-news-paper-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 414,
+   "visible": true
+  },
+  {
+   "slug": "tailbone-pain-article-in-rajasthan-patrika-news-paper",
+   "title": "Tailbone Pain Article in Rajasthan Patrika News Paper",
+   "publication": "Rajasthan Patrika",
+   "date": "2014-01-21",
+   "image": "/assets/img/press/tailbone-pain-article-in-rajasthan-patrika-news-paper.jpg",
+   "width": 604,
+   "height": 942,
+   "language": "",
+   "thumb": "/assets/img/press/tailbone-pain-article-in-rajasthan-patrika-news-paper-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 749,
+   "visible": true
+  },
+  {
+   "slug": "tailbone-pain-article-in-salar-paper",
+   "title": "Tailbone Pain Article in Salar Paper",
+   "publication": "Salar",
+   "date": "2014-01-21",
+   "image": "/assets/img/press/tailbone-pain-article-in-salar-paper.jpg",
+   "width": 850,
+   "height": 1169,
+   "language": "",
+   "thumb": "/assets/img/press/tailbone-pain-article-in-salar-paper-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 660,
+   "visible": true
+  },
+  {
+   "slug": "article-on-tail-bone-pain",
+   "title": "Article on Tail Bone Pain",
+   "publication": "Newspaper",
+   "date": "2013-07-28",
+   "image": "/assets/img/press/article-on-tail-bone-pain.jpg",
+   "width": 960,
+   "height": 698,
+   "language": "",
+   "thumb": "/assets/img/press/article-on-tail-bone-pain-thumb.webp",
+   "thumbWidth": 480,
+   "thumbHeight": 349,
+   "visible": true
+  }
+ ],
+ "hours": {
+  "0": [
+   "08:00",
+   "15:00"
+  ],
+  "1": [
+   "10:00",
+   "17:00"
+  ],
+  "2": [
+   "10:00",
+   "17:00"
+  ],
+  "3": [
+   "10:00",
+   "17:00"
+  ],
+  "4": [
+   "10:00",
+   "17:00"
+  ],
+  "5": [
+   "10:00",
+   "17:00"
+  ],
+  "6": [
+   "10:00",
+   "15:00"
+  ]
+ },
+ "contact": {
+  "phone": "+91 98866 88323",
+  "whatsapp": "919886688323",
+  "email": "contact@tailbonetreatment.com"
+ },
+ "articles": [
+  {
+   "id": 30,
+   "title": "Tailbone pain, explained in pictures",
+   "tags": [
+    "Anatomy",
+    "Causes",
+    "Diagnosis",
+    "Treatment"
+   ]
+  },
+  {
+   "id": 29,
+   "title": "Water slides, theme park rides and your tailbone",
+   "tags": [
+    "Injury",
+    "Causes",
+    "Self-care"
+   ]
+  },
+  {
+   "id": 28,
+   "title": "Why \"bone setting\" for tailbone pain can be dangerous",
+   "tags": [
+    "Treatment",
+    "Red flags",
+    "Diagnosis"
+   ]
+  },
+  {
+   "id": 27,
+   "title": "Kegel exercises can make tailbone pain worse",
+   "tags": [
+    "Treatment",
+    "Self-care",
+    "Women's health"
+   ]
+  },
+  {
+   "id": 26,
+   "title": "A displaced tailbone: why the direction of the shift matters",
+   "tags": [
+    "Diagnosis",
+    "Treatment",
+    "Injury",
+    "Anatomy"
+   ]
+  },
+  {
+   "id": 25,
+   "title": "Why women get tailbone pain five times more often than men",
+   "tags": [
+    "Research",
+    "Women's health",
+    "Pregnancy",
+    "Causes"
+   ]
+  },
+  {
+   "id": 24,
+   "title": "Two-wheelers, potholes and tailbone pain",
+   "tags": [
+    "Research",
+    "Causes",
+    "Work and lifestyle",
+    "Sitting"
+   ]
+  },
+  {
+   "id": 23,
+   "title": "Pain near the tailbone that isn't coming from the coccyx",
+   "tags": [
+    "Research",
+    "Red flags",
+    "Related conditions",
+    "Diagnosis"
+   ]
+  },
+  {
+   "id": 22,
+   "title": "Tailbone pain through history, from 1859 to now",
+   "tags": [
+    "Research",
+    "History"
+   ]
+  },
+  {
+   "id": 21,
+   "title": "Spondylitis, pelvic floor problems and other conditions linked to tailbone pain",
+   "tags": [
+    "Research",
+    "Related conditions",
+    "Diagnosis"
+   ]
+  },
+  {
+   "id": 20,
+   "title": "Why some tailbones hurt and others don't",
+   "tags": [
+    "Research",
+    "Anatomy",
+    "Diagnosis"
+   ]
+  },
+  {
+   "id": 19,
+   "title": "How coccydynia is treated, and how often each treatment works",
+   "tags": [
+    "Research",
+    "Treatment",
+    "Self-care"
+   ]
+  },
+  {
+   "id": 18,
+   "title": "Tailbone pain in numbers",
+   "tags": [
+    "Research",
+    "Causes",
+    "Treatment"
+   ]
+  },
+  {
+   "id": 17,
+   "title": "Does body weight affect tailbone pain?",
+   "tags": [
+    "Research",
+    "Causes",
+    "Sitting"
+   ]
+  },
+  {
+   "id": 16,
+   "title": "8 ways to sit more comfortably with tailbone pain",
+   "tags": [
+    "Self-care",
+    "Sitting",
+    "Work and lifestyle"
+   ]
+  },
+  {
+   "id": 15,
+   "title": "Tailbone pain after having a baby",
+   "tags": [
+    "Pregnancy",
+    "Women's health",
+    "Self-care",
+    "Treatment"
+   ]
+  },
+  {
+   "id": 14,
+   "title": "When tailbone pain needs urgent attention",
+   "tags": [
+    "Red flags",
+    "Symptoms",
+    "Diagnosis"
+   ]
+  },
+  {
+   "id": 13,
+   "title": "What happens at a coccydynia consultation (and how to prepare)",
+   "tags": [
+    "Your visit",
+    "Diagnosis",
+    "Treatment"
+   ]
+  },
+  {
+   "id": 12,
+   "title": "Can Physiotherapy Really Treat Chronic Tailbone Pain Without Surgery?",
+   "tags": [
+    "Treatment",
+    "Chronic pain",
+    "Self-care"
+   ]
+  },
+  {
+   "id": 11,
+   "title": "Why Some Tailbone Pain Treatments Fail: The Importance of Functional Assessment",
+   "tags": [
+    "Treatment",
+    "Diagnosis",
+    "Chronic pain"
+   ]
+  },
+  {
+   "id": 10,
+   "title": "Tailbone Pain After Childbirth: When Post-Delivery Pain Should Not Be Ignored",
+   "tags": [
+    "Pregnancy",
+    "Women's health",
+    "Causes"
+   ]
+  },
+  {
+   "id": 9,
+   "title": "Tailbone Pain While Sitting: Understanding the Real Mechanical Cause",
+   "tags": [
+    "Sitting",
+    "Causes",
+    "Anatomy"
+   ]
+  },
+  {
+   "id": 8,
+   "title": "Why Chronic Tailbone Pain is Often Misdiagnosed for Years",
+   "tags": [
+    "Diagnosis",
+    "Chronic pain",
+    "Sitting"
+   ]
+  },
+  {
+   "id": 7,
+   "title": "How Can Tailbone Pain Add Limitations To Your Work Life?",
+   "tags": [
+    "Work and lifestyle",
+    "Sitting",
+    "Chronic pain"
+   ]
+  },
+  {
+   "id": 6,
+   "title": "Bruised Tailbone: Requires Special Precautions. Slow to Heal",
+   "tags": [
+    "Injury",
+    "Self-care",
+    "Treatment"
+   ]
+  },
+  {
+   "id": 5,
+   "title": "Wellness Talks: Tailbone Pain Can Go Within a Few months!",
+   "tags": [
+    "Treatment",
+    "Chronic pain",
+    "Self-care"
+   ]
+  },
+  {
+   "id": 4,
+   "title": "Emotional Stress from Tailbone Pain",
+   "tags": [
+    "Mental health",
+    "Chronic pain",
+    "Treatment"
+   ]
+  },
+  {
+   "id": 3,
+   "title": "Tailbone Pain is the Most Common Aches that Pregnant Women Experience Through out Pregnancy",
+   "tags": [
+    "Pregnancy",
+    "Women's health",
+    "Causes",
+    "Self-care"
+   ]
+  },
+  {
+   "id": 2,
+   "title": "Post Pregnancy Low Back Pain Could be Recti Divarication (Abdominal Splitting)",
+   "tags": [
+    "Pregnancy",
+    "Women's health",
+    "Related conditions",
+    "Diagnosis"
+   ]
+  },
+  {
+   "id": 1,
+   "title": "Psychological aspect of Coccydynia / Tailbone Pain",
+   "tags": [
+    "Mental health",
+    "Chronic pain",
+    "Symptoms"
+   ]
+  }
+ ],
+ "launch": {
+  "hidden": [
+   "booking",
+   "accounts",
+   "referrals",
+   "home_visits",
+   "story_form",
+   "stories"
+  ],
+  "hiddenArticles": [
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12,
+   17,
+   20,
+   21,
+   22,
+   23,
+   24,
+   25,
+   29
+  ]
+ }
+}

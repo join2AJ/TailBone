@@ -108,8 +108,8 @@ export function writeSiteDefaults() {
   const press = JSON.parse(fs.readFileSync(path.join(root, "content/press.json"), "utf8")).map((p) => ({ ...p, visible: true }));
   const articles = loadPosts().map(({ meta }) => ({ id: meta.id, title: meta.title, tags: meta.tags })).sort((a, b) => b.id - a.id);
   const launch = JSON.parse(fs.readFileSync(path.join(root, "content/launch.json"), "utf8"));
-  fs.mkdirSync(path.join(root, "public/assets/data"), { recursive: true });
-  fs.writeFileSync(path.join(root, "public/assets/data/site-defaults.json"), `${JSON.stringify({
+  fs.mkdirSync(path.join(root, "public/dashboard"), { recursive: true });
+  fs.writeFileSync(path.join(root, "public/dashboard/defaults.json"), `${JSON.stringify({
     faq, press, hours: DEFAULT_HOURS, contact: DEFAULT_CONTACT, articles, launch: { hidden: launch.hidden, hiddenArticles: launch.hiddenArticles || [] },
   }, null, 1)}\n`);
 }
