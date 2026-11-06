@@ -1391,3 +1391,9 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .feature h3 { margin: 0; }
 .feature > p, .feature > ul { grid-column: 1 / -1; margin: .7rem 0 0; }
 @media (max-width: 640px) { .feature { padding: 1.1rem 1.2rem; } .feature h3 { font-size: 1.1rem; } }
+/* Step cards (How a visit works, Four steps): number on the left, heading beside it, text below */
+.step { display: grid; grid-template-columns: auto 1fr; column-gap: .9rem; align-items: center; align-content: start; }
+.step::before { margin-bottom: 0; }
+.step h3 { margin: 0; }
+.step > p { grid-column: 1 / -1; margin-top: .7rem; }
+@media (max-width: 640px) { .step { padding: 1.1rem 1.2rem; } .step::before { width: 40px; height: 40px; } .step h3 { font-size: 1.1rem; } }
