@@ -61,6 +61,13 @@ Also choose the admin email and a strong password (12+ characters).
 
 ## Step 4b: Launch phase (what the public website shows)
 The website launches with some features and 20 articles held back (`content/launch.json`). The super admin changes this in **Control panel → Launch phase**; to make **Publish to website** work:
+
+**If Render hosts everything (recommended: one service, one bill).** Render's build already builds the pages (render.yaml), and the server serves them and follows the hidden-page redirects. Point the domain at Render (**Settings → Custom Domains**) instead of Netlify.
+1. In Render: **Settings → Deploy Hook**, copy the address, and add it as the environment variable `RENDER_DEPLOY_HOOK`.
+2. Add `LAUNCH_URL` = `https://<your-render-address>/api/launch`.
+Render then rebuilds with the saved settings whenever the super admin presses **Publish**.
+
+**If Netlify stays in front of Render:**
 1. In Netlify: **Site configuration → Build & deploy → Build hooks → Add build hook** (name it "Launch phase"). Copy the address.
 2. In Render, add the environment variable `NETLIFY_BUILD_HOOK` with that address.
 3. In Netlify: **Site configuration → Environment variables**, add `LAUNCH_URL` = `https://<your-render-address>/api/launch`.

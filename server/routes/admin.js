@@ -23,7 +23,7 @@ import { listPosts, setEnabled } from "../blog.js";
 import { addDocument, listDocuments, getDocument, readFile, sendFile, KINDS, MAX_BYTES } from "../documents.js";
 import { adminView, saveArea, restoreArea, AREA_LABELS, PAGES } from "../site-content.js";
 import { addMedia, sniffMedia } from "../articles.js";
-import { getLaunch, saveLaunch, launchArticles, publishLaunch, LAUNCH_FEATURES } from "../launch.js";
+import { getLaunch, saveLaunch, launchArticles, publishLaunch, buildHook, LAUNCH_FEATURES } from "../launch.js";
 import { getVideoSettings, saveVideoSettings, cleanVideoUrl, videoUrlFor } from "../video.js";
 import { growthRoutes } from "./admin-growth.js";
 import { cleanProfile, saveProfile, profileView, PROFILE_OPTIONS } from "../profile.js";
@@ -261,7 +261,7 @@ export function adminRoutes(db) {
 
   // Launch phases: which features and articles the public website leaves out for now (see server/launch.js).
   r.get("/superadmin/launch", (req, res) => res.json({
-    launch: getLaunch(db), features: LAUNCH_FEATURES, articles: launchArticles(db), publishConnected: Boolean(process.env.NETLIFY_BUILD_HOOK),
+    launch: getLaunch(db), features: LAUNCH_FEATURES, articles: launchArticles(db), publishConnected: Boolean(buildHook()),
   }));
   r.put("/superadmin/launch", (req, res) => {
     const value = saveLaunch(db, req.body, req.admin.email);

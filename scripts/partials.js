@@ -41,7 +41,32 @@ export const isHidden = (feature) => LAUNCH.hidden.includes(feature);
 /** Pages that belong to hidden features: not built into links or the sitemap, and redirected (see writeRedirects). */
 export const HIDDEN_PAGES = {
   "/manage.html": "accounts", "/checkin.html": "accounts", "/refer.html": "referrals", "/partner.html": "referrals", "/home-visit.html": "home_visits",
+  "/stories.html": "stories",
 };
+/** Where a hidden page's old address leads instead. */
+export const HIDDEN_PAGE_TARGET = { "/stories.html": "/doctor" };
+
+// While online booking is hidden, the Book page is the "call, WhatsApp or email" page, so booking buttons say so.
+const BOOKING_LABELS = {
+  "Book appointment": "Contact us",
+  "Book an appointment": "Call or WhatsApp to book",
+  "Book online": "Call or WhatsApp",
+  "Book online consult": "Ask about an online consult",
+  "Book an online consult": "Ask about an online consult",
+  "Book in New Delhi": "Call the New Delhi clinic",
+  "booking page": "contact page",
+  "अपॉइंटमेंट बुक करें": "कॉल या WhatsApp करें",
+  "ऑनलाइन बुक करें": "कॉल या WhatsApp करें",
+  "ऑनलाइन कंसल्ट बुक करें": "ऑनलाइन कंसल्ट के बारे में पूछें",
+  "नई दिल्ली में बुक करें": "नई दिल्ली क्लिनिक को कॉल करें",
+  "बुकिंग पेज": "संपर्क पेज",
+};
+function phaseOneBooking(html) {
+  if (!isHidden("booking")) return html;
+  html = html.replace(/(<a\b[^>]*href="(?:\/hi)?\/book"[^>]*>)([^<]+)(<\/a>)/g, (m, open, text, close) => (Object.hasOwn(BOOKING_LABELS, text.trim()) ? `${open}${BOOKING_LABELS[text.trim()]}${close}` : m));
+  // Phone bar: Call · WhatsApp · Email instead of Book.
+  return html.replace(/<a href="[^"]*" class="mbar__primary">([^<]*)<\/a>/, (m, text) => `<a href="mailto:contact@tailbonetreatment.com" class="mbar__primary">${/[ऀ-ॿ]/.test(text) ? "ईमेल" : "Email"}</a>`);
+}
 
 /** Articles kept for a later phase (launch.json "hiddenArticles", by article number): their slugs. */
 export const isArticleHidden = (id) => (LAUNCH.hiddenArticles || []).includes(Number(id));
@@ -81,7 +106,7 @@ export function applyLaunch(html) {
     html = html.slice(0, Math.max(start, 0)) + html.slice(end);
     open.lastIndex = Math.max(start, 0);
   }
-  return unlinkHiddenArticles(html);
+  return unlinkHiddenArticles(phaseOneBooking(html));
 }
 
 export function animFigure(name) {

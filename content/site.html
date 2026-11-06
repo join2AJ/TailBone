@@ -74,7 +74,7 @@
         <a href="/blog/">Blog</a>
         <a href="/locations">Clinics</a>
         <a href="/faq" class="nav__mobile-only">Questions</a>
-        <a href="/stories.html" class="nav__mobile-only">Patient stories</a>
+        <a href="/stories.html" class="nav__mobile-only" data-launch="stories">Patient stories</a>
         <a href="/manage.html" class="nav__mobile-only" data-launch="accounts">My appointments</a>
         <a href="/book" class="btn btn--primary nav__cta">Book appointment</a>
       </nav>
@@ -335,7 +335,7 @@
           <div>
             <span class="eyebrow">Your specialist</span>
             <h2 id="meetTitle">Dr Rajveer Singh</h2>
-            <p class="creds">BPT · Fellowship in Orthopaedic Rehabilitation (Apollo Hospital, Chennai)</p>
+            <p class="creds">BPT · Fellowship in Orthopaedic Rehabilitation, Apollo Hospital Chennai · formerly with Sagar Hospitals</p>
             <p>An exclusive specialist for coccyx and tailbone pain, treating patients without surgery in New Delhi and online. A female doctor is also available at the New Delhi clinic.</p>
             <ul class="ticks ticks--grid">
               <li>Tailbone pain (coccydynia)</li>
@@ -345,7 +345,7 @@
               <li>Sitting pain</li>
               <li>Chronic tailbone discomfort</li>
             </ul>
-            <a href="/doctor" class="btn btn--ghost">More about Dr Rajveer and patient stories</a>
+            <a href="/doctor" class="btn btn--ghost">More about Dr Rajveer</a>
           </div>
         </div>
       </div>
@@ -362,7 +362,7 @@
           <dt>Where</dt><dd>150A/09, Shanti Apartment, Kishangarh, Vasant Kunj, New Delhi 110070. Online video consultations from anywhere. Lucknow clinic opening soon.</dd>
           <dt>Hours</dt><dd>Monday to Friday 10:00–17:00, Saturday 10:00–15:00, Sunday 08:00–15:00, by appointment.</dd>
           <dt>Fees</dt><dd id="glanceFees">Consultation ₹800 (in clinic or online). Follow-up within 7 days of a visit ₹500.</dd>
-          <dt>How to book</dt><dd>Online at <a href="/book">Book an appointment</a>, on WhatsApp, or by phone on <a href="tel:+919886688323">+91&nbsp;98866&nbsp;88323</a>.</dd>
+          <dt>How to book</dt><dd data-launch="booking">Online at <a href="/book">Book an appointment</a>, on WhatsApp, or by phone on <a href="tel:+919886688323">+91&nbsp;98866&nbsp;88323</a>.</dd><dd data-launch-only="booking">Call or WhatsApp <a href="tel:+919886688323">+91&nbsp;98866&nbsp;88323</a>, or email <a href="mailto:contact@tailbonetreatment.com">contact@tailbonetreatment.com</a>.</dd>
         </dl>
       </div>
     </section>
@@ -607,10 +607,18 @@
         <div class="reveal">
           <span class="eyebrow">Meet your specialist</span>
           <h2>Dr Rajveer Singh</h2>
-          <p class="creds">BPT · Fellowship in Orthopaedic Rehabilitation (Apollo Hospital, Chennai)</p>
+          <p class="creds">BPT · Fellowship in Orthopaedic Rehabilitation, Apollo Hospital Chennai · formerly with Sagar Hospitals</p>
           <p class="lead">Exclusive specialist for coccyx and tailbone pain: non-surgical treatment in New Delhi and online.</p>
           <p>For more than ten years Dr Rajveer Singh has treated mainly one problem, tailbone pain, which many people are told they just have to live with. Patients travel from across India and from the Middle East to see him for Internal Manipulation, a technique few practitioners in the region offer.</p>
           <p>Patients describe him as easy to reach by call, SMS, WhatsApp and email, and they say the treatment is quick, respectful and not embarrassing.</p>
+          <h3 class="h3">Qualifications and experience</h3>
+          <ul class="ticks">
+            <li>Bachelor of Physiotherapy, Oxford College of Physiotherapy, Bangalore</li>
+            <li>Fellowship in Orthopaedic Rehabilitation, Apollo Hospital, Chennai (2007)</li>
+            <li>More than 6 years at Sagar Hospitals, Bangalore</li>
+            <li>Life Member, Indian Association of Physiotherapists (L-15697)</li>
+            <li>Treating tailbone pain since 2014; listed among specialists in India on coccyx.org</li>
+          </ul>
           <h3 class="h3">Conditions we treat</h3>
           <ul class="ticks ticks--grid">
             <li>Tailbone pain (coccydynia)</li>
@@ -622,7 +630,7 @@
           </ul>
           <p class="small muted">Clinic in New Delhi · online consultations · Lucknow opening soon · a female doctor is available at the clinic.</p>
           <div class="row-gap">
-            <a href="/book" class="btn btn--primary">Book with Dr Rajveer</a>
+            <a href="/book" class="btn btn--primary" data-launch="booking">Book with Dr Rajveer</a>
             <a href="https://www.instagram.com/drrajveersingh_9886688323/" target="_blank" rel="noopener" class="btn btn--ghost">Follow on Instagram</a>
             <a href="https://www.youtube.com/channel/UCcLNy_lJceu4Ci8LaVW4GEw" target="_blank" rel="noopener" class="btn btn--ghost">Watch on YouTube</a>
           </div>
@@ -631,7 +639,7 @@
     </section>
 
     <!-- Testimonials -->
-    <section class="section section--dark" id="stories" data-page="doctor" data-feature="stories">
+    <section class="section section--dark" id="stories" data-page="doctor" data-feature="stories" data-launch="stories">
       <div class="container">
         <div class="section__head reveal">
           <span class="eyebrow eyebrow--light">Patient stories</span>
@@ -1073,7 +1081,7 @@
         <h2 class="footer__title">Useful links</h2>
         <ul class="footer__links">
           <li><a href="/blog/">Blog</a></li>
-          <li><a href="/stories.html" data-feature="stories">Patient stories</a></li>
+          <li data-launch="stories"><a href="/stories.html" data-feature="stories">Patient stories</a></li>
           <li><a href="/press.html">In the news</a></li>
           <li data-launch="home_visits"><a href="/home-visit.html">Doctor at your place</a></li>
           <li data-launch="referrals"><a href="/refer.html">Refer a patient</a></li>

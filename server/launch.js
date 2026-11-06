@@ -1,7 +1,7 @@
 // Launch phases: which features and articles the public website leaves out for now. The defaults are in
 // content/launch.json; the super admin can change them in the Control panel. The website is static, so a change takes
-// effect when Netlify rebuilds it: "Publish" calls the Netlify build hook (NETLIFY_BUILD_HOOK), and the build reads the
-// saved settings from /api/launch (scripts/build-site.js, LAUNCH_URL).
+// effect when the host rebuilds it: "Publish" calls its rebuild address (RENDER_DEPLOY_HOOK or NETLIFY_BUILD_HOOK), and
+// the build reads the saved settings from /api/launch (scripts/build-site.js, LAUNCH_URL).
 import fs from "node:fs";
 import { HttpError } from "./services.js";
 import { loadPosts } from "../scripts/build-blog.js";
@@ -13,7 +13,8 @@ export const LAUNCH_FEATURES = {
   accounts: "My appointments and the follow-up check-in page",
   referrals: "Refer a patient and the partner log-in",
   home_visits: "Request form for treatment at your place (the Clinics tab and FAQ still mention it, with Call and WhatsApp)",
-  story_form: "The \"Share your story\" form (stories stay readable)",
+  story_form: "The \"Share your story\" form",
+  stories: "Patient stories (the Stories page and the stories on the Doctor page)",
 };
 
 function fileDefaults() {
@@ -50,10 +51,14 @@ export function saveLaunch(db, input, by) {
 }
 
 /** Asks Netlify to rebuild the website, which then reads these settings. */
+// The website can be hosted on Render alone (the server also serves the pages) or on Netlify in front of it; publishing
+// calls that host's rebuild address: Render's deploy hook or Netlify's build hook.
+export const buildHook = () => process.env.RENDER_DEPLOY_HOOK || process.env.NETLIFY_BUILD_HOOK || "";
+
 export async function publishLaunch() {
-  const hook = process.env.NETLIFY_BUILD_HOOK;
-  if (!hook) throw new HttpError(409, "Publishing isn't connected yet: the developer needs to add the Netlify build hook (NETLIFY_BUILD_HOOK) to the server. Until then, send the developer this list.");
-  if (!/^https:\/\/api\.netlify\.com\/build_hooks\/[\w-]+$/.test(hook)) throw new HttpError(500, "NETLIFY_BUILD_HOOK doesn't look like a Netlify build hook address.");
+  const hook = buildHook();
+  if (!hook) throw new HttpError(409, "Publishing isn't connected yet: the developer needs to add the host's rebuild address (RENDER_DEPLOY_HOOK or NETLIFY_BUILD_HOOK) to the server. Until then, send the developer this list.");
+  if (!/^https:\/\/(api\.render\.com\/deploy\/srv-[\w-]+\?key=[\w-]+|api\.netlify\.com\/build_hooks\/[\w-]+)$/.test(hook)) throw new HttpError(500, "The rebuild address doesn't look like a Render deploy hook or a Netlify build hook.");
   const res = await fetch(hook, { method: "POST", signal: AbortSignal.timeout(10_000) });
-  if (!res.ok) throw new HttpError(502, `Netlify didn't accept the request (${res.status}). Try again in a minute.`);
+  if (!res.ok) throw new HttpError(502, `The host didn't accept the request (${res.status}). Try again in a minute.`);
 }

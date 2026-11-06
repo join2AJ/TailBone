@@ -6,7 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { animFigure, siteFooter, siteHeader, SITE, isArticleHidden, unlinkHiddenArticles } from "./partials.js";
+import { animFigure, siteFooter, siteHeader, SITE, isArticleHidden, applyLaunch } from "./partials.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(root, "content/blog");
@@ -331,7 +331,7 @@ export function articlePage(post, others) {
 ${post.html}
         </div>
         <aside class="post-note" aria-label="Medical disclaimer">
-          <strong>Please note:</strong> this article is general information, not a diagnosis or a substitute for a consultation. If you have any of the <a href="/blog/tailbone-pain-red-flags.html">red-flag symptoms</a>, see a doctor promptly.
+          <strong>Please note:</strong> this article is general information, not a diagnosis. For an expert opinion on your own pain, consult Dr Rajveer Singh. If you have any of the <a href="/blog/tailbone-pain-red-flags.html">red-flag symptoms</a>, get medical help promptly.
         </aside>
         <div class="post-cta">
           <div>
@@ -340,7 +340,7 @@ ${post.html}
           </div>
           <div class="post-cta__actions">
             <a href="/book" class="btn btn--primary">Book appointment</a>
-            <a href="${WA}" class="btn btn--wa" target="_blank" rel="noopener">WhatsApp us</a>
+            <a href="${WA}" class="btn btn--wa-outline" target="_blank" rel="noopener">WhatsApp us</a>
           </div>
         </div>
       </article>
@@ -465,10 +465,10 @@ export function build() {
   fs.mkdirSync(OUT, { recursive: true });
   fs.mkdirSync(path.join(OUT, "art"), { recursive: true });
   for (const p of posts) {
-    fs.writeFileSync(path.join(OUT, `${p.meta.slug}.html`), unlinkHiddenArticles(articlePage(p, posts.filter((o) => o !== p))));
+    fs.writeFileSync(path.join(OUT, `${p.meta.slug}.html`), applyLaunch(articlePage(p, posts.filter((o) => o !== p))));
     fs.writeFileSync(path.join(OUT, "art", `${p.meta.slug}.svg`), artSvg(p.meta));
   }
-  fs.writeFileSync(path.join(OUT, "index.html"), indexPage(posts));
+  fs.writeFileSync(path.join(OUT, "index.html"), applyLaunch(indexPage(posts)));
   // Search index for the blog's search box; the server also reads it to list articles in the dashboard.
   fs.writeFileSync(path.join(OUT, "search.json"), JSON.stringify(posts.map(({ meta, body }) => ({
     id: meta.id, slug: meta.slug, title: meta.title, summary: meta.summary, tags: meta.tags, date: meta.date, text: plainText(body),

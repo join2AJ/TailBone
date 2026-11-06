@@ -119,6 +119,16 @@ export function createApp(db) {
     next();
   });
 
+  // Pages of features not launched yet and articles held back (content/launch.json): the build lists them in
+  // public/_redirects as "302!" rules, which Netlify follows; this does the same when the server hosts the pages.
+  const launchFile = path.join(config.publicDir, "_redirects");
+  const LAUNCH_MOVED = new Map(fs.existsSync(launchFile) ? fs.readFileSync(launchFile, "utf8").split("\n")
+    .map((l) => l.trim().split(/\s+/)).filter((p) => p.length === 3 && p[2] === "302!").map(([from, to]) => [from, to]) : []);
+  app.use((req, res, next) => {
+    const to = req.method === "GET" && LAUNCH_MOVED.get(req.path);
+    return to ? res.redirect(302, to) : next();
+  });
+
   // Articles written in the dashboard, their pictures and uploaded media (see articles.js).
   app.get(/^\/blog\/a\/([a-z0-9-]+)\.svg$/, (req, res, next) => {
     const svg = renderArt(db, req.params[0]);

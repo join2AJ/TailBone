@@ -1335,3 +1335,20 @@ figure.anim:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px
 .video-card__play--ig { display: grid; place-items: center; align-content: center; gap: .6rem; background: linear-gradient(160deg, #833ab4, #fd1d1d 60%, #fcb045); font-weight: 700; }
 .video-card__play--ig .video-card__icon { position: static; transform: none; background: rgba(255,255,255,.2); }
 .video-card figcaption { padding: .6rem .2rem 0; font-weight: 600; line-height: 1.4; }
+/* Article footer: a calmer "Still sore when you sit?" box with two buttons side by side, and smaller sources */
+.post-cta { background: var(--bg-soft); box-shadow: none; gap: 1rem 1.5rem; }
+.post-cta h2 { font-size: var(--step-1); }
+.post-cta__actions { gap: .5rem; }
+.post-cta__actions .btn { padding: .65rem 1.1rem; font-size: .95rem; }
+.btn--wa-outline { background: var(--surface); color: var(--ink); border: 1.5px solid #25d366; }
+.btn--wa-outline:hover, .btn--wa-outline:focus-visible { background: #25d366; color: #fff; }
+@media (max-width: 640px) {
+  .post-cta { padding: 1.1rem; }
+  .post-cta__actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .post-cta__actions .btn { width: 100%; padding: .6rem .5rem; font-size: .9rem; text-align: center; justify-content: center; }
+}
+.post-body #s-sources { font-size: 1rem; margin-top: 2.2rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.post-body #s-sources ~ ul, .post-body #s-sources ~ ol { font-size: .8rem; line-height: 1.5; color: var(--muted); padding-left: 1.1rem; }
+.post-body #s-sources ~ ul li { margin: .25rem 0; }
+.post-body #s-sources ~ ul a { color: var(--muted); text-decoration-thickness: 1px; }
+.post-note { font-size: .88rem; }

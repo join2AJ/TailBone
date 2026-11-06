@@ -5,7 +5,9 @@ services:
     runtime: node
     plan: starter            # a paid plan is needed for a persistent disk
     region: singapore        # closest Render region to India
-    buildCommand: npm ci --omit=dev
+    # Builds the pages too, so Render alone can host the whole website (no Netlify needed). With LAUNCH_URL set to
+    # https://<this service>/api/launch, the build uses the launch settings saved in the Control panel.
+    buildCommand: npm ci --omit=dev && node scripts/build-site.js
     startCommand: npm start
     healthCheckPath: /api/health
     disk:

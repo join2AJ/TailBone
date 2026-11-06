@@ -3,4 +3,5 @@
 [data-launch="accounts"],
 [data-launch="referrals"],
 [data-launch="home_visits"],
-[data-launch="story_form"] { display: none !important; }
+[data-launch="story_form"],
+[data-launch="stories"] { display: none !important; }
